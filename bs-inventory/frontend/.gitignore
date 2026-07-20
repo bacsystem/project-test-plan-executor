@@ -1,0 +1,47 @@
+# IDE specific
+# WebStorm
+.idea/
+# VSCode
+.vscode/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependency directories
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Production files
+build/
+
+# TypeScript
+*.tsbuildinfo
+
+# Miscellaneous
+*.pem
+
+# Ignore EditorConfig
+.editorconfig
+
+# vercel
+.vercel
+
+# typescript
+next-env.d.ts
+
+# local configuration
+.env.local
+
+.wrangler/
+.open-next/

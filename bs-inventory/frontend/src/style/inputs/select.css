@@ -1,0 +1,19 @@
+/* --------------------------- */
+/* Select */
+/* --------------------------- */
+
+@layer style {
+  /* Select inherits styles from input.css */
+
+  /* Select icon square */
+  .MuiSelect-icon {
+    @apply text-text-secondary top-[calc(50%-0.625rem)] ltr:right-2.5 rtl:right-[unset] rtl:left-2.5;
+    &:hover {
+      @apply text-primary! bg-transparent!;
+    }
+  }
+
+  .MuiSelect-root.Mui-readOnly .MuiSelect-select {
+    @apply cursor-default!;
+  }
+}
