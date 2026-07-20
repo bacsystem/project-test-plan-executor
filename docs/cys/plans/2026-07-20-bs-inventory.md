@@ -41,11 +41,11 @@ React Testing Library, Playwright.
 ### Task 1: Domain types and stock logic
 
 **Files:**
-- Create: `backend/go.mod`
-- Create: `backend/internal/domain/product.go`
-- Create: `backend/internal/domain/movement.go`
-- Create: `backend/internal/domain/stock.go`
-- Test: `backend/internal/domain/stock_test.go`
+- Create: `bs-inventory/backend/go.mod`
+- Create: `bs-inventory/backend/internal/domain/product.go`
+- Create: `bs-inventory/backend/internal/domain/movement.go`
+- Create: `bs-inventory/backend/internal/domain/stock.go`
+- Test: `bs-inventory/backend/internal/domain/stock_test.go`
 
 **Interfaces:**
 - Consumes: None
@@ -54,15 +54,13 @@ React Testing Library, Playwright.
 - [ ] **Step 1: Initialize the Go module**
 
 ```bash
-mkdir -p backend
-cd backend
-go mod init bs-inventory
-cd ..
+mkdir -p bs-inventory/backend
+(cd bs-inventory/backend && go mod init bs-inventory)
 ```
 
 - [ ] **Step 2: Write the failing tests**
 
-Create `backend/internal/domain/stock_test.go`:
+Create `bs-inventory/backend/internal/domain/stock_test.go`:
 
 ```go
 package domain_test
@@ -109,12 +107,12 @@ func TestIsLowStockCrossing(t *testing.T) {
 
 - [ ] **Step 3: Run it, expect FAIL**
 
-Run: `go -C backend test ./internal/domain/...`
+Run: `go -C bs-inventory/backend test ./internal/domain/...`
 Expected: FAIL — `domain.Product`, `domain.StockMovement`, `domain.ComputeStock`, `domain.IsLowStockCrossing` don't exist yet.
 
 - [ ] **Step 4: Write the minimal implementation**
 
-Create `backend/internal/domain/product.go`:
+Create `bs-inventory/backend/internal/domain/product.go`:
 
 ```go
 package domain
@@ -129,7 +127,7 @@ type Product struct {
 }
 ```
 
-Create `backend/internal/domain/movement.go`:
+Create `bs-inventory/backend/internal/domain/movement.go`:
 
 ```go
 package domain
@@ -152,7 +150,7 @@ type StockMovement struct {
 }
 ```
 
-Create `backend/internal/domain/stock.go`:
+Create `bs-inventory/backend/internal/domain/stock.go`:
 
 ```go
 package domain
@@ -185,13 +183,13 @@ func IsLowStockCrossing(previousQty, newQty, threshold int) bool {
 
 - [ ] **Step 5: Run it, expect PASS**
 
-Run: `go -C backend test ./internal/domain/...`
+Run: `go -C bs-inventory/backend test ./internal/domain/...`
 Expected: PASS.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add backend/go.mod backend/internal/domain
+git add bs-inventory/backend/go.mod backend/internal/domain
 git commit -m "feat(domain): add Product, StockMovement, and stock computation logic"
 ```
 
@@ -200,11 +198,11 @@ git commit -m "feat(domain): add Product, StockMovement, and stock computation l
 ### Task 2: PostgreSQL repositories
 
 **Files:**
-- Create: `backend/internal/postgres/schema.sql`
-- Create: `backend/internal/postgres/products.go`
-- Create: `backend/internal/postgres/movements.go`
-- Modify: `backend/go.mod`
-- Test: `backend/internal/postgres/postgres_test.go`
+- Create: `bs-inventory/backend/internal/postgres/schema.sql`
+- Create: `bs-inventory/backend/internal/postgres/products.go`
+- Create: `bs-inventory/backend/internal/postgres/movements.go`
+- Modify: `bs-inventory/backend/go.mod`
+- Test: `bs-inventory/backend/internal/postgres/postgres_test.go`
 
 **Interfaces:**
 - Consumes: `Product`, `StockMovement`
@@ -213,13 +211,13 @@ git commit -m "feat(domain): add Product, StockMovement, and stock computation l
 - [ ] **Step 1: Add dependencies**
 
 ```bash
-go -C backend get github.com/jackc/pgx/v5 github.com/google/uuid
-go -C backend get github.com/testcontainers/testcontainers-go github.com/testcontainers/testcontainers-go/modules/postgres
+go -C bs-inventory/backend get github.com/jackc/pgx/v5 github.com/google/uuid
+go -C bs-inventory/backend get github.com/testcontainers/testcontainers-go github.com/testcontainers/testcontainers-go/modules/postgres
 ```
 
 - [ ] **Step 2: Write the failing tests**
 
-Create `backend/internal/postgres/postgres_test.go`:
+Create `bs-inventory/backend/internal/postgres/postgres_test.go`:
 
 ```go
 package postgres_test
@@ -345,12 +343,12 @@ func TestMovementRepository_InsertAndListByProduct(t *testing.T) {
 
 - [ ] **Step 3: Run it, expect FAIL**
 
-Run: `go -C backend test ./internal/postgres/...`
+Run: `go -C bs-inventory/backend test ./internal/postgres/...`
 Expected: FAIL — `schema.sql`, `postgres.NewProductRepository`, and `postgres.NewMovementRepository` don't exist yet.
 
 - [ ] **Step 4: Write the minimal implementation**
 
-Create `backend/internal/postgres/schema.sql`:
+Create `bs-inventory/backend/internal/postgres/schema.sql`:
 
 ```sql
 CREATE TABLE IF NOT EXISTS products (
@@ -371,7 +369,7 @@ CREATE TABLE IF NOT EXISTS stock_movements (
 CREATE INDEX IF NOT EXISTS idx_stock_movements_product_sku ON stock_movements(product_sku);
 ```
 
-Create `backend/internal/postgres/products.go`:
+Create `bs-inventory/backend/internal/postgres/products.go`:
 
 ```go
 package postgres
@@ -446,7 +444,7 @@ func (r *ProductRepository) List(ctx context.Context, limit, offset int) ([]doma
 }
 ```
 
-Create `backend/internal/postgres/movements.go`:
+Create `bs-inventory/backend/internal/postgres/movements.go`:
 
 ```go
 package postgres
@@ -501,13 +499,13 @@ func (r *MovementRepository) ListByProduct(ctx context.Context, sku string) ([]d
 
 - [ ] **Step 5: Run it, expect PASS**
 
-Run: `go -C backend test ./internal/postgres/...`
+Run: `go -C bs-inventory/backend test ./internal/postgres/...`
 Expected: PASS.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add backend/internal/postgres backend/go.mod backend/go.sum
+git add bs-inventory/backend/internal/postgres backend/go.mod backend/go.sum
 git commit -m "feat(postgres): add product and movement repositories"
 ```
 
@@ -516,10 +514,10 @@ git commit -m "feat(postgres): add product and movement repositories"
 ### Task 3: RabbitMQ event publisher
 
 **Files:**
-- Create: `backend/internal/events/events.go`
-- Create: `backend/internal/events/publisher.go`
-- Modify: `backend/go.mod`
-- Test: `backend/internal/events/publisher_test.go`
+- Create: `bs-inventory/backend/internal/events/events.go`
+- Create: `bs-inventory/backend/internal/events/publisher.go`
+- Modify: `bs-inventory/backend/go.mod`
+- Test: `bs-inventory/backend/internal/events/publisher_test.go`
 
 **Interfaces:**
 - Consumes: None
@@ -528,13 +526,13 @@ git commit -m "feat(postgres): add product and movement repositories"
 - [ ] **Step 1: Add dependencies**
 
 ```bash
-go -C backend get github.com/rabbitmq/amqp091-go
-go -C backend get github.com/testcontainers/testcontainers-go/modules/rabbitmq
+go -C bs-inventory/backend get github.com/rabbitmq/amqp091-go
+go -C bs-inventory/backend get github.com/testcontainers/testcontainers-go/modules/rabbitmq
 ```
 
 - [ ] **Step 2: Write the failing test**
 
-Create `backend/internal/events/publisher_test.go`:
+Create `bs-inventory/backend/internal/events/publisher_test.go`:
 
 ```go
 package events_test
@@ -621,12 +619,12 @@ func TestPublisher_PublishStockUpdated(t *testing.T) {
 
 - [ ] **Step 3: Run it, expect FAIL**
 
-Run: `go -C backend test ./internal/events/...`
+Run: `go -C bs-inventory/backend test ./internal/events/...`
 Expected: FAIL — `events.NewPublisher`, `events.StockUpdatedPayload`, and `events.ExchangeName` don't exist yet.
 
 - [ ] **Step 4: Write the minimal implementation**
 
-Create `backend/internal/events/events.go`:
+Create `bs-inventory/backend/internal/events/events.go`:
 
 ```go
 package events
@@ -645,7 +643,7 @@ type StockLowPayload struct {
 }
 ```
 
-Create `backend/internal/events/publisher.go`:
+Create `bs-inventory/backend/internal/events/publisher.go`:
 
 ```go
 package events
@@ -696,13 +694,13 @@ func (p *Publisher) publish(ctx context.Context, routingKey string, payload any)
 
 - [ ] **Step 5: Run it, expect PASS**
 
-Run: `go -C backend test ./internal/events/...`
+Run: `go -C bs-inventory/backend test ./internal/events/...`
 Expected: PASS.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add backend/internal/events backend/go.mod backend/go.sum
+git add bs-inventory/backend/internal/events backend/go.mod backend/go.sum
 git commit -m "feat(events): add RabbitMQ publisher for stock.updated and stock.low"
 ```
 
@@ -711,9 +709,9 @@ git commit -m "feat(events): add RabbitMQ publisher for stock.updated and stock.
 ### Task 4: HTTP handlers
 
 **Files:**
-- Create: `backend/internal/http/router.go`
-- Modify: `backend/go.mod`
-- Test: `backend/internal/http/router_test.go`
+- Create: `bs-inventory/backend/internal/http/router.go`
+- Modify: `bs-inventory/backend/go.mod`
+- Test: `bs-inventory/backend/internal/http/router_test.go`
 
 **Interfaces:**
 - Consumes: `ProductRepository`, `MovementRepository`, `Publisher`, `ComputeStock`, `IsLowStockCrossing`, `ErrDuplicateSKU`, `ErrProductNotFound`
@@ -722,12 +720,12 @@ git commit -m "feat(events): add RabbitMQ publisher for stock.updated and stock.
 - [ ] **Step 1: Add dependencies**
 
 ```bash
-go -C backend get github.com/go-chi/chi/v5
+go -C bs-inventory/backend get github.com/go-chi/chi/v5
 ```
 
 - [ ] **Step 2: Write the failing tests**
 
-Create `backend/internal/http/router_test.go`:
+Create `bs-inventory/backend/internal/http/router_test.go`:
 
 ```go
 package http_test
@@ -949,12 +947,12 @@ func TestLowStock_ReportsProductsAtOrBelowThreshold(t *testing.T) {
 
 - [ ] **Step 3: Run it, expect FAIL**
 
-Run: `go -C backend test ./internal/http/...`
+Run: `go -C bs-inventory/backend test ./internal/http/...`
 Expected: FAIL — `bshttp.Server` doesn't exist yet.
 
 - [ ] **Step 4: Write the minimal implementation**
 
-Create `backend/internal/http/router.go`:
+Create `bs-inventory/backend/internal/http/router.go`:
 
 ```go
 package http
@@ -1171,13 +1169,13 @@ func writeError(w http.ResponseWriter, status int, message string) {
 
 - [ ] **Step 5: Run it, expect PASS**
 
-Run: `go -C backend test ./internal/http/...`
+Run: `go -C bs-inventory/backend test ./internal/http/...`
 Expected: PASS.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add backend/internal/http backend/go.mod backend/go.sum
+git add bs-inventory/backend/internal/http backend/go.mod backend/go.sum
 git commit -m "feat(http): add REST handlers for products, stock movements, and low-stock report"
 ```
 
@@ -1186,8 +1184,8 @@ git commit -m "feat(http): add REST handlers for products, stock movements, and 
 ### Task 5: Server wiring
 
 **Files:**
-- Create: `backend/cmd/server/main.go`
-- Test: `backend/cmd/server/main_test.go`
+- Create: `bs-inventory/backend/cmd/server/main.go`
+- Test: `bs-inventory/backend/cmd/server/main_test.go`
 
 **Interfaces:**
 - Consumes: `Server`, `Router`
@@ -1195,7 +1193,7 @@ git commit -m "feat(http): add REST handlers for products, stock movements, and 
 
 - [ ] **Step 1: Write the failing tests**
 
-Create `backend/cmd/server/main_test.go`:
+Create `bs-inventory/backend/cmd/server/main_test.go`:
 
 ```go
 package main
@@ -1232,12 +1230,12 @@ func TestLoadConfig_EnvOverride(t *testing.T) {
 
 - [ ] **Step 2: Run it, expect FAIL**
 
-Run: `go -C backend test ./cmd/server/...`
+Run: `go -C bs-inventory/backend test ./cmd/server/...`
 Expected: FAIL — `LoadConfig` doesn't exist yet.
 
 - [ ] **Step 3: Write the minimal implementation**
 
-Create `backend/cmd/server/main.go`:
+Create `bs-inventory/backend/cmd/server/main.go`:
 
 ```go
 package main
@@ -1323,13 +1321,13 @@ func main() {
 
 - [ ] **Step 4: Run it, expect PASS**
 
-Run: `go -C backend test ./cmd/server/...`
+Run: `go -C bs-inventory/backend test ./cmd/server/...`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add backend/cmd
+git add bs-inventory/backend/cmd
 git commit -m "feat(server): wire config, repositories, and publisher into a runnable server"
 ```
 
@@ -1338,14 +1336,14 @@ git commit -m "feat(server): wire config, repositories, and publisher into a run
 ### Task 6: Frontend template trim and API client
 
 **Files:**
-- Create: `frontend/` (seeded by extracting `acorn-next-mui-admin.zip`, see Step 1)
-- Modify: `frontend/package.json`
-- Modify: `frontend/next.config.mjs`
-- Modify: `frontend/.nvmrc`
-- Modify: `frontend/.npmrc`
-- Delete: `frontend/src/app/landing-page`
-- Create: `frontend/src/lib/api-client.ts`
-- Test: `frontend/src/lib/api-client.test.ts`
+- Create: `bs-inventory/frontend/` (seeded by extracting `acorn-next-mui-admin.zip`, see Step 1)
+- Modify: `bs-inventory/frontend/package.json`
+- Modify: `bs-inventory/frontend/next.config.mjs`
+- Modify: `bs-inventory/frontend/.nvmrc`
+- Modify: `bs-inventory/frontend/.npmrc`
+- Delete: `bs-inventory/frontend/src/app/landing-page`
+- Create: `bs-inventory/frontend/src/lib/api-client.ts`
+- Test: `bs-inventory/frontend/src/lib/api-client.test.ts`
 
 **Interfaces:**
 - Consumes: None
@@ -1354,14 +1352,14 @@ git commit -m "feat(server): wire config, repositories, and publisher into a run
 - [ ] **Step 1: Seed the frontend from the template**
 
 ```bash
-mkdir -p frontend
-# Extract the previously-downloaded acorn-next-mui-admin.zip into frontend/
+mkdir -p bs-inventory/frontend
+# Extract the previously-downloaded acorn-next-mui-admin.zip into bs-inventory/frontend/
 # (contents of the zip's acorn-next-mui-admin/ folder, not the zip itself)
 ```
 
 - [ ] **Step 2: Remove MUI X Premium/Pro dependencies**
 
-In `frontend/package.json`, remove these lines from `dependencies`
+In `bs-inventory/frontend/package.json`, remove these lines from `dependencies`
 (Community-only per the design spec, no commercial MUI X license):
 
 ```json
@@ -1381,7 +1379,7 @@ The template's `.nvmrc` (`22.14.0`) and `package.json`'s `engines.node`
 (`>=24.15.0`) disagree, and neither was actually enforced (`.npmrc` had
 no `engine-strict`). Fix both:
 
-In `frontend/package.json`, change:
+In `bs-inventory/frontend/package.json`, change:
 
 ```json
 "engines": {
@@ -1399,7 +1397,7 @@ to:
 },
 ```
 
-Append to `frontend/.npmrc`:
+Append to `bs-inventory/frontend/.npmrc`:
 
 ```
 engine-strict=true
@@ -1408,20 +1406,18 @@ engine-strict=true
 - [ ] **Step 4: Remove demo content unrelated to inventory**
 
 ```bash
-rm -rf frontend/src/app/landing-page
+rm -rf bs-inventory/frontend/src/app/landing-page
 ```
 
 - [ ] **Step 5: Add dev dependencies for testing**
 
 ```bash
-cd frontend
-npm install --save-dev vitest @testing-library/react @testing-library/jest-dom jsdom @playwright/test
-cd ..
+(cd bs-inventory/frontend && npm install --save-dev vitest @testing-library/react @testing-library/jest-dom jsdom @playwright/test)
 ```
 
 - [ ] **Step 6: Write the failing test**
 
-Create `frontend/src/lib/api-client.test.ts`:
+Create `bs-inventory/frontend/src/lib/api-client.test.ts`:
 
 ```ts
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -1464,12 +1460,12 @@ describe("apiClient", () => {
 
 - [ ] **Step 7: Run it, expect FAIL**
 
-Run: `cd frontend && npx vitest run src/lib/api-client.test.ts`
+Run: `cd bs-inventory/frontend && npx vitest run src/lib/api-client.test.ts`
 Expected: FAIL — `./api-client` doesn't exist yet.
 
 - [ ] **Step 8: Write the minimal implementation**
 
-Create `frontend/src/lib/api-client.ts`:
+Create `bs-inventory/frontend/src/lib/api-client.ts`:
 
 ```ts
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
@@ -1521,13 +1517,13 @@ export const apiClient = {
 
 - [ ] **Step 9: Run it, expect PASS**
 
-Run: `cd frontend && npx vitest run src/lib/api-client.test.ts`
+Run: `cd bs-inventory/frontend && npx vitest run src/lib/api-client.test.ts`
 Expected: PASS.
 
 - [ ] **Step 10: Commit**
 
 ```bash
-git add frontend
+git add bs-inventory/frontend
 git commit -m "feat(frontend): trim template to Community-only MUI X, add typed API client"
 ```
 
@@ -1536,8 +1532,8 @@ git commit -m "feat(frontend): trim template to Community-only MUI X, add typed 
 ### Task 7: Products page
 
 **Files:**
-- Create: `frontend/src/app/(dashboard)/products/page.tsx`
-- Test: `frontend/src/app/(dashboard)/products/page.test.tsx`
+- Create: `bs-inventory/frontend/src/app/(dashboard)/products/page.tsx`
+- Test: `bs-inventory/frontend/src/app/(dashboard)/products/page.test.tsx`
 
 **Interfaces:**
 - Consumes: `apiClient`
@@ -1545,7 +1541,7 @@ git commit -m "feat(frontend): trim template to Community-only MUI X, add typed 
 
 - [ ] **Step 1: Write the failing test**
 
-Create `frontend/src/app/(dashboard)/products/page.test.tsx`:
+Create `bs-inventory/frontend/src/app/(dashboard)/products/page.test.tsx`:
 
 ```tsx
 import { render, screen, waitFor } from "@testing-library/react";
@@ -1576,12 +1572,12 @@ describe("ProductsPage", () => {
 
 - [ ] **Step 2: Run it, expect FAIL**
 
-Run: `cd frontend && npx vitest run "src/app/(dashboard)/products/page.test.tsx"`
+Run: `cd bs-inventory/frontend && npx vitest run "src/app/(dashboard)/products/page.test.tsx"`
 Expected: FAIL — `./page` doesn't exist yet.
 
 - [ ] **Step 3: Write the minimal implementation**
 
-Create `frontend/src/app/(dashboard)/products/page.tsx`:
+Create `bs-inventory/frontend/src/app/(dashboard)/products/page.tsx`:
 
 ```tsx
 "use client";
@@ -1646,13 +1642,13 @@ export default function ProductsPage() {
 
 - [ ] **Step 4: Run it, expect PASS**
 
-Run: `cd frontend && npx vitest run "src/app/(dashboard)/products/page.test.tsx"`
+Run: `cd bs-inventory/frontend && npx vitest run "src/app/(dashboard)/products/page.test.tsx"`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add "frontend/src/app/(dashboard)/products"
+git add "bs-inventory/frontend/src/app/(dashboard)/products"
 git commit -m "feat(frontend): add products list page with create dialog"
 ```
 
@@ -1661,8 +1657,8 @@ git commit -m "feat(frontend): add products list page with create dialog"
 ### Task 8: Product detail page
 
 **Files:**
-- Create: `frontend/src/app/(dashboard)/products/[sku]/page.tsx`
-- Test: `frontend/src/app/(dashboard)/products/[sku]/page.test.tsx`
+- Create: `bs-inventory/frontend/src/app/(dashboard)/products/[sku]/page.tsx`
+- Test: `bs-inventory/frontend/src/app/(dashboard)/products/[sku]/page.test.tsx`
 
 **Interfaces:**
 - Consumes: `apiClient`
@@ -1670,7 +1666,7 @@ git commit -m "feat(frontend): add products list page with create dialog"
 
 - [ ] **Step 1: Write the failing test**
 
-Create `frontend/src/app/(dashboard)/products/[sku]/page.test.tsx`:
+Create `bs-inventory/frontend/src/app/(dashboard)/products/[sku]/page.test.tsx`:
 
 ```tsx
 import { render, screen, waitFor } from "@testing-library/react";
@@ -1707,12 +1703,12 @@ describe("ProductDetailPage", () => {
 
 - [ ] **Step 2: Run it, expect FAIL**
 
-Run: `cd frontend && npx vitest run "src/app/(dashboard)/products/[sku]/page.test.tsx"`
+Run: `cd bs-inventory/frontend && npx vitest run "src/app/(dashboard)/products/[sku]/page.test.tsx"`
 Expected: FAIL — `./page` doesn't exist yet.
 
 - [ ] **Step 3: Write the minimal implementation**
 
-Create `frontend/src/app/(dashboard)/products/[sku]/page.tsx`:
+Create `bs-inventory/frontend/src/app/(dashboard)/products/[sku]/page.tsx`:
 
 ```tsx
 "use client";
@@ -1763,13 +1759,13 @@ export default function ProductDetailPage() {
 
 - [ ] **Step 4: Run it, expect PASS**
 
-Run: `cd frontend && npx vitest run "src/app/(dashboard)/products/[sku]/page.test.tsx"`
+Run: `cd bs-inventory/frontend && npx vitest run "src/app/(dashboard)/products/[sku]/page.test.tsx"`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add "frontend/src/app/(dashboard)/products/[sku]"
+git add "bs-inventory/frontend/src/app/(dashboard)/products/[sku]"
 git commit -m "feat(frontend): add product detail page with stock and movement history"
 ```
 
@@ -1778,8 +1774,8 @@ git commit -m "feat(frontend): add product detail page with stock and movement h
 ### Task 9: New stock movement page
 
 **Files:**
-- Create: `frontend/src/app/(dashboard)/stock/movements/new/page.tsx`
-- Test: `frontend/src/app/(dashboard)/stock/movements/new/page.test.tsx`
+- Create: `bs-inventory/frontend/src/app/(dashboard)/stock/movements/new/page.tsx`
+- Test: `bs-inventory/frontend/src/app/(dashboard)/stock/movements/new/page.test.tsx`
 
 **Interfaces:**
 - Consumes: `apiClient`
@@ -1787,7 +1783,7 @@ git commit -m "feat(frontend): add product detail page with stock and movement h
 
 - [ ] **Step 1: Write the failing test**
 
-Create `frontend/src/app/(dashboard)/stock/movements/new/page.test.tsx`:
+Create `bs-inventory/frontend/src/app/(dashboard)/stock/movements/new/page.test.tsx`:
 
 ```tsx
 import { render, screen, fireEvent } from "@testing-library/react";
@@ -1812,12 +1808,12 @@ describe("NewMovementPage", () => {
 
 - [ ] **Step 2: Run it, expect FAIL**
 
-Run: `cd frontend && npx vitest run "src/app/(dashboard)/stock/movements/new/page.test.tsx"`
+Run: `cd bs-inventory/frontend && npx vitest run "src/app/(dashboard)/stock/movements/new/page.test.tsx"`
 Expected: FAIL — `./page` doesn't exist yet.
 
 - [ ] **Step 3: Write the minimal implementation**
 
-Create `frontend/src/app/(dashboard)/stock/movements/new/page.tsx`:
+Create `bs-inventory/frontend/src/app/(dashboard)/stock/movements/new/page.tsx`:
 
 ```tsx
 "use client";
@@ -1869,13 +1865,13 @@ export default function NewMovementPage() {
 
 - [ ] **Step 4: Run it, expect PASS**
 
-Run: `cd frontend && npx vitest run "src/app/(dashboard)/stock/movements/new/page.test.tsx"`
+Run: `cd bs-inventory/frontend && npx vitest run "src/app/(dashboard)/stock/movements/new/page.test.tsx"`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add "frontend/src/app/(dashboard)/stock/movements"
+git add "bs-inventory/frontend/src/app/(dashboard)/stock/movements"
 git commit -m "feat(frontend): add new stock movement form with client-side validation"
 ```
 
@@ -1884,8 +1880,8 @@ git commit -m "feat(frontend): add new stock movement form with client-side vali
 ### Task 10: Low-stock report page
 
 **Files:**
-- Create: `frontend/src/app/(dashboard)/stock/low/page.tsx`
-- Test: `frontend/src/app/(dashboard)/stock/low/page.test.tsx`
+- Create: `bs-inventory/frontend/src/app/(dashboard)/stock/low/page.tsx`
+- Test: `bs-inventory/frontend/src/app/(dashboard)/stock/low/page.test.tsx`
 
 **Interfaces:**
 - Consumes: `apiClient`
@@ -1893,7 +1889,7 @@ git commit -m "feat(frontend): add new stock movement form with client-side vali
 
 - [ ] **Step 1: Write the failing test**
 
-Create `frontend/src/app/(dashboard)/stock/low/page.test.tsx`:
+Create `bs-inventory/frontend/src/app/(dashboard)/stock/low/page.test.tsx`:
 
 ```tsx
 import { render, screen, waitFor } from "@testing-library/react";
@@ -1919,12 +1915,12 @@ describe("LowStockPage", () => {
 
 - [ ] **Step 2: Run it, expect FAIL**
 
-Run: `cd frontend && npx vitest run "src/app/(dashboard)/stock/low/page.test.tsx"`
+Run: `cd bs-inventory/frontend && npx vitest run "src/app/(dashboard)/stock/low/page.test.tsx"`
 Expected: FAIL — `./page` doesn't exist yet.
 
 - [ ] **Step 3: Write the minimal implementation**
 
-Create `frontend/src/app/(dashboard)/stock/low/page.tsx`:
+Create `bs-inventory/frontend/src/app/(dashboard)/stock/low/page.tsx`:
 
 ```tsx
 "use client";
@@ -1952,13 +1948,13 @@ export default function LowStockPage() {
 
 - [ ] **Step 4: Run it, expect PASS**
 
-Run: `cd frontend && npx vitest run "src/app/(dashboard)/stock/low/page.test.tsx"`
+Run: `cd bs-inventory/frontend && npx vitest run "src/app/(dashboard)/stock/low/page.test.tsx"`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add "frontend/src/app/(dashboard)/stock/low"
+git add "bs-inventory/frontend/src/app/(dashboard)/stock/low"
 git commit -m "feat(frontend): add low-stock report page"
 ```
 
@@ -1967,9 +1963,9 @@ git commit -m "feat(frontend): add low-stock report page"
 ### Task 11: Local development stack (docker-compose)
 
 **Files:**
-- Create: `docker-compose.yml`
-- Create: `backend/Dockerfile`
-- Create: `frontend/Dockerfile`
+- Create: `bs-inventory/docker-compose.yml`
+- Create: `bs-inventory/backend/Dockerfile`
+- Create: `bs-inventory/frontend/Dockerfile`
 
 **Interfaces:**
 - Consumes: `RunServer`, `apiClient`
@@ -1978,7 +1974,7 @@ git commit -m "feat(frontend): add low-stock report page"
 Not TDD in the usual sense — this is infrastructure config, verified by
 booting the real stack, not a unit test.
 
-- [ ] **Step 1: Write `backend/Dockerfile`**
+- [ ] **Step 1: Write `bs-inventory/backend/Dockerfile`**
 
 ```dockerfile
 FROM golang:1.23-alpine AS build
@@ -1992,7 +1988,7 @@ EXPOSE 8080
 ENTRYPOINT ["/server"]
 ```
 
-- [ ] **Step 2: Write `frontend/Dockerfile`**
+- [ ] **Step 2: Write `bs-inventory/frontend/Dockerfile`**
 
 ```dockerfile
 FROM node:22-alpine AS build
@@ -2009,7 +2005,7 @@ EXPOSE 3000
 ENTRYPOINT ["npm", "start"]
 ```
 
-- [ ] **Step 3: Write `docker-compose.yml`**
+- [ ] **Step 3: Write `bs-inventory/docker-compose.yml`**
 
 ```yaml
 version: "3.9"
@@ -2055,19 +2051,23 @@ services:
 
 - [ ] **Step 4: Validate the compose file**
 
-Run: `docker compose config`
+Run: `docker compose -f bs-inventory/docker-compose.yml config`
 Expected: prints the resolved config with no errors (validates YAML +
-service references).
+service references). Note `-f` points at the compose file explicitly
+rather than `cd`-ing into `bs-inventory/`, since Docker resolves the
+`build:` context paths (`./backend`, `./frontend`) relative to the
+compose file's own directory regardless of the shell's current
+directory.
 
 - [ ] **Step 5: Boot the real stack and verify health**
 
-Run: `docker compose up -d --build && curl -sf http://localhost:8080/healthz`
-Expected: `{"status":"ok"}`. Then `docker compose down`.
+Run: `docker compose -f bs-inventory/docker-compose.yml up -d --build && curl -sf http://localhost:8080/healthz`
+Expected: `{"status":"ok"}`. Then `docker compose -f bs-inventory/docker-compose.yml down`.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add docker-compose.yml backend/Dockerfile frontend/Dockerfile
+git add bs-inventory/docker-compose.yml bs-inventory/backend/Dockerfile bs-inventory/frontend/Dockerfile
 git commit -m "chore: add docker-compose stack for local development"
 ```
 
@@ -2076,14 +2076,14 @@ git commit -m "chore: add docker-compose stack for local development"
 ### Task 12: End-to-end smoke test
 
 **Files:**
-- Create: `frontend/playwright.config.ts`
-- Create: `frontend/e2e/inventory-flow.spec.ts`
+- Create: `bs-inventory/frontend/playwright.config.ts`
+- Create: `bs-inventory/frontend/e2e/inventory-flow.spec.ts`
 
 **Interfaces:**
 - Consumes: `ProductsPage`, `ProductDetailPage`, `NewMovementPage`, `LowStockPage`, `ComposeStack`
 - Produces: None
 
-- [ ] **Step 1: Write `frontend/playwright.config.ts`**
+- [ ] **Step 1: Write `bs-inventory/frontend/playwright.config.ts`**
 
 ```ts
 import { defineConfig } from "@playwright/test";
@@ -2099,7 +2099,7 @@ export default defineConfig({
 
 - [ ] **Step 2: Write the end-to-end test**
 
-Create `frontend/e2e/inventory-flow.spec.ts`:
+Create `bs-inventory/frontend/e2e/inventory-flow.spec.ts`:
 
 ```ts
 import { test, expect } from "@playwright/test";
@@ -2127,10 +2127,10 @@ test("create a product, record a movement, see it reflected in stock", async ({ 
 - [ ] **Step 3: Run it against the real stack, expect FAIL first**
 
 ```bash
-docker compose up -d --build
+docker compose -f bs-inventory/docker-compose.yml up -d --build
 ```
 
-Run: `cd frontend && npx playwright test`
+Run: `cd bs-inventory/frontend && npx playwright test`
 Expected: at this point in a from-scratch run this should already PASS,
 since Tasks 1–11 are done — this step exists to catch integration gaps
 between independently-built backend and frontend branches (e.g., a field
@@ -2147,13 +2147,13 @@ TypeScript client). Fix it in whichever side is wrong, re-run.
 - [ ] **Step 5: Tear down**
 
 ```bash
-docker compose down
+docker compose -f bs-inventory/docker-compose.yml down
 ```
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add frontend/playwright.config.ts frontend/e2e
+git add bs-inventory/frontend/playwright.config.ts frontend/e2e
 git commit -m "test(e2e): add end-to-end smoke test for the product/stock flow"
 ```
 
@@ -2185,16 +2185,26 @@ git commit -m "test(e2e): add end-to-end smoke test for the product/stock flow"
   full enumeration of a table beyond what's shown, so no per-row test
   obligation applies here.
 - **A known, accepted parallelism loss:** Tasks 2 and 3 both modify
-  `backend/go.mod` (adding `pgx`/`testcontainers-go/postgres` vs.
+  `bs-inventory/backend/go.mod` (adding `pgx`/`testcontainers-go/postgres` vs.
   `amqp091-go`/`testcontainers-go/rabbitmq`, respectively). The
   executor's same-file chaining will therefore serialize them even
   though they are logically independent (neither's code imports the
   other). This is a realistic property of any real Go module — `go.mod`
   is inherently a shared, evolving file — not a flaw in this plan's task
   boundaries; Task 4 already depended on both via `Consumes` regardless.
+- **Path fix:** the plan was first drafted with `backend/`/`frontend/` at
+  the repo root, missing the user's explicit instruction that this
+  module lives under `bs-inventory/` (matching the `persons/`,
+  `subtract/`, `factorial/` sibling-pilot convention). Fixed every
+  `Files:` entry and shell command to the `bs-inventory/` prefix; along
+  the way, replaced two `cd X; ...; cd ..` sequences (Tasks 1 and 6)
+  with `(cd X && ...)` subshells, since the extra directory level meant
+  a bare `cd ..` would land in `bs-inventory/` instead of back at the
+  repo root — subshells sidestep that class of bug entirely rather than
+  needing the right number of `..` segments.
 - **Parser dry-run:** ran `node <parallel-plan-executor
   clone>/bin/parse-plan.js docs/cys/plans/2026-07-20-bs-inventory.md`.
-  First pass used `` `docker-compose.yml` `` as Task 11's produced
+  First pass used `` `bs-inventory/docker-compose.yml` `` as Task 11's produced
   symbol — the parser split it into two separate symbols (`docker` and
   `compose.yml`), apparently not handling a hyphen inside a backtick-
   quoted symbol. The `11 → 12` edge still formed correctly by
