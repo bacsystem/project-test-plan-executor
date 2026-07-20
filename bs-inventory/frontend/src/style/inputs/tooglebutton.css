@@ -1,0 +1,208 @@
+/* --------------------------- */
+/* Toggle Button */
+/* --------------------------- */
+
+@layer style {
+  .MuiToggleButtonGroup-root {
+    @apply gap-1!;
+  }
+
+  .MuiToggleButtonGroup-vertical {
+    @apply gap-1!;
+  }
+
+  .MuiToggleButtonGroup-root .MuiToggleButton-root {
+    @apply m-0!;
+  }
+
+  .MuiToggleButton-root {
+    @apply font-body text-text-primary border-none! font-medium tracking-normal normal-case shadow-none transition-all;
+
+    &:hover {
+      @apply bg-grey-50 text-text-primary-dark;
+    }
+
+    &.Mui-selected,
+    &.Mui-selected:hover {
+      @apply bg-primary text-text-contrast;
+    }
+
+    &.Mui-disabled {
+      @apply opacity-disabled;
+    }
+  }
+
+  /* Sizes */
+  .MuiToggleButton-root.MuiToggleButton-sizeTiny {
+    @apply rounded-sm px-1.5 py-1.5 text-base leading-4;
+  }
+
+  .MuiToggleButton-root.MuiToggleButton-sizeSmall {
+    @apply rounded-sm px-2 py-2 text-base leading-4;
+  }
+
+  .MuiToggleButton-root.MuiToggleButton-sizeMedium {
+    @apply rounded-md px-2 py-2 text-base leading-5;
+  }
+
+  .MuiToggleButton-root.MuiToggleButton-sizeLarge {
+    @apply rounded-lg px-2 py-2 text-base leading-6;
+  }
+
+  .MuiToggleButton-root.outlined.MuiToggleButton-sizeTiny {
+    @apply rounded-sm border! border-solid! border-transparent! px-[calc(0.375rem-1px)] py-[calc(0.375rem-1px)] text-base leading-4;
+  }
+
+  .MuiToggleButton-root.outlined.MuiToggleButton-sizeSmall {
+    @apply rounded-sm border! border-solid! border-transparent! px-[calc(0.5rem-1px)] py-[calc(0.5rem-1px)] text-base leading-4;
+  }
+
+  .MuiToggleButton-root.outlined.MuiToggleButton-sizeMedium {
+    @apply rounded-md border! border-solid! border-transparent! px-[calc(0.5rem-1px)] py-[calc(0.5rem-1px)] text-base leading-5;
+  }
+
+  .MuiToggleButton-root.outlined.MuiToggleButton-sizeLarge {
+    @apply rounded-lg border! border-solid! border-transparent! px-[calc(0.5rem-1px)] py-[calc(0.5rem-1px)] text-base leading-6;
+  }
+
+  /* Colors */
+  .MuiToggleButton-root {
+    &.Mui-selected,
+    &.Mui-selected:hover {
+      @apply bg-primary;
+    }
+  }
+
+  .MuiToggleButton-root.outlined {
+    &.Mui-selected,
+    &.Mui-selected:hover {
+      @apply border-primary! text-primary bg-transparent;
+    }
+  }
+
+  .MuiToggleButton-root.MuiToggleButton-secondary {
+    &.Mui-selected,
+    &.Mui-selected:hover {
+      @apply bg-secondary;
+    }
+  }
+
+  .MuiToggleButton-root.outlined.MuiToggleButton-secondary {
+    &.Mui-selected,
+    &.Mui-selected:hover {
+      @apply border-secondary! text-secondary bg-transparent;
+    }
+  }
+
+  .MuiToggleButton-root.MuiToggleButton-accent-1 {
+    &.Mui-selected,
+    &.Mui-selected:hover {
+      @apply bg-accent-1;
+    }
+  }
+
+  .MuiToggleButton-root.outlined.MuiToggleButton-accent-1 {
+    &.Mui-selected,
+    &.Mui-selected:hover {
+      @apply border-accent-1! text-accent-1 bg-transparent;
+    }
+  }
+
+  .MuiToggleButton-root.MuiToggleButton-accent-2 {
+    &.Mui-selected,
+    &.Mui-selected:hover {
+      @apply bg-accent-2;
+    }
+  }
+
+  .MuiToggleButton-root.outlined.MuiToggleButton-accent-2 {
+    &.Mui-selected,
+    &.Mui-selected:hover {
+      @apply border-accent-2! text-accent-2 bg-transparent;
+    }
+  }
+
+  .MuiToggleButton-root.MuiToggleButton-accent-3 {
+    &.Mui-selected,
+    &.Mui-selected:hover {
+      @apply bg-accent-3;
+    }
+  }
+
+  .MuiToggleButton-root.outlined.MuiToggleButton-accent-3 {
+    &.Mui-selected,
+    &.Mui-selected:hover {
+      @apply border-accent-3! text-accent-3 bg-transparent;
+    }
+  }
+
+  .MuiToggleButton-root.MuiToggleButton-accent-4 {
+    &.Mui-selected,
+    &.Mui-selected:hover {
+      @apply bg-accent-4;
+    }
+  }
+
+  .MuiToggleButton-root.outlined.MuiToggleButton-accent-4 {
+    &.Mui-selected,
+    &.Mui-selected:hover {
+      @apply border-accent-4! text-accent-4 bg-transparent;
+    }
+  }
+
+  .MuiToggleButton-root.MuiToggleButton-warning {
+    &.Mui-selected,
+    &.Mui-selected:hover {
+      @apply bg-warning;
+    }
+  }
+
+  .MuiToggleButton-root.outlined.MuiToggleButton-warning {
+    &.Mui-selected,
+    &.Mui-selected:hover {
+      @apply border-warning! text-warning bg-transparent;
+    }
+  }
+
+  .MuiToggleButton-root.MuiToggleButton-success {
+    &.Mui-selected,
+    &.Mui-selected:hover {
+      @apply bg-success;
+    }
+  }
+
+  .MuiToggleButton-root.outlined.MuiToggleButton-success {
+    &.Mui-selected,
+    &.Mui-selected:hover {
+      @apply border-success! text-success bg-transparent;
+    }
+  }
+
+  .MuiToggleButton-root.MuiToggleButton-info {
+    &.Mui-selected,
+    &.Mui-selected:hover {
+      @apply bg-info;
+    }
+  }
+
+  .MuiToggleButton-root.outlined.MuiToggleButton-info {
+    &.Mui-selected,
+    &.Mui-selected:hover {
+      @apply border-info! text-info bg-transparent;
+    }
+  }
+
+  .MuiToggleButton-root.Mui-error {
+    &.Mui-selected,
+    &.Mui-selected:hover {
+      @apply bg-error;
+    }
+  }
+
+  .MuiToggleButton-root.outlined.Mui-error {
+    &.Mui-selected,
+    &.Mui-selected:hover {
+      @apply border-error! text-error bg-transparent;
+    }
+  }
+}

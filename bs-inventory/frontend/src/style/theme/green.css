@@ -1,0 +1,81 @@
+/* --------------------------- */
+/* Theme Green */
+/* --------------------------- */
+
+@layer base {
+  .theme-green {
+    --primary: 110 73% 39%;
+    --primary-light: 110 73% 49%;
+    --primary-dark: 110 73% 29%;
+
+    --secondary: 81 53% 48%;
+    --secondary-light: 81 53% 58%;
+    --secondary-dark: 81 53% 38%;
+
+    --accent-1: 44 77% 57%;
+    --accent-1-light: 44 77% 67%;
+    --accent-1-dark: 44 77% 47%;
+
+    --accent-2: 18 69% 59%;
+    --accent-2-light: 18 69% 69%;
+    --accent-2-dark: 18 69% 49%;
+
+    --accent-3: 293 77% 71%;
+    --accent-3-light: 293 77% 81%;
+    --accent-3-dark: 293 77% 61%;
+
+    --accent-4: 251 78% 63%;
+    --accent-4-light: 251 78% 73%;
+    --accent-4-dark: 251 78% 53%;
+
+    --accent-5: 219 82% 59%;
+    --accent-5-light: 219 82% 69%;
+    --accent-5-dark: 219 82% 49%;
+
+    --accent-6: 193 86% 55%;
+    --accent-6-light: 193 86% 65%;
+    --accent-6-dark: 193 86% 45%;
+
+    --bg-waves: url("/images/backgrounds/waves-light.jpg");
+    --bg-spheres: url("/images/backgrounds/theme-green-light-spheres.jpg");
+
+    color-scheme: light;
+  }
+  .theme-green.dark {
+    --primary: 110 68% 44%;
+    --primary-light: 110 68% 54%;
+    --primary-dark: 110 68% 34%;
+
+    --secondary: 81 48% 53%;
+    --secondary-light: 81 48% 63%;
+    --secondary-dark: 81 48% 43%;
+
+    --accent-1: 44 72% 62%;
+    --accent-1-light: 44 72% 72%;
+    --accent-1-dark: 44 72% 52%;
+
+    --accent-2: 18 64% 64%;
+    --accent-2-light: 18 64% 74%;
+    --accent-2-dark: 18 64% 54%;
+
+    --accent-3: 293 72% 66%;
+    --accent-3-light: 293 72% 76%;
+    --accent-3-dark: 293 72% 56%;
+
+    --accent-4: 251 73% 68%;
+    --accent-4-light: 251 73% 78%;
+    --accent-4-dark: 251 73% 58%;
+
+    --accent-5: 219 77% 64%;
+    --accent-5-light: 219 77% 74%;
+    --accent-5-dark: 219 77% 54%;
+
+    --accent-6: 193 81% 60%;
+    --accent-6-light: 193 81% 70%;
+    --accent-6-dark: 193 81% 50%;
+
+    --bg-waves: url("/images/backgrounds/waves-dark.jpg");
+    --bg-spheres: url("/images/backgrounds/theme-green-dark-spheres.jpg");
+    color-scheme: dark;
+  }
+}

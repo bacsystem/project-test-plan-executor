@@ -1,0 +1,29 @@
+/* --------------------------- */
+/* Landing Page Commonly Used Styles */
+/* --------------------------- */
+
+@layer style {
+  .lp-contained-container {
+    @apply w-full xl:w-7xl;
+  }
+
+  .lp-container-padding {
+    @apply px-6 md:px-8;
+  }
+
+  .lp-content-padding {
+    @apply p-8 sm:p-12 md:p-16 lg:p-20;
+  }
+
+  .lp-h1 {
+    @apply text-[3.5rem] leading-14 font-extrabold md:text-[4.5rem] md:leading-18;
+  }
+
+  .lp-h2 {
+    @apply mb-2.5 text-[2rem] leading-9 font-extrabold md:text-[2.5rem] md:leading-12;
+  }
+
+  .lp-leading {
+    @apply text-[1rem] leading-5 md:text-[1.125rem] md:leading-6;
+  }
+}

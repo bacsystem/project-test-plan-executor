@@ -1,0 +1,80 @@
+/* --------------------------- */
+/* Typography */
+/* --------------------------- */
+
+@layer style {
+  .MuiTypography-root {
+    @apply text-start tracking-normal;
+  }
+
+  .MuiTypography-h1 {
+    @apply font-heading text-5xl font-bold;
+  }
+
+  .MuiTypography-h2 {
+    @apply font-heading text-4xl font-bold;
+  }
+
+  .MuiTypography-h3 {
+    @apply font-heading text-3xl font-bold;
+  }
+
+  .MuiTypography-h4 {
+    @apply font-heading text-2xl font-bold;
+  }
+
+  .MuiTypography-h5 {
+    @apply font-heading text-xl font-bold;
+  }
+
+  .MuiTypography-h6 {
+    @apply font-heading text-lg font-bold;
+  }
+
+  .MuiTypography-subtitle1 {
+    @apply font-body text-base font-bold;
+  }
+
+  .MuiTypography-subtitle2 {
+    @apply font-body text-base font-semibold;
+  }
+
+  .MuiTypography-body1,
+  .MuiInputBase-input {
+    @apply font-body text-base leading-5 font-normal;
+  }
+
+  .MuiTypography-body2 {
+    @apply font-body text-sm font-normal;
+  }
+
+  .MuiTypography-button {
+    @apply font-body text-base font-medium normal-case;
+  }
+
+  .MuiTypography-overline {
+    @apply font-body text-xs font-normal;
+  }
+
+  .MuiTypography-caption {
+    @apply font-body text-xs font-normal;
+  }
+
+  * {
+    @apply tracking-normal;
+  }
+
+  code,
+  pre {
+    @apply border-grey-100 bg-grey-20 rounded-[0.5rem] border border-solid px-1.5 py-0.25;
+  }
+
+  .syntax-highlighter code,
+  .syntax-highlighter pre {
+    @apply rounded-none border-none bg-transparent p-0;
+  }
+
+  *::selection {
+    @apply bg-primary/50;
+  }
+}

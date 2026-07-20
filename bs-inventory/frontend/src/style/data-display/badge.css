@@ -1,0 +1,21 @@
+/* --------------------------- */
+/* Badge */
+/* --------------------------- */
+
+@layer style {
+  .MuiBadge-badge {
+    @apply font-body text-sm tracking-normal normal-case;
+  }
+
+  html[dir="rtl"] {
+    .MuiBadge-badge {
+      transform: scale(1) translate(-50%, -50%);
+      transform-origin: 0% 0%;
+      @apply right-[unset] left-0;
+
+      &.MuiBadge-invisible {
+        transform: scale(0) translate(-50%, -50%);
+      }
+    }
+  }
+}

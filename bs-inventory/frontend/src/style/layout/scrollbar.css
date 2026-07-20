@@ -1,0 +1,27 @@
+/* --------------------------- */
+/* Scrollbar */
+/* --------------------------- */
+
+*::-webkit-scrollbar {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 0.375rem;
+  background-color: inherit;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: hsla(var(--grey-300));
+  border-radius: 0.375rem;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: hsla(var(--grey-400));
+}
+
+*::-webkit-scrollbar-button {
+  visibility: hidden;
+}
+
+* {
+  scrollbar-width: unset !important;
+}

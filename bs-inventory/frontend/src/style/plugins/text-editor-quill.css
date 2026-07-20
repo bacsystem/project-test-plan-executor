@@ -1,0 +1,168 @@
+/* --------------------------- */
+/* Quill - Text Editor */
+/* --------------------------- */
+
+@layer style {
+  .quill {
+    @apply font-body;
+
+    .ql-toolbar.ql-snow {
+      @apply font-body! rounded-t-lg;
+    }
+
+    .ql-container.ql-snow {
+      @apply font-body! rounded-b-lg text-base!;
+    }
+
+    &.standard {
+      .ql-toolbar.ql-snow {
+        @apply bg-grey-25! border-b-grey-100! border-s-0! border-e-0! border-t-0! border-b!;
+      }
+
+      .ql-container.ql-snow {
+        @apply bg-grey-25! border-none!;
+      }
+    }
+
+    &.outlined {
+      .ql-toolbar.ql-snow {
+        @apply border-grey-200!;
+      }
+
+      .ql-container.ql-snow {
+        @apply border-grey-200!;
+      }
+    }
+  }
+
+  .ql-toolbar.ql-snow {
+    @apply py-1.5!;
+  }
+
+  .ql-snow.ql-toolbar button,
+  .ql-snow .ql-toolbar button {
+    @apply text-text-primary! h-8! w-8! rounded-sm! p-1.5!;
+
+    &:hover {
+      @apply bg-grey-25! text-primary!;
+    }
+  }
+
+  .ql-toolbar.ql-snow .ql-picker {
+    @apply text-text-primary! h-8! w-8! rounded-sm! p-1.5!;
+    &:hover {
+      @apply bg-grey-25!;
+      .ql-picker-label {
+        @apply text-primary!;
+      }
+    }
+
+    .ql-picker-label {
+      @apply border-none! p-0!;
+    }
+  }
+
+  .ql-toolbar.ql-snow .ql-picker.ql-header {
+    @apply h-8! w-auto! rounded-sm! px-3! py-1.5!;
+
+    .ql-picker-label {
+      @apply border-none! p-0!;
+
+      &:before {
+        @apply text-text-primary me-8!;
+      }
+
+      &:after {
+        @apply bg-text-primary absolute inset-e-0 inline-block h-5 w-5 content-[""];
+        -webkit-mask-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M13.3335 6.25L10.7073 3.62377C10.3167 3.23325 9.68358 3.23325 9.29306 3.62377L6.66683 6.25' stroke='%234D4D4D' stroke-width='1.25' stroke-linecap='round'/%3E%3Cpath d='M13.3335 13.75L10.7073 16.3762C10.3167 16.7668 9.68358 16.7668 9.29306 16.3762L6.66683 13.75' stroke='%234D4D4D' stroke-width='1.25' stroke-linecap='round'/%3E%3C/svg%3E%0A");
+        mask-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M13.3335 6.25L10.7073 3.62377C10.3167 3.23325 9.68358 3.23325 9.29306 3.62377L6.66683 6.25' stroke='%234D4D4D' stroke-width='1.25' stroke-linecap='round'/%3E%3Cpath d='M13.3335 13.75L10.7073 16.3762C10.3167 16.7668 9.68358 16.7668 9.29306 16.3762L6.66683 13.75' stroke='%234D4D4D' stroke-width='1.25' stroke-linecap='round'/%3E%3C/svg%3E%0A");
+      }
+
+      &:before {
+        @apply leading-5!;
+      }
+
+      svg {
+        @apply hidden;
+      }
+    }
+
+    &:hover {
+      .ql-picker-label {
+        @apply bg-grey-25! text-primary!;
+
+        &:after {
+          @apply bg-primary;
+        }
+
+        &:before {
+          @apply text-primary;
+        }
+      }
+    }
+  }
+
+  .ql-picker-options {
+    @apply bg-background-paper! shadow-darker-sm! outline-grey-50! rounded-lg! border-none! p-2! outline-1!;
+
+    .ql-picker-item {
+      @apply rounded-sm! px-4! py-2!;
+
+      &:before {
+        @apply text-base!;
+      }
+    }
+  }
+
+  .ql-picker:not(.ql-color-picker) {
+    .ql-picker-item:hover {
+      @apply bg-grey-25! text-primary!;
+    }
+  }
+
+  .ql-snow .ql-color-picker .ql-picker-options {
+    @apply w-58!;
+
+    .ql-picker-item {
+      @apply m-1! rounded-[0.625rem]! px-2.5! py-2.5!;
+
+      &:hover {
+        @apply outline-primary/40! border border-transparent! outline-2!;
+      }
+    }
+  }
+
+  .ql-snow.ql-toolbar button:hover,
+  .ql-snow .ql-toolbar button:hover,
+  .ql-snow.ql-toolbar button:focus,
+  .ql-snow .ql-toolbar button:focus,
+  .ql-snow.ql-toolbar button.ql-active,
+  .ql-snow .ql-toolbar button.ql-active,
+  .ql-snow.ql-toolbar .ql-picker-label:hover,
+  .ql-snow .ql-toolbar .ql-picker-label:hover,
+  .ql-snow.ql-toolbar .ql-picker-label.ql-active,
+  .ql-snow .ql-toolbar .ql-picker-label.ql-active,
+  .ql-snow.ql-toolbar .ql-picker-item:hover,
+  .ql-snow .ql-toolbar .ql-picker-item:hover,
+  .ql-snow.ql-toolbar .ql-picker-item.ql-selected,
+  .ql-snow .ql-toolbar .ql-picker-item.ql-selected {
+    @apply text-primary!;
+  }
+
+  .ql-snow .ql-editor code,
+  .ql-snow .ql-editor .ql-code-block-container {
+    @apply bg-grey-25! border-grey-100! text-text-primary! text-base!;
+  }
+
+  .ql-editor.ql-blank:before {
+    @apply text-text-primary! opacity-disabled! not-italic!;
+  }
+
+  .ql-editor {
+    @apply rtl:text-right!;
+  }
+
+  .ql-formats {
+    @apply ltr:mr-4! ltr:ml-0! rtl:mr-0! rtl:ml-4!;
+  }
+}

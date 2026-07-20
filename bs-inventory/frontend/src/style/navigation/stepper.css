@@ -1,0 +1,88 @@
+/* --------------------------- */
+/* Stepper */
+/* --------------------------- */
+
+@layer style {
+  .MuiStepLabel-label {
+    @apply font-body text-base leading-5 font-normal;
+  }
+
+  .MuiStepLabel-horizontal {
+    @apply items-start;
+  }
+
+  .MuiStepLabel-iconContainer {
+    @apply rounded-md text-base leading-5;
+  }
+
+  .MuiStepConnector-line {
+    @apply border-grey-100;
+  }
+
+  .MuiStep-horizontal {
+    @apply px-2;
+  }
+
+  .MuiStepper-horizontal .MuiStep-horizontal:first-of-type {
+    @apply ps-0;
+  }
+
+  .MuiStepper-horizontal .MuiStep-horizontal:last-of-type {
+    @apply pe-0;
+  }
+
+  .MuiStepper-alternativeLabel {
+    .MuiStepLabel-alternativeLabel {
+      @apply items-center;
+    }
+
+    .MuiStep-horizontal {
+      @apply px-2!;
+    }
+
+    .MuiStepConnector-horizontal {
+      @apply rtl:right-[calc(-50%+20px)] rtl:left-[calc(50%+20px)];
+    }
+
+    .MuiStepLabel-iconContainer {
+      @apply px-2;
+    }
+  }
+
+  .MuiStepper-root.MuiStepper-vertical .MuiStep-root.MuiStep-vertical .MuiStepContent-root {
+    @apply rtl:border-r-grey-200 rtl:mr-3 rtl:ml-0 rtl:border-r rtl:border-l-0 rtl:pr-5 rtl:pl-2;
+  }
+
+  .MuiStepConnector-alternativeLabel {
+    @apply top-4;
+  }
+
+  .MuiStepLabel-labelContainer .MuiStepLabel-alternativeLabel {
+    @apply mt-2;
+  }
+
+  .MuiStep-vertical {
+    .MuiStepContent-root {
+      @apply border-grey-100;
+    }
+
+    .MuiStepLabel-labelContainer {
+      @apply text-start;
+    }
+  }
+
+  .MuiMobileStepper-dot {
+    @apply bg-grey-50;
+    &.MuiMobileStepper-dotActive {
+      @apply bg-primary;
+    }
+  }
+
+  .MuiMobileStepper-root {
+    @apply bg-transparent;
+  }
+
+  .MuiStepLabel-iconContainer {
+    @apply pr-2 pl-0 rtl:pr-0 rtl:pl-2;
+  }
+}

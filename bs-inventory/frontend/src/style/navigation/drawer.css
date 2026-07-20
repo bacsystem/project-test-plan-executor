@@ -1,0 +1,33 @@
+/* --------------------------- */
+/* Drawer */
+/* --------------------------- */
+
+@layer style {
+  .MuiDrawer-paper {
+    @apply bg-background-paper;
+  }
+
+  .MuiDrawer-paperAnchorLeft {
+    @apply rounded-e-2xl;
+  }
+
+  .MuiDrawer-paperAnchorRight {
+    @apply rounded-s-2xl;
+  }
+
+  .MuiDrawer-paperAnchorBottom {
+    @apply rounded-t-2xl;
+  }
+
+  .MuiDrawer-paperAnchorTop {
+    @apply rounded-b-2xl;
+  }
+
+  .MuiDrawer-paperAnchorLeft {
+    @apply rtl:right-0 rtl:left-[unset];
+  }
+
+  .MuiDrawer-paperAnchorRight {
+    @apply rtl:right-[unset] rtl:left-0;
+  }
+}

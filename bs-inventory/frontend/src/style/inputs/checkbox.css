@@ -1,0 +1,321 @@
+/* --------------------------- */
+/* Checkbox */
+/* --------------------------- */
+
+@layer style {
+  .MuiCheckbox-root {
+    svg {
+      @apply transition-colors;
+    }
+    &.MuiCheckbox-sizeSmall,
+    &.MuiCheckbox-sizeMedium {
+      @apply p-0;
+    }
+
+    .contained {
+      @apply text-grey-50;
+    }
+
+    .outlined {
+      @apply text-grey-200;
+    }
+
+    &.Mui-checked,
+    &.MuiCheckbox-indeterminate {
+      &.MuiCheckbox-colorPrimary .contained {
+        @apply text-primary;
+      }
+
+      &.MuiCheckbox-colorSecondary .contained {
+        @apply text-secondary;
+      }
+
+      &.MuiCheckbox-colorAccent-1 .contained {
+        @apply text-accent-1;
+      }
+
+      &.MuiCheckbox-colorAccent-2 .contained {
+        @apply text-accent-2;
+      }
+
+      &.MuiCheckbox-colorAccent-3 .contained {
+        @apply text-accent-3;
+      }
+
+      &.MuiCheckbox-colorAccent-4 .contained {
+        @apply text-accent-4;
+      }
+
+      &.MuiCheckbox-colorAccent-5 .contained {
+        @apply text-accent-5;
+      }
+
+      &.MuiCheckbox-colorAccent-6 .contained {
+        @apply text-accent-6;
+      }
+
+      &.MuiCheckbox-colorSuccess .contained {
+        @apply text-success;
+      }
+
+      &.MuiCheckbox-colorError .contained {
+        @apply text-error;
+      }
+
+      &.MuiCheckbox-colorInfo .contained {
+        @apply text-info;
+      }
+
+      &.MuiCheckbox-colorWarning .contained {
+        @apply text-warning;
+      }
+
+      &.MuiCheckbox-colorText-primary .contained {
+        @apply text-text-primary;
+      }
+
+      &.MuiCheckbox-colorText-secondary .contained {
+        @apply text-text-secondary;
+      }
+
+      &.MuiCheckbox-colorText-disabled .contained {
+        @apply text-text-disabled;
+      }
+    }
+  }
+
+  .MuiFormControlLabel-labelPlacementEnd .MuiCheckbox-root {
+    @apply me-2;
+  }
+
+  .MuiFormControlLabel-labelPlacementStart .MuiCheckbox-root {
+    @apply ms-2;
+  }
+
+  .MuiFormControlLabel-labelPlacementTop {
+    @apply m-0;
+    .MuiCheckbox-root {
+      @apply mt-1;
+    }
+  }
+
+  .MuiFormControlLabel-labelPlacementBottom {
+    @apply m-0;
+    .MuiCheckbox-root {
+      @apply mb-1;
+    }
+  }
+
+  /* Hover */
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(.MuiCheckbox-root) {
+    &:hover svg {
+      @apply text-grey-100;
+    }
+
+    &:hover svg.outlined {
+      @apply text-grey-500;
+    }
+  }
+
+  .MuiCheckbox-root:not(.Mui-disabled) {
+    &:hover svg {
+      @apply text-grey-100;
+    }
+
+    &:hover svg.outlined {
+      @apply text-grey-500;
+    }
+  }
+
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(.MuiCheckbox-root.MuiCheckbox-colorPrimary.Mui-checked),
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(
+      .MuiCheckbox-root.MuiCheckbox-colorPrimary.MuiCheckbox-indeterminate
+    ) {
+    &:hover svg {
+      @apply text-primary-light;
+    }
+  }
+
+  .MuiCheckbox-root.MuiCheckbox-colorPrimary.Mui-checked:not(.Mui-disabled),
+  .MuiCheckbox-root.MuiCheckbox-colorPrimary.Mui-indeterminate:not(.Mui-disabled) {
+    &:hover svg {
+      @apply text-primary-light;
+    }
+  }
+
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(.MuiCheckbox-root.MuiCheckbox-colorSecondary.Mui-checked),
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(
+      .MuiCheckbox-root.MuiCheckbox-colorSecondary.MuiCheckbox-indeterminate
+    ) {
+    &:hover svg {
+      @apply text-secondary-light;
+    }
+  }
+
+  .MuiCheckbox-root.MuiCheckbox-colorSecondary.Mui-checked:not(.Mui-disabled),
+  .MuiCheckbox-root.MuiCheckbox-colorSecondary.Mui-indeterminate:not(.Mui-disabled) {
+    &:hover svg {
+      @apply text-secondary-light;
+    }
+  }
+
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(.MuiCheckbox-root.MuiCheckbox-colorAccent-1.Mui-checked),
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(
+      .MuiCheckbox-root.MuiCheckbox-colorAccent-1.MuiCheckbox-indeterminate
+    ) {
+    &:hover svg {
+      @apply text-accent-1-light;
+    }
+  }
+
+  .MuiCheckbox-root.MuiCheckbox-colorAccent-1.Mui-checked:not(.Mui-disabled),
+  .MuiCheckbox-root.MuiCheckbox-colorAccent-1.Mui-indeterminate:not(.Mui-disabled) {
+    &:hover svg {
+      @apply text-accent-1-light;
+    }
+  }
+
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(.MuiCheckbox-root.MuiCheckbox-colorAccent-2.Mui-checked),
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(
+      .MuiCheckbox-root.MuiCheckbox-colorAccent-2.MuiCheckbox-indeterminate
+    ) {
+    &:hover svg {
+      @apply text-accent-2-light;
+    }
+  }
+
+  .MuiCheckbox-root.MuiCheckbox-colorAccent-2.Mui-checked:not(.Mui-disabled),
+  .MuiCheckbox-root.MuiCheckbox-colorAccent-2.Mui-indeterminate:not(.Mui-disabled) {
+    &:hover svg {
+      @apply text-accent-2-light;
+    }
+  }
+
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(.MuiCheckbox-root.MuiCheckbox-colorAccent-3.Mui-checked),
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(
+      .MuiCheckbox-root.MuiCheckbox-colorAccent-3.MuiCheckbox-indeterminate
+    ) {
+    &:hover svg {
+      @apply text-accent-3-light;
+    }
+  }
+
+  .MuiCheckbox-root.MuiCheckbox-colorAccent-3.Mui-checked:not(.Mui-disabled),
+  .MuiCheckbox-root.MuiCheckbox-colorAccent-3.Mui-indeterminate:not(.Mui-disabled) {
+    &:hover svg {
+      @apply text-accent-3-light;
+    }
+  }
+
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(.MuiCheckbox-root.MuiCheckbox-colorAccent-4.Mui-checked),
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(
+      .MuiCheckbox-root.MuiCheckbox-colorAccent-4.MuiCheckbox-indeterminate
+    ) {
+    &:hover svg {
+      @apply text-accent-4-light;
+    }
+  }
+
+  .MuiCheckbox-root.MuiCheckbox-colorAccent-4.Mui-checked:not(.Mui-disabled),
+  .MuiCheckbox-root.MuiCheckbox-colorAccent-4.Mui-indeterminate:not(.Mui-disabled) {
+    &:hover svg {
+      @apply text-accent-4-light;
+    }
+  }
+
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(.MuiCheckbox-root.MuiCheckbox-colorAccent-5.Mui-checked),
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(
+      .MuiCheckbox-root.MuiCheckbox-colorAccent-5.MuiCheckbox-indeterminate
+    ) {
+    &:hover svg {
+      @apply text-accent-5-light;
+    }
+  }
+
+  .MuiCheckbox-root.MuiCheckbox-colorAccent-5.Mui-checked:not(.Mui-disabled),
+  .MuiCheckbox-root.MuiCheckbox-colorAccent-5.Mui-indeterminate:not(.Mui-disabled) {
+    &:hover svg {
+      @apply text-accent-5-light;
+    }
+  }
+
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(.MuiCheckbox-root.MuiCheckbox-colorAccent-6.Mui-checked),
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(
+      .MuiCheckbox-root.MuiCheckbox-colorAccent-6.MuiCheckbox-indeterminate
+    ) {
+    &:hover svg {
+      @apply text-accent-6-light;
+    }
+  }
+
+  .MuiCheckbox-root.MuiCheckbox-colorAccent-6.Mui-checked:not(.Mui-disabled),
+  .MuiCheckbox-root.MuiCheckbox-colorAccent-6.Mui-indeterminate:not(.Mui-disabled) {
+    &:hover svg {
+      @apply text-accent-6-light;
+    }
+  }
+
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(.MuiCheckbox-root.MuiCheckbox-colorWarning.Mui-checked),
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(
+      .MuiCheckbox-root.MuiCheckbox-colorWarning-4.MuiCheckbox-indeterminate
+    ) {
+    &:hover svg {
+      @apply text-warning-light;
+    }
+  }
+
+  .MuiCheckbox-root.MuiCheckbox-colorWarning.Mui-checked:not(.Mui-disabled),
+  .MuiCheckbox-root.MuiCheckbox-colorWarning.Mui-indeterminate:not(.Mui-disabled) {
+    &:hover svg {
+      @apply text-warning-light;
+    }
+  }
+
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(.MuiCheckbox-root.MuiCheckbox-colorSuccess.Mui-checked),
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(
+      .MuiCheckbox-root.MuiCheckbox-colorSuccess-4.MuiCheckbox-indeterminate
+    ) {
+    &:hover svg {
+      @apply text-success-light;
+    }
+  }
+
+  .MuiCheckbox-root.MuiCheckbox-colorSuccess.Mui-checked:not(.Mui-disabled),
+  .MuiCheckbox-root.MuiCheckbox-colorSuccess.Mui-indeterminate:not(.Mui-disabled) {
+    &:hover svg {
+      @apply text-success-light;
+    }
+  }
+
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(.MuiCheckbox-root.MuiCheckbox-colorInfo.Mui-checked),
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(
+      .MuiCheckbox-root.MuiCheckbox-colorInfo-4.MuiCheckbox-indeterminate
+    ) {
+    &:hover svg {
+      @apply text-info-light;
+    }
+  }
+
+  .MuiCheckbox-root.MuiCheckbox-colorInfo.Mui-checked:not(.Mui-disabled),
+  .MuiCheckbox-root.MuiCheckbox-colorInfo.Mui-indeterminate:not(.Mui-disabled) {
+    &:hover svg {
+      @apply text-info-light;
+    }
+  }
+
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(.MuiCheckbox-root.MuiCheckbox-colorError.Mui-checked),
+  .MuiFormControlLabel-root:not(.Mui-disabled):has(
+      .MuiCheckbox-root.MuiCheckbox-colorError-4.MuiCheckbox-indeterminate
+    ) {
+    &:hover svg {
+      @apply text-error-light;
+    }
+  }
+
+  .MuiCheckbox-root.MuiCheckbox-colorError.Mui-checked:not(.Mui-disabled),
+  .MuiCheckbox-root.MuiCheckbox-colorError.Mui-indeterminate:not(.Mui-disabled) {
+    &:hover svg {
+      @apply text-error-light;
+    }
+  }
+}

@@ -1,0 +1,46 @@
+/* --------------------------- */
+/* Paper */
+/* --------------------------- */
+
+@layer style {
+  .MuiPaper-rounded {
+    @apply rounded-3xl;
+  }
+
+  .MuiPaper-root,
+  .MuiPaper-elevation0 {
+    @apply shadow-none;
+  }
+
+  .MuiPaper-elevation1 {
+    @apply shadow-2xs;
+  }
+
+  .MuiPaper-elevation2 {
+    @apply shadow-xs;
+  }
+
+  .MuiPaper-elevation3 {
+    @apply shadow-sm;
+  }
+
+  .MuiPaper-elevation4 {
+    @apply shadow-md;
+  }
+
+  .MuiPaper-elevation5 {
+    @apply shadow-lg;
+  }
+
+  .MuiPaper-elevation6 {
+    @apply shadow-xl;
+  }
+
+  .MuiPaper-elevation6 {
+    @apply shadow-2xl;
+  }
+
+  .MuiPaper-outlined {
+    @apply border-grey-50 border border-solid;
+  }
+}

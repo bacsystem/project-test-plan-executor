@@ -1,0 +1,566 @@
+/* --------------------------- */
+/* Input */
+/* --------------------------- */
+
+@layer style {
+  /* Regular filled Input */
+  .MuiFormControl-root {
+    .MuiInputBase-root,
+    .MuiPickersInputBase-root {
+      @apply bg-grey-25 font-body text-text-primary placeholder:opacity-disabled h-auto min-h-0 rounded-lg px-4 py-2 text-base leading-5 outline-2 -outline-offset-1 outline-transparent transition-all;
+
+      &.Mui-focused:not(.Mui-disabled):not(.Mui-readOnly) {
+        @apply outline-primary/40 border-transparent outline-2 -outline-offset-2;
+      }
+
+      &:hover:not(.Mui-disabled):not(.Mui-readOnly) {
+        @apply bg-grey-50;
+      }
+
+      &.Mui-focused:hover:not(.Mui-disabled):not(.Mui-readOnly) {
+        @apply bg-grey-25 border-transparent;
+      }
+
+      .MuiInput-input,
+      .MuiPickersSectionList-root {
+        @apply font-body text-text-primary placeholder:opacity-disabled h-auto min-h-0 px-0 py-0.5 text-base leading-5 outline-transparent;
+      }
+
+      &.MuiInputBase-sizeSmall,
+      &.MuiPickersInputBase-inputSizeSmall {
+        @apply rounded-md px-4 py-1.5;
+      }
+
+      .MuiPickersSectionList-root span {
+        @apply font-body leading-5;
+      }
+    }
+
+    &.number-field {
+      .MuiInputBase-root.MuiInput-root {
+        @apply py-0!;
+      }
+    }
+  }
+
+  .MuiInputLabel-standard {
+    display: none;
+  }
+
+  /* Paper standard input with line */
+  .MuiInputBase-root.surface-standard,
+  .MuiFormControl-root.surface-standard {
+    .MuiInputBase-root.MuiInput-root,
+    .MuiPickersInputBase-root {
+      @apply bg-background-paper outline-grey-25 font-body text-text-primary placeholder:opacity-disabled h-auto min-h-0 rounded-lg px-4 py-2 text-base leading-5 outline -outline-offset-1 transition-all;
+
+      &.Mui-focused:not(.Mui-disabled):not(.Mui-readOnly) {
+        @apply outline-primary/40 border-transparent outline-2 -outline-offset-2;
+      }
+
+      &:hover:not(.Mui-disabled):not(.Mui-readOnly) {
+        @apply bg-background-paper text-primary;
+      }
+
+      &.Mui-focused:hover:not(.Mui-disabled):not(.Mui-readOnly) {
+        @apply bg-background-paper border-transparent;
+      }
+    }
+
+    .MuiInput-input,
+    .MuiPickersSectionList-root {
+      @apply font-body text-text-primary placeholder:opacity-disabled h-auto min-h-0 px-0 py-0.5 text-base leading-5 outline-transparent;
+    }
+
+    &.MuiInputBase-sizeSmall,
+    &.MuiPickersInputBase-inputSizeSmall {
+      @apply rounded-md px-4 py-1.5;
+    }
+
+    .MuiPickersSectionList-root span {
+      @apply font-body leading-5;
+    }
+  }
+
+  /* Regular outlined Input */
+  .MuiInputBase-root.outlined,
+  .MuiFormControl-root.outlined {
+    .MuiInputBase-root.MuiInput-root,
+    .MuiPickersInputBase-root {
+      @apply border-grey-200 border border-solid bg-transparent px-3.75 py-[calc(.5rem-1px)]! outline-2 -outline-offset-1 outline-transparent transition-all;
+
+      &.Mui-focused:not(.Mui-disabled):not(.Mui-readOnly) {
+        @apply outline-primary/40 border-transparent outline-2 -outline-offset-1;
+      }
+
+      &:hover:not(.Mui-disabled):not(.Mui-readOnly) {
+        @apply border-grey-500 bg-transparent;
+      }
+
+      &.Mui-focused:hover:not(.Mui-disabled):not(.Mui-readOnly) {
+        @apply border-transparent bg-transparent;
+      }
+    }
+
+    .MuiInput-input,
+    .MuiPickersSectionList-root {
+      @apply font-body text-text-primary placeholder:opacity-disabled h-auto min-h-0 px-0 py-0.5 text-base leading-5 outline-transparent;
+    }
+
+    .MuiInputBase-root.MuiInput-root.MuiInputBase-sizeSmall,
+    .MuiPickersInputBase-inputSizeSmall {
+      @apply px-3.75! py-[calc(.375rem-1px)]!;
+    }
+
+    &.number-field {
+      .MuiInputBase-root.MuiInput-root {
+        @apply py-0!;
+      }
+    }
+  }
+
+  /* Standard label with semibold font */
+  .MuiFormLabel-root:not(.MuiInputLabel-animated) {
+    @apply font-body text-text-primary mb-2 text-base font-semibold;
+  }
+
+  /* Outline input and its notched outline */
+  .MuiFormControl-root .MuiInputBase-root.MuiOutlinedInput-root,
+  .MuiFormControl-root .MuiPickersInputBase-root.MuiPickersOutlinedInput-root {
+    @apply border-none bg-transparent p-0 outline-hidden;
+    .MuiOutlinedInput-input,
+    .MuiPickersSectionList-root {
+      @apply font-body text-text-primary placeholder:opacity-disabled h-auto min-h-0 rounded-lg px-4 py-3 text-base leading-5;
+    }
+
+    .MuiOutlinedInput-notchedOutline,
+    .MuiPickersOutlinedInput-notchedOutline {
+      @apply border-grey-200 rounded-lg transition-colors;
+    }
+
+    &:hover:not(.Mui-disabled):not(.Mui-readOnly) {
+      @apply bg-transparent;
+    }
+
+    &:hover:not(.Mui-disabled):not(.Mui-readOnly) .MuiOutlinedInput-notchedOutline,
+    &:hover:not(.Mui-disabled):not(.Mui-readOnly) .MuiPickersOutlinedInput-notchedOutline {
+      @apply border-grey-500;
+    }
+
+    &.Mui-focused:not(.Mui-disabled):not(.Mui-readOnly) {
+      @apply outline-none!;
+    }
+
+    &.Mui-focused:not(.Mui-disabled):not(.Mui-readOnly) .MuiOutlinedInput-notchedOutline,
+    &.Mui-focused:not(.Mui-disabled):not(.Mui-readOnly) .MuiPickersOutlinedInput-notchedOutline {
+      @apply border-primary/40;
+    }
+
+    &.MuiInputBase-sizeSmall {
+      .MuiInputBase-input {
+        @apply rounded-md px-4 py-2;
+      }
+      .MuiOutlinedInput-notchedOutline {
+        @apply rounded-md;
+      }
+    }
+
+    &.MuiPickersInputBase-inputSizeSmall {
+      .MuiPickersSectionList-root {
+        @apply rounded-md px-4 py-2;
+      }
+      .MuiPickersOutlinedInput-notchedOutline {
+        @apply rounded-md;
+      }
+    }
+
+    legend {
+      @apply font-body text-sm;
+    }
+
+    &.Mui-disabled .MuiOutlinedInput-notchedOutline {
+      @apply border-grey-200;
+    }
+  }
+
+  .MuiFormControl-root .MuiPickersInputBase-root.MuiPickersOutlinedInput-root {
+    @apply p-0! pe-4!;
+  }
+
+  /* Outline label and its transform */
+  .MuiInputLabel-outlined {
+    @apply font-body text-text-secondary inset-s-0 left-[unset] text-base leading-5;
+    transform: translate(1rem, 0.75rem) scale(1);
+
+    &.MuiInputLabel-shrink {
+      transform: translate(1rem, calc(-0.5rem - 2px)) scale(0.85);
+    }
+
+    &.MuiInputLabel-sizeSmall {
+      transform: translate(1rem, 0.5rem) scale(1);
+      &.MuiInputLabel-shrink {
+        transform: translate(1rem, calc(-0.5rem - 2px)) scale(0.85);
+      }
+    }
+  }
+
+  /* Filled input  */
+  .MuiFormControl-root .MuiInputBase-root.MuiFilledInput-root,
+  .MuiFormControl-root .MuiPickersInputBase-root.MuiPickersFilledInput-underline {
+    @apply bg-grey-25 placeholder:opacity-disabled h-auto min-h-0 rounded-lg p-0 outline-2 -outline-offset-1 outline-transparent transition-all;
+
+    &.Mui-focused:not(.Mui-disabled):not(.Mui-readOnly) {
+      @apply bg-grey-25 outline-primary/40 border-transparent outline-2 -outline-offset-1;
+    }
+    &:hover:not(.Mui-disabled):not(.Mui-readOnly) {
+      @apply bg-grey-50;
+    }
+    &.Mui-focused:hover:not(.Mui-disabled):not(.Mui-readOnly) {
+      @apply bg-grey-25! border-transparent;
+    }
+
+    &::before,
+    &::after {
+      display: none;
+    }
+
+    .MuiFilledInput-input,
+    .MuiPickersSectionList-root {
+      @apply font-body text-text-primary placeholder:opacity-disabled h-auto min-h-0 rounded-lg px-4 pt-5.5 pb-2 text-base leading-5;
+    }
+
+    &.MuiInputBase-sizeSmall {
+      .MuiInputBase-input {
+        @apply rounded-md pt-4.5 pb-1;
+      }
+    }
+
+    &.MuiPickersInputBase-inputSizeSmall {
+      .MuiPickersSectionList-root {
+        @apply rounded-md pt-4.5 pb-1;
+      }
+    }
+
+    &.Mui-disabled {
+      @apply bg-grey-25;
+    }
+  }
+
+  /* Filled input surface  */
+  .MuiFormControl-root.surface
+    .MuiInputBase-root.MuiFilledInput-root.MuiFilledInput-underline.MuiInputBase-formControl {
+    @apply bg-background-paper outline-grey-25 outline -outline-offset-1;
+
+    &.Mui-focused {
+      @apply bg-background-paper!;
+    }
+
+    &:hover:not(.Mui-disabled) {
+      @apply bg-background-paper! outline-primary/40 border-transparent outline-2 -outline-offset-1;
+    }
+
+    &.Mui-focused:hover {
+      @apply bg-background-paper!;
+    }
+
+    &.Mui-disabled:hover {
+      @apply outline-transparent!;
+    }
+  }
+
+  /* Paper background filled input with line */
+  .MuiFormControl-root.surface-standard
+    .MuiInputBase-root.MuiFilledInput-root.MuiFilledInput-underline.MuiInputBase-formControl {
+    @apply bg-background-paper outline-grey-25 outline -outline-offset-1;
+
+    &.Mui-focused {
+      @apply bg-background-paper!;
+    }
+
+    &:hover:not(.Mui-disabled) {
+      @apply bg-background-paper! outline-primary/40 border-transparent outline-2 -outline-offset-1;
+    }
+
+    &.Mui-focused:hover {
+      @apply bg-background-paper!;
+    }
+
+    &.Mui-disabled:hover {
+      @apply outline-transparent!;
+    }
+  }
+
+  /* Filled input label and its transform */
+  .MuiInputLabel-filled {
+    @apply font-body text-text-secondary inset-s-0 left-[unset] text-base leading-5;
+
+    transform: translate(1rem, 0.875rem) scale(1);
+    &.MuiInputLabel-shrink {
+      transform: translate(1rem, 0.25rem) scale(0.85);
+    }
+
+    &.MuiInputLabel-sizeSmall {
+      transform: translate(1rem, 0.675rem) scale(1);
+      &.MuiInputLabel-shrink {
+        transform: translate(1rem, 0.125rem) scale(0.85);
+      }
+    }
+  }
+
+  /* Form group spacing */
+  .MuiFormGroup-root,
+  .MuiFormControl-root {
+    @apply m-0 mb-4;
+  }
+  .MuiFormGroup-root .MuiFormControl-root:last-of-type,
+  .MuiFormGroup-root > .MuiFormGroup-root,
+  .MuiFormControl-root > .MuiFormControl-root,
+  .MuiFormControl-root .MuiAutocomplete-root .MuiFormControl-root {
+    @apply mb-0;
+  }
+  label + .MuiInputBase-root {
+    @apply mt-0 p-0;
+  }
+
+  /* Disabled rule */
+  .MuiInputBase-root.Mui-disabled,
+  .MuiFormLabel-root.Mui-disabled,
+  .MuiCheckbox-root.Mui-disabled,
+  .MuiRadio-root.Mui-disabled,
+  .MuiFormControlLabel-label.Mui-disabled,
+  .MuiPickersInputBase-root.Mui-disabled {
+    @apply opacity-disabled text-text-primary;
+  }
+
+  .MuiFormControlLabel-label.Mui-disabled {
+    @apply text-text-primary!;
+  }
+
+  .Mui-disabled {
+    -webkit-text-fill-color: unset !important;
+  }
+
+  /* Form helper text */
+  .MuiFormHelperText-root {
+    @apply font-body text-sm leading-4 font-normal tracking-normal;
+  }
+
+  .MuiInputBase-root + .MuiFormHelperText-root {
+    @apply ms-4 me-4;
+  }
+
+  /* Adornments */
+  .MuiInputAdornment-root span.notranslate[aria-hidden="true"] {
+    @apply hidden;
+  }
+
+  .MuiPickersInputBase-adornedStart.MuiPickersOutlinedInput-root,
+  .MuiPickersFilledInput-underline.MuiPickersInputBase-adornedStart,
+  .MuiInputBase-adornedStart.MuiOutlinedInput-root,
+  .MuiInputBase-adornedStart.MuiFilledInput-root,
+  label + .MuiInputBase-adornedStart.MuiOutlinedInput-root,
+  label + .MuiInputBase-adornedStart.MuiFilledInput-root {
+    @apply ps-4!;
+  }
+
+  .MuiPickersInputBase-adornedEnd.MuiPickersOutlinedInput-root,
+  .MuiPickersFilledInput-underline.MuiPickersInputBase-adornedEnd,
+  .MuiInputBase-adornedEnd.MuiOutlinedInput-root,
+  .MuiInputBase-adornedEnd.MuiFilledInput-root,
+  label + .MuiInputBase-adornedEnd.MuiOutlinedInput-root,
+  label + .MuiInputBase-adornedEnd.MuiFilledInput-root {
+    @apply pe-4!;
+  }
+
+  .MuiFilledInput-adornedStart .MuiInputBase-input.MuiInputBase-inputAdornedStart,
+  .MuiOutlinedInput-root.MuiInputBase-adornedStart .MuiInputBase-input.MuiInputBase-inputAdornedStart {
+    @apply ps-2!;
+  }
+
+  .MuiFilledInput-adornedEnd .MuiInputBase-input.MuiInputBase-inputAdornedEnd,
+  .MuiOutlinedInput-root.MuiInputBase-adornedEnd .MuiInputBase-input.MuiInputBase-inputAdornedEnd {
+    @apply pe-2!;
+  }
+
+  .MuiInputAdornment-positionStart {
+    @apply ms-0 me-2;
+  }
+
+  .MuiInputAdornment-positionEnd {
+    @apply ms-2 me-0;
+  }
+
+  .MuiInputAdornment-positionStart.MuiInputAdornment-filled,
+  .MuiInputAdornment-positionStart.MuiInputAdornment-outlined {
+    @apply ms-0 me-2;
+  }
+
+  .MuiInputAdornment-positionEnd.MuiInputAdornment-filled,
+  .MuiInputAdornment-positionEnd.MuiInputAdornment-outlined {
+    @apply ms-2 me-0;
+  }
+
+  .MuiInputAdornment-positionStart.MuiInputAdornment-filled,
+  .MuiInputAdornment-positionStart.MuiInputAdornment-outlined,
+  .MuiInputAdornment-positionEnd.MuiInputAdornment-filled,
+  .MuiInputAdornment-positionEnd.MuiInputAdornment-outlined {
+    @apply m-0;
+  }
+
+  .MuiInputAdornment-positionEnd.MuiInputAdornment-filled .MuiButtonBase-root,
+  .MuiInputAdornment-positionEnd.MuiInputAdornment-outlined .MuiButtonBase-root {
+    @apply -me-3;
+  }
+
+  .MuiInputAdornment-root .MuiButtonBase-root:hover {
+    svg {
+      @apply text-primary;
+    }
+  }
+
+  .MuiPickersFilledInput-underline .MuiInputAdornment-filled.MuiInputAdornment-sizeMedium,
+  .MuiInputBase-root.MuiFilledInput-root .MuiInputAdornment-filled.MuiInputAdornment-sizeMedium {
+    @apply font-body text-text-secondary mt-5.5 self-start text-base leading-5;
+  }
+
+  .MuiPickersFilledInput-underline .MuiInputAdornment-filled.MuiInputAdornment-sizeSmall,
+  .MuiInputBase-root.MuiFilledInput-root .MuiInputAdornment-filled.MuiInputAdornment-sizeSmall {
+    @apply font-body text-text-secondary mt-4.5 self-start text-base leading-5;
+  }
+
+  .MuiInputAdornment-root.MuiInputAdornment-positionEnd.MuiInputAdornment-filled .MuiButtonBase-root {
+    @apply -mt-4;
+  }
+
+  .MuiInputAdornment-root .MuiButtonBase-root {
+    &:hover {
+      @apply text-primary bg-transparent;
+    }
+  }
+
+  /* Adornments: Standard Input */
+  .MuiInputAdornment-positionStart.MuiInputAdornment-standard {
+    @apply -ms-1! me-0!;
+  }
+
+  .MuiInputBase-adornedStart .MuiInputBase-input {
+    @apply ps-2!;
+  }
+
+  .MuiInputAdornment-positionEnd.MuiInputAdornment-standard {
+    @apply ms-0! -me-1!;
+  }
+
+  .MuiInputBase-adornedEnd .MuiInputBase-input {
+    @apply pe-2!;
+  }
+
+  .MuiInputAdornment-standard .MuiButtonBase-root {
+    @apply p-0;
+  }
+
+  /* Error */
+  .MuiFormLabel-root.Mui-error {
+    @apply text-text-primary;
+  }
+
+  .MuiFormControl-root .MuiInputBase-root.MuiOutlinedInput-root:not(:hover).Mui-error:not(.Mui-focused) {
+    @apply bg-transparent!;
+    .MuiOutlinedInput-notchedOutline {
+      @apply border-error!;
+    }
+  }
+
+  .MuiFormControl-root .MuiInputBase-root.MuiFilledInput-root:not(:hover).Mui-error:not(.Mui-focused) {
+    @apply bg-error-light/10!;
+  }
+
+  .MuiFormControl-root .MuiInputBase-root:not(:hover).Mui-error:not(.Mui-focused) {
+    @apply bg-error-light/10!;
+  }
+
+  .MuiFormControl-root.outlined .MuiInputBase-root:not(:hover).Mui-error:not(.Mui-focused) {
+    @apply border-error! bg-transparent!;
+  }
+
+  /* Full height text field */
+  .MuiFormControl-root.full-height {
+    @apply flex-1;
+
+    .MuiInputBase-root {
+      @apply flex-1 items-start;
+    }
+  }
+
+  /* Text area */
+  textarea {
+    @apply placeholder:opacity-disabled placeholder:text-text-primary font-body leading-5;
+
+    &.autosize:focus {
+      @apply outline-primary/40! border-transparent! outline-2! -outline-offset-1!;
+    }
+  }
+
+  textarea::-webkit-resizer {
+    display: none;
+  }
+  textarea::-moz-resizer {
+    display: none;
+  }
+
+  /* Picker Line */
+  .MuiPickersInputBase-root::before,
+  .MuiPickersInputBase-root::after {
+    @apply content-none;
+  }
+
+  /* Transparent Autofill Background */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus {
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
+  /* Picker direction in RTL */
+  html[dir="rtl"] .MuiPickersSectionList-root {
+    direction: rtl;
+  }
+
+  /* Filled input label and its transform in RTL */
+  html[dir="rtl"] .MuiInputLabel-filled {
+    transform: translate(-1rem, 0.875rem) scale(1);
+    transform-origin: top right;
+    &.MuiInputLabel-shrink {
+      transform: translate(-1rem, 0.25rem) scale(0.85);
+    }
+
+    &.MuiInputLabel-sizeSmall {
+      transform: translate(-1rem, 0.675rem) scale(1);
+      &.MuiInputLabel-shrink {
+        transform: translate(-1rem, 0.125rem) scale(0.85);
+      }
+    }
+  }
+
+  /* Outline label and its transform in RTL */
+  html[dir="rtl"] .MuiInputLabel-outlined {
+    transform: translate(-1rem, 0.75rem) scale(1);
+    transform-origin: top right;
+    &.MuiInputLabel-shrink {
+      transform: translate(-1rem, calc(-0.5rem - 2px)) scale(0.85);
+    }
+
+    &.MuiInputLabel-sizeSmall {
+      transform: translate(-1rem, 0.5rem) scale(1);
+      &.MuiInputLabel-shrink {
+        transform: translate(-1rem, calc(-0.5rem - 2px)) scale(0.85);
+      }
+    }
+  }
+}

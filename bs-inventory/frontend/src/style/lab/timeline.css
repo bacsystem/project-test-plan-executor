@@ -1,0 +1,61 @@
+/* --------------------------- */
+/* Timeline */
+/* --------------------------- */
+
+@layer style {
+  .MuiTimelineItem-root.MuiTimelineItem-positionLeft {
+    &::before {
+      @apply content-none;
+    }
+  }
+
+  .MuiTimelineItem-root.MuiTimelineItem-positionRight {
+    &::before {
+      @apply content-none;
+    }
+  }
+
+  .MuiTimelineContent-root.MuiTimelineContent-positionLeft {
+    @apply ps-0;
+  }
+
+  .MuiTimelineContent-root.MuiTimelineContent-positionRight {
+    @apply pe-0;
+  }
+
+  .MuiTimelineContent-root {
+    @apply pt-2.5;
+  }
+
+  .MuiTimelineConnector-root {
+    @apply bg-grey-100 w-px;
+  }
+
+  .MuiTimelineDot-root {
+    @apply min-h-4 min-w-4 shadow-none;
+  }
+
+  .MuiTimeline-root {
+    @apply p-0;
+  }
+
+  .MuiTimelineContent-positionLeft {
+    @apply ltr:text-right rtl:text-left;
+  }
+
+  .MuiTimeline-positionAlternate .MuiTimelineItem-root:nth-of-type(2n) .MuiTimelineContent-root {
+    @apply ltr:text-right rtl:text-left;
+  }
+
+  .MuiTimeline-positionAlternateReverse .MuiTimelineItem-root:nth-of-type(2n + 1) .MuiTimelineContent-root {
+    @apply ltr:text-right rtl:text-left;
+  }
+
+  .MuiTimeline-positionAlternateReverse .MuiTimelineItem-root:nth-of-type(2n) .MuiTimelineContent-root {
+    @apply ltr:text-left rtl:text-right;
+  }
+
+  .MuiTimeline-positionRight .MuiTimelineOppositeContent-positionRight {
+    @apply ltr:text-right rtl:text-left;
+  }
+}

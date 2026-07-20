@@ -1,0 +1,55 @@
+/* --------------------------- */
+/* Card */
+/* --------------------------- */
+
+@layer style {
+  .MuiCard-root {
+    @apply bg-background-paper outline-grey-50 rounded-3xl px-3 py-3 shadow-none outline outline-offset-0;
+  }
+
+  .MuiCardContent-root {
+    @apply px-4 py-4;
+
+    &:last-child {
+      @apply px-4 py-4;
+    }
+  }
+
+  .MuiCardActions-root {
+    @apply px-4 pt-2 pb-4;
+  }
+
+  .MuiCardActionArea-root {
+    @apply rounded-md;
+  }
+
+  .card-title {
+    @apply mb-2 min-h-12;
+  }
+
+  .MuiCardContent-root .card-title {
+    @apply mb-2 min-h-8;
+  }
+
+  .MuiPaper-outlined.MuiCard-root {
+    @apply outline-grey-50 border-none shadow-none! outline outline-offset-0;
+  }
+
+  .MuiCardHeader-avatar {
+    @apply me-3;
+  }
+}
+
+@media only screen and (max-width: 540px) {
+  .MuiCardContent-root {
+    @apply px-2 py-2;
+
+    &:last-child {
+      @apply px-2 py-2;
+    }
+  }
+
+  .MuiCardActions-root {
+    @apply px-2 pt-1 pb-2;
+  }
+}

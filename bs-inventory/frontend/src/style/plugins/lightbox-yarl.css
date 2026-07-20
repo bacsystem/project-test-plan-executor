@@ -1,0 +1,111 @@
+/* --------------------------- */
+/* Yet Another React Lightbox - Lightbox */
+/* --------------------------- */
+
+@layer style {
+  :root {
+    --yarl__thumbnails_thumbnail_gap: 0.5rem;
+    --yarl__thumbnails_thumbnail_width: 4rem;
+    --yarl__thumbnails_thumbnail_height: 4rem;
+  }
+
+  .yarl__root.rounded-lightbox {
+    .yarl__slide_image {
+      @apply rounded-3xl;
+    }
+  }
+
+  .yarl__root.inline .yarl__slide {
+    @apply p-0!;
+  }
+
+  .yarl__slide {
+    @apply p-20!;
+  }
+
+  .yarl__root .yarl__container {
+    @apply bg-[rgba(0,0,0,0.5)]!;
+  }
+
+  .yarl__button {
+    @apply bg-grey-25! text-text-primary! rounded-lg! px-2! py-2! text-base! leading-6! shadow-sm filter-none! transition-colors;
+    &:hover {
+      @apply text-primary!;
+    }
+  }
+
+  .yarl__toolbar {
+    @apply gap-2! px-4! py-3!;
+  }
+
+  .yarl__button.yarl__navigation_prev {
+    @apply ms-4!;
+  }
+
+  .yarl__button.yarl__navigation_next {
+    @apply me-4!;
+  }
+
+  /* Inline */
+  .yarl__root.inline.rounded-md {
+    .yarl__slide_image {
+      @apply rounded-md;
+    }
+  }
+
+  .yarl__root.inline.rounded-lg {
+    .yarl__slide_image {
+      @apply rounded-lg;
+    }
+  }
+
+  .yarl__root.inline.rounded-xl {
+    .yarl__slide_image {
+      @apply rounded-xl;
+    }
+  }
+
+  .yarl__root.inline {
+    .yarl__container {
+      @apply bg-transparent!;
+    }
+  }
+
+  /* Captions */
+  .yarl__slide_captions_container {
+    @apply bg-background-paper! text-text-primary! start-[unset]! end-[unset]! mx-2! my-2! rounded-lg!;
+  }
+
+  .yarl__slide_title {
+    @apply font-heading;
+  }
+
+  .yarl__slide_captions_container.yarl__slide_description_container {
+    @apply py-3!;
+  }
+
+  .yarl__slide_description {
+    @apply text-text-primary! text-center! font-semibold;
+  }
+
+  /* Thumbnails */
+  .yarl__thumbnails_container {
+    @apply bg-[rgba(0,0,0,0.5)]!;
+  }
+
+  .yarl__thumbnails_vignette {
+    @apply bg-none!;
+  }
+
+  .yarl__thumbnails_thumbnail {
+    @apply m-0! border-none! bg-transparent! p-0! opacity-50!;
+
+    .yarl__slide_image {
+      @apply rounded-2xl;
+    }
+
+    &.yarl__thumbnails_thumbnail_active {
+      @apply opacity-100!;
+    }
+  }
+}
