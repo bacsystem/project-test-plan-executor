@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 
-import { GridRenderEditCellParams, useGridApiContext } from "@mui/x-data-grid-pro";
+import { GridRenderEditCellParams, useGridApiContext } from "@mui/x-data-grid";
 import { DateTimePicker } from "@mui/x-date-pickers";
 import { DateTimePickerProps } from "@mui/x-date-pickers/DateTimePicker";
 

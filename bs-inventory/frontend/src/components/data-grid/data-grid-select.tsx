@@ -1,6 +1,6 @@
 import { FormControl, MenuItem, Select, SelectChangeEvent } from "@mui/material";
 import { SelectProps } from "@mui/material/Select";
-import { GridRenderEditCellParams, GridSingleSelectColDef, useGridApiContext } from "@mui/x-data-grid-pro";
+import { GridRenderEditCellParams, GridSingleSelectColDef, useGridApiContext } from "@mui/x-data-grid";
 
 import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
 

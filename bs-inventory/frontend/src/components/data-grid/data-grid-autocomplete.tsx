@@ -1,6 +1,6 @@
 import { Autocomplete, FormControl, TextField } from "@mui/material";
 import { AutocompleteProps } from "@mui/material/Autocomplete";
-import { GridRenderEditCellParams, GridSingleSelectColDef, useGridApiContext } from "@mui/x-data-grid-pro";
+import { GridRenderEditCellParams, GridSingleSelectColDef, useGridApiContext } from "@mui/x-data-grid";
 
 import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
 import NiCross from "@/icons/nexture/ni-cross";

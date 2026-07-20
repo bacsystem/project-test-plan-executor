@@ -4,7 +4,6 @@ import UserAchievements from "../sections/user-achievements";
 import UserProfileMenu from "../sections/user-profile-menu";
 import UserSpecialties from "../sections/user-specialties";
 import UserOverviewActivity from "./sections/user-overview-activity";
-import UserOverviewContributions from "./sections/user-overview-contributions";
 import UserOverviewLogs from "./sections/user-overview-logs";
 import UserOverviewProjects from "./sections/user-overview-projects";
 import UserOverviewStats from "./sections/user-overview-stats";
@@ -103,10 +102,7 @@ export default function Page() {
           <Grid size={12}>
             <UserOverviewProjects />
           </Grid>
-          <Grid size={{ "3xl": 8, xs: 12 }}>
-            <UserOverviewContributions />
-          </Grid>
-          <Grid size={{ "3xl": 4, xs: 12 }}>
+          <Grid size={12}>
             <UserOverviewActivity />
           </Grid>
           <Grid size={12}>

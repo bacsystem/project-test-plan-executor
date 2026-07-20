@@ -1,5 +1,5 @@
 import { FormControl, Input } from "@mui/material";
-import { GridColDef, GridRenderEditCellParams, useGridApiContext } from "@mui/x-data-grid-pro";
+import { GridColDef, GridRenderEditCellParams, useGridApiContext } from "@mui/x-data-grid";
 
 interface DataGridInputProps extends GridRenderEditCellParams {
   editorProps?: React.ComponentProps<typeof Input>["inputProps"];

@@ -1,5 +1,5 @@
 import { capitalize, FormControl, Input, TextField } from "@mui/material";
-import { GridFilterInputValueProps } from "@mui/x-data-grid-pro";
+import { GridFilterInputValueProps } from "@mui/x-data-grid";
 
 interface DataGridInputFilterProps extends GridFilterInputValueProps {
   editorProps?: React.ComponentProps<typeof Input>["inputProps"];

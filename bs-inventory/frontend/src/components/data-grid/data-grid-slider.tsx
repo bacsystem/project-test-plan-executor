@@ -1,6 +1,6 @@
 import { FormControl, Slider } from "@mui/material";
 import { SliderProps } from "@mui/material/Slider";
-import { GridRenderEditCellParams, useGridApiContext } from "@mui/x-data-grid-pro";
+import { GridRenderEditCellParams, useGridApiContext } from "@mui/x-data-grid";
 
 interface DataGridSliderProps extends GridRenderEditCellParams {
   editorProps?: Omit<SliderProps, "value" | "onChange" | "defaultValue">;
