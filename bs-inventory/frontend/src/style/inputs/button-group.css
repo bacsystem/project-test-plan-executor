@@ -1,0 +1,34 @@
+/* --------------------------- */
+/* Button Group */
+/* --------------------------- */
+
+@layer style {
+  .MuiButtonGroup-root.MuiButtonGroup-horizontal .MuiButtonGroup-firstButton,
+  .MuiButtonGroup-root.MuiButtonGroup-horizontal .MuiButtonGroup-middleButton {
+    @apply rounded-e-none border-e border-r-0;
+  }
+
+  .MuiButtonGroup-root.MuiButtonGroup-horizontal .MuiButtonGroup-lastButton,
+  .MuiButtonGroup-root.MuiButtonGroup-horizontal .MuiButtonGroup-middleButton {
+    @apply rounded-s-none;
+  }
+
+  .MuiButtonGroup-root.MuiButtonGroup-vertical .MuiButtonGroup-firstButton,
+  .MuiButtonGroup-root.MuiButtonGroup-vertical .MuiButtonGroup-middleButton {
+    @apply rounded-b-none;
+  }
+
+  .MuiButtonGroup-root.MuiButtonGroup-vertical .MuiButtonGroup-lastButton,
+  .MuiButtonGroup-root.MuiButtonGroup-vertical .MuiButtonGroup-middleButton {
+    @apply rounded-t-none;
+  }
+
+  .MuiButtonGroup-root.MuiButtonGroup-vertical.MuiButtonGroup-contained .MuiButton-root,
+  .MuiButtonGroup-root.MuiButtonGroup-vertical.MuiButtonGroup-text .MuiButton-root {
+    @apply border-text-contrast/25!;
+  }
+
+  .MuiButtonGroup-root .MuiButton-root {
+    @apply ring-0;
+  }
+}

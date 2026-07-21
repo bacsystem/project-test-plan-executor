@@ -1,0 +1,227 @@
+/* --------------------------- */
+/* Autocomplete */
+/* --------------------------- */
+
+@layer style {
+  .MuiAutocomplete-root {
+    .MuiChip-root {
+      @apply -ms-0.5 me-1.5 mt-0.5 mb-0.5;
+    }
+  }
+
+  /* Autocomplete filled */
+  .MuiAutocomplete-root {
+    @apply leading-0;
+    .MuiInputBase-root.MuiFilledInput-root {
+      @apply font-body h-auto ps-4! pe-8 pt-5! pb-0.5! text-base leading-5;
+
+      .MuiAutocomplete-input {
+        @apply rounded-none! ps-0! pe-2! pt-1! pb-1!;
+      }
+
+      &.MuiInputBase-sizeSmall {
+        @apply rounded-md pe-10! pt-4! pb-0.5!;
+
+        .MuiAutocomplete-input,
+        .MuiInputBase-input {
+          @apply py-0.5!;
+        }
+      }
+
+      .MuiChip-root {
+        @apply ms-0 me-1 mt-0.5 mb-0.5;
+      }
+    }
+
+    &.MuiAutocomplete-hasClearIcon.MuiAutocomplete-hasPopupIcon {
+      .MuiAutocomplete-inputRoot {
+        @apply pe-14!;
+      }
+    }
+
+    .MuiCircularProgress-root {
+      @apply -mt-3;
+    }
+  }
+
+  /* Autocomplete filled surface */
+  .MuiAutocomplete-root.surface .MuiInputBase-root.MuiFilledInput-root {
+    @apply bg-background-paper shadow-sm backdrop-blur-sm;
+
+    &.Mui-focused {
+      @apply bg-background-paper;
+    }
+    &:hover {
+      @apply bg-background-paper outline-primary/40 border-transparent outline-2 -outline-offset-1;
+    }
+    &.Mui-focused:hover {
+      @apply bg-background-paper!;
+    }
+
+    &.Mui-disabled:hover {
+      @apply outline-transparent!;
+    }
+  }
+
+  /* Autocomplete outlined */
+  .MuiAutocomplete-root {
+    .MuiAutocomplete-inputRoot.MuiOutlinedInput-root {
+      @apply py-2!;
+    }
+
+    .MuiAutocomplete-inputRoot.MuiOutlinedInput-root.MuiInputBase-sizeSmall {
+      @apply py-1.5!;
+    }
+
+    .MuiCircularProgress-root {
+      @apply mt-0;
+    }
+
+    .MuiOutlinedInput-input.MuiAutocomplete-input {
+      @apply py-1!;
+    }
+
+    .MuiInputBase-sizeSmall {
+      .MuiOutlinedInput-input.MuiAutocomplete-input {
+        @apply py-0.5!;
+      }
+    }
+  }
+
+  /* Autocomplete standard */
+  .MuiAutocomplete-root {
+    .MuiInputBase-root.MuiInput-root {
+      @apply bg-grey-25 font-body text-text-primary placeholder:opacity-disabled h-auto min-h-0 rounded-lg px-4! py-1.25! pe-8! text-base leading-5 outline-2 -outline-offset-1 outline-transparent transition-all;
+      &.Mui-focused {
+        @apply outline-primary/40! border-transparent outline-2 -outline-offset-1;
+      }
+      &:hover:not(.Mui-disabled) {
+        @apply bg-grey-50;
+      }
+      &.Mui-focused:hover {
+        @apply bg-grey-25 border-transparent;
+      }
+      .MuiInputBase-input {
+        @apply rounded-none bg-transparent! py-1.25 outline-hidden!;
+      }
+
+      &.MuiInputBase-sizeSmall {
+        @apply rounded-md py-0.75!;
+      }
+    }
+
+    &.MuiAutocomplete-hasClearIcon.MuiAutocomplete-hasPopupIcon {
+      .MuiInputBase-root.MuiInput-root {
+        @apply pe-14!;
+      }
+    }
+
+    .MuiCircularProgress-root {
+      @apply mt-0;
+    }
+  }
+
+  /* Autocomplete standard outlined */
+  .MuiFormControl-root .MuiAutocomplete-root {
+    .outlined {
+      .MuiInputBase-root.MuiInput-root {
+        @apply border-grey-200 font-body text-text-primary placeholder:opacity-disabled h-auto min-h-0 rounded-lg border border-solid bg-transparent px-4! py-1! pe-8! text-base leading-5 outline-2 -outline-offset-1 outline-transparent transition-all;
+        &.Mui-focused {
+          @apply outline-primary/40 border-transparent outline-2 -outline-offset-1;
+        }
+        &:hover:not(.Mui-disabled) {
+          @apply border-grey-500 bg-transparent;
+        }
+        &.Mui-focused:hover {
+          @apply border-transparent bg-transparent;
+        }
+        .MuiInputBase-input {
+          @apply rounded-none border-none! bg-transparent! outline-hidden!;
+        }
+
+        &.MuiInputBase-sizeSmall {
+          @apply rounded-md py-0.5!;
+        }
+      }
+    }
+
+    &.MuiAutocomplete-hasClearIcon.MuiAutocomplete-hasPopupIcon {
+      .MuiInputBase-root.MuiInput-root {
+        @apply pe-14!;
+      }
+    }
+  }
+
+  /* Circular progress */
+  .MuiAutocomplete-root .MuiCircularProgress-root {
+    @apply text-text-primary h-4! w-4!;
+
+    .MuiCircularProgress-circle {
+      stroke-width: 3;
+    }
+  }
+
+  /* Autocomplete icons */
+  .MuiAutocomplete-clearIndicator,
+  .MuiAutocomplete-popupIndicator {
+    @apply text-text-secondary p-0.5!;
+    &:hover {
+      @apply text-primary! bg-transparent!;
+    }
+  }
+  .MuiChip-deleteIcon {
+    @apply text-text-secondary! h-4 w-4;
+  }
+  .MuiAutocomplete-endAdornment {
+    @apply ltr:right-2.5! ltr:left-[unset]! rtl:right-[unset]! rtl:left-2.5!;
+  }
+
+  /* Loading and no result */
+  .MuiAutocomplete-paper,
+  .MuiAutocomplete-noOptions,
+  .MuiAutocomplete-loading {
+    @apply font-body text-base leading-5;
+  }
+
+  /* Autocomplete container */
+  .MuiAutocomplete-paper {
+    @apply bg-background-paper shadow-darker-sm! outline-grey-50 rounded-lg px-2 py-2 outline-1;
+
+    &:empty {
+      @apply m-0! border-none! p-0! outline-hidden!;
+    }
+  }
+
+  /* Outlined class  */
+  .MuiAutocomplete-popper.outlined .MuiAutocomplete-paper {
+    @apply outline-primary/40 mt-1 mb-1 rounded-lg outline-2 -outline-offset-1;
+  }
+
+  /* Autocomplete items */
+  .MuiAutocomplete-popper .MuiAutocomplete-paper .MuiAutocomplete-listbox .MuiAutocomplete-option {
+    @apply font-body my-0.5 rounded-sm px-4 py-2 text-base leading-5 font-medium tracking-normal normal-case shadow-none;
+
+    &:hover {
+      @apply bg-grey-500/10 text-text-primary;
+    }
+
+    &:active,
+    &.active {
+      @apply bg-grey-500/15 text-primary;
+    }
+
+    &.Mui-selected,
+    &[aria-selected="true"] {
+      @apply bg-grey-500/10! text-primary;
+    }
+
+    &.Mui-focused,
+    &.Mui-focusVisible {
+      @apply bg-grey-50!;
+    }
+  }
+
+  .MuiAutocomplete-listbox {
+    @apply p-0;
+  }
+}

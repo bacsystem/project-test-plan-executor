@@ -1,0 +1,67 @@
+/* --------------------------- */
+/* Accordion */
+/* --------------------------- */
+
+@layer style {
+  .MuiAccordion-root {
+    @apply m-0 min-h-0 rounded-none bg-transparent p-0;
+
+    &.Mui-expanded {
+      @apply m-0 min-h-0 p-0;
+    }
+  }
+
+  .MuiAccordionSummary-root {
+    @apply font-body m-0 min-h-0 p-0;
+
+    &.Mui-expanded {
+      @apply m-0 min-h-0 p-0;
+    }
+  }
+
+  .MuiAccordionSummary-content {
+    @apply m-0 min-h-0 p-0;
+
+    &.Mui-expanded {
+      @apply m-0 min-h-0 p-0;
+    }
+  }
+
+  .MuiAccordion-root::before {
+    display: none;
+  }
+
+  .MuiAccordionDetails-root {
+    @apply font-body m-0 min-h-0 p-0;
+  }
+
+  .MuiAccordion-root.bordered:has(+ .MuiAccordion-root.bordered) {
+    @apply border-grey-100 rounded-none border-s-0 border-e-0 border-t-0 border-b border-solid;
+  }
+
+  .MuiAccordion-root.basic.Mui-expanded {
+    .MuiCollapse-root .MuiCollapse-wrapper {
+      @apply pb-4;
+    }
+  }
+
+  .MuiAccordion-root.basic .MuiAccordionSummary-content {
+    @apply py-4;
+
+    &.Mui-expanded {
+      @apply py-4;
+    }
+  }
+
+  .MuiAccordionSummary-root {
+    .accordion-rotate {
+      @apply transition-transform rtl:rotate-180;
+    }
+
+    &.Mui-expanded {
+      .accordion-rotate {
+        @apply rotate-90 rtl:rotate-90;
+      }
+    }
+  }
+}

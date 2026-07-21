@@ -1,0 +1,411 @@
+/* --------------------------- */
+/* Date and Time Pickers */
+/* --------------------------- */
+
+@layer style {
+  /* Date Picker */
+  .MuiPickerPopper-paper {
+    @apply bg-background-paper shadow-darker-sm! outline-grey-50 mt-1 mb-1 rounded-lg p-2 outline-1;
+
+    &:empty {
+      @apply m-0! border-none! p-0! outline-hidden!;
+    }
+
+    &.outlined {
+      @apply outline-primary/40 mt-1 mb-1 rounded-lg outline-2 -outline-offset-1;
+    }
+  }
+
+  .MuiPickersCalendarHeader-label {
+    @apply font-body text-text-primary text-base font-bold tracking-normal normal-case;
+  }
+
+  .MuiPickerDay-today {
+    @apply border-text-secondary! border! outline-none!;
+  }
+
+  .MuiPickerDay-root,
+  .MuiYearCalendar-button,
+  .MuiMonthCalendar-button {
+    @apply font-body rounded-md px-5 py-2 text-base leading-4 font-medium tracking-normal normal-case;
+    &:not(.Mui-selected):not(.Mui-disabled):hover {
+      @apply bg-grey-25;
+    }
+  }
+
+  .MuiPickerDay-root {
+    @apply p-0;
+  }
+
+  .MuiButtonBase-root.MuiPickerDay-root.Mui-selected:focus,
+  .MuiMonthCalendar-button.Mui-selected:focus,
+  .MuiYearCalendar-button.Mui-selected:focus,
+  .MuiButtonBase-root.MuiPickerDay-root.Mui-selected:active,
+  .MuiMonthCalendar-button.Mui-selected:active,
+  .MuiYearCalendar-button.Mui-selected:active {
+    @apply bg-primary!;
+  }
+
+  .MuiPickersToolbar-root.MuiDatePickerToolbar-root.MuiPickersLayout-toolbar {
+    span.MuiTypography-root.MuiTypography-overline {
+      @apply hidden;
+    }
+
+    .MuiPickersToolbar-content .MuiDatePickerToolbar-title {
+      @apply font-heading text-lg font-bold;
+    }
+  }
+
+  .MuiPickersCalendarHeader-root {
+    @apply mt-3 ps-5 pe-5;
+  }
+
+  .MuiPickersArrowSwitcher-root {
+    @apply gap-1.5;
+  }
+
+  .MuiMonthCalendar-root {
+    @apply border-none!;
+  }
+
+  .MuiDayCalendar-weekNumber {
+    @apply text-base;
+  }
+
+  .MuiList-root.MuiList-padding.MuiMultiSectionDigitalClockSection-root {
+    @apply w-20;
+
+    .MuiButtonBase-root.MuiMenuItem-root {
+      @apply px-8;
+    }
+  }
+
+  .MuiMultiSectionDigitalClock-root {
+    @apply border-transparent;
+
+    .MuiList-root {
+      @apply border-transparent;
+    }
+  }
+
+  .MuiPickersLayout-root {
+    .MuiDialogActions-root {
+      @apply px-5 pt-0 pb-5;
+    }
+  }
+
+  /* Time Picker */
+  .MuiTimePickerToolbar-hourMinuteLabel {
+    @apply items-center;
+    .MuiButtonBase-root {
+      @apply font-heading p-0 text-lg font-bold;
+      &:not(.Mui-selected):not(.Mui-disabled):hover {
+        @apply bg-transparent;
+        .MuiTypography-root:not(.Mui-selected) {
+          @apply text-primary;
+        }
+      }
+    }
+  }
+
+  .MuiTimePickerToolbar-ampmSelection {
+    @apply flex-row gap-1;
+    .MuiButtonBase-root {
+      @apply p-0;
+      &:not(.Mui-selected):not(.Mui-disabled):hover {
+        @apply bg-transparent;
+        .MuiTypography-root:not(.Mui-selected) {
+          @apply text-primary;
+        }
+      }
+    }
+  }
+
+  .MuiTimeRangePickerToolbar-container {
+    @apply items-center;
+    .MuiButtonBase-root {
+      @apply font-heading px-1 py-0 text-lg font-bold;
+      &:not(.Mui-selected):not(.Mui-disabled):hover {
+        @apply bg-transparent;
+        .MuiTypography-root:not(.Mui-selected) {
+          @apply text-primary;
+        }
+      }
+    }
+  }
+
+  .MuiPickersToolbar-root {
+    span.MuiTypography-root.MuiTypography-overline {
+      @apply hidden;
+    }
+  }
+
+  .MuiTimeRangePickerToolbar-container.MuiTimeRangePickerToolbar-mobile {
+    @apply flex flex-row justify-around;
+
+    & > div {
+      @apply flex flex-none items-center justify-center;
+    }
+  }
+
+  .MuiTimeRangePickerTabs-root {
+    @apply mb-4;
+  }
+
+  .MuiPickersToolbar-root.MuiTimeRangePickerToolbar-root {
+    @apply border-none;
+  }
+
+  .MuiClockPointer-root,
+  .MuiClock-pin {
+    @apply bg-transparent;
+  }
+
+  .MuiClockNumber-root {
+    @apply font-body text-base leading-4 tracking-normal normal-case;
+  }
+
+  .MuiClockPointer-thumb {
+    @apply rounded-md border-[1.125rem];
+  }
+
+  .MuiClock-clock {
+    @apply bg-grey-25 h-60 w-60 pt-2.5;
+  }
+
+  .MuiTimeClock-arrowSwitcher {
+    @apply -me-3 -mt-3;
+  }
+
+  /* Date and Time */
+  .MuiPickersLayout-root {
+    .MuiDivider-root {
+      @apply hidden;
+    }
+
+    .MuiTabs-root.MuiPickersLayout-tabs {
+      @apply mt-4 mb-2 shadow-none;
+    }
+  }
+
+  .MuiDateCalendar-root ~ .MuiMultiSectionDigitalClock-root,
+  .MuiDateRangeCalendar-root ~ .MuiMultiSectionDigitalClock-root {
+    @apply mt-2;
+  }
+
+  .MuiDateTimePickerToolbar-dateContainer {
+    .MuiButtonBase-root {
+      @apply p-0;
+
+      &:last-of-type {
+        @apply -mt-1;
+      }
+
+      &:not(.Mui-selected):not(.Mui-disabled):hover {
+        @apply bg-transparent;
+        .MuiTypography-root:not(.Mui-selected) {
+          @apply text-primary;
+        }
+      }
+    }
+  }
+
+  .MuiDateTimePickerToolbar-timeDigitsContainer {
+    @apply items-center;
+    .MuiButtonBase-root {
+      @apply p-0;
+
+      &:not(.Mui-selected):not(.Mui-disabled):hover {
+        @apply bg-transparent;
+        .MuiTypography-root:not(.Mui-selected) {
+          @apply text-primary;
+        }
+      }
+    }
+  }
+
+  .MuiDateTimePickerToolbar-ampmSelection {
+    @apply flex-row gap-1;
+
+    .MuiButtonBase-root {
+      @apply p-0;
+
+      &:not(.Mui-selected):not(.Mui-disabled):hover {
+        @apply bg-transparent;
+        .MuiTypography-root:not(.Mui-selected) {
+          @apply text-primary;
+        }
+      }
+    }
+  }
+
+  /* Date Range Picker */
+  .MuiDateRangePickerDay-root .MuiButtonBase-root {
+    transform: scale(1);
+  }
+
+  .MuiDateRangeCalendar-monthContainer {
+    @apply border-transparent;
+  }
+
+  .MuiMultiInputDateRangeField-separator {
+    @apply hidden;
+  }
+
+  .MuiMultiInputDateRangeField-root {
+    @apply gap-2;
+  }
+
+  .MuiDateRangePickerToolbar-container {
+    .MuiButtonBase-root {
+      @apply p-0;
+
+      &:not(.Mui-selected):not(.Mui-disabled):hover {
+        @apply bg-transparent;
+
+        .MuiTypography-root:not(.Mui-selected) {
+          @apply text-primary;
+        }
+      }
+    }
+  }
+
+  /* Shortcuts */
+  .MuiPickersLayout-shortcuts {
+    @apply pt-3;
+  }
+
+  /* Time Range Picker */
+  .MuiMultiInputTimeRangeField-separator {
+    @apply hidden;
+  }
+
+  .MuiMultiInputTimeRangeField-root {
+    @apply gap-2;
+  }
+
+  .MuiMultiSectionDigitalClock-root .MuiList-root {
+    @apply overflow-scroll;
+  }
+
+  /* Date Time Range Picker */
+  .MuiMultiInputDateTimeRangeField-separator {
+    @apply hidden;
+  }
+
+  .MuiMultiInputDateTimeRangeField-root {
+    @apply gap-2;
+  }
+
+  .MuiDateTimeRangePickerToolbar-startToolbar {
+    @apply mb-2;
+  }
+
+  .MuiDateTimeRangePickerToolbar-endToolbar {
+    @apply mb-4 border-none;
+  }
+
+  .MuiDateTimeRangePickerToolbar-startToolbar,
+  .MuiDateTimeRangePickerToolbar-endToolbar {
+    @apply p-0;
+  }
+
+  .MuiDateTimePickerToolbar-timeContainer {
+    .MuiButtonBase-root {
+      @apply p-0;
+
+      &:not(.Mui-selected):not(.Mui-disabled):hover {
+        @apply bg-transparent;
+
+        .MuiTypography-root:not(.Mui-selected) {
+          @apply text-primary;
+        }
+      }
+    }
+  }
+
+  .MuiDateTimePickerToolbar-timeDigitsContainer {
+    .MuiButtonBase-root {
+      @apply w-auto;
+    }
+  }
+
+  .MuiDateTimeRangePickerTabs-root {
+    @apply mb-2;
+    .MuiButtonBase-root {
+      @apply py-1.5;
+    }
+
+    .MuiIconButton-root {
+      @apply px-2.5 py-2.5;
+      svg {
+        @apply h-4 w-4;
+      }
+    }
+  }
+
+  .MuiPickersInputBase-activeBar {
+    @apply hidden;
+  }
+
+  label + .MuiPickersInputBase-root {
+    @apply mt-0!;
+  }
+
+  .MuiPickersCalendarHeader-labelContainer {
+    @apply rtl:mr-[unset] rtl:ml-auto;
+  }
+
+  .MuiPickersArrowSwitcher-nextIconButton {
+    @apply rtl:ml-[unset];
+  }
+
+  .MuiPickersArrowSwitcher-previousIconButton {
+    @apply rtl:-ml-3;
+  }
+
+  .MuiDateRangePickerDay-root.MuiButtonBase-root,
+  .MuiButtonBase-root.MuiPickerDay-root {
+    @apply rounded-md;
+  }
+
+  .MuiDateRangePickerDay-root.MuiDateRangePickerDay-insideSelection:before {
+    @apply bg-primary-light/10;
+  }
+
+  .MuiDateRangePickerDay-root.MuiDateRangePickerDay-selectionStart:before,
+  .MuiDateRangePickerDay-root.MuiDateRangePickerDay-selectionEnd:before {
+    @apply bg-primary-light/10;
+  }
+
+  /* Small Calendar */
+  .MuiDateCalendar-root.small {
+    @apply w-52 px-2.5;
+    .MuiPickersCalendarHeader-root {
+      @apply mt-0 px-0;
+    }
+
+    .MuiButtonBase-root,
+    .MuiPickersCalendarHeader-label {
+      @apply text-xs;
+    }
+
+    .MuiPickersCalendarHeader-label {
+      @apply text-xs hover:bg-transparent!;
+    }
+
+    .MuiButtonBase-root:not(.Mui-selected) {
+      @apply hover:bg-grey-100;
+    }
+
+    .MuiPickerDay-root,
+    .MuiYearCalendar-button,
+    .MuiMonthCalendar-button {
+      @apply h-7 rounded-[10px];
+    }
+
+    .MuiPickersArrowSwitcher-spacer {
+      @apply w-0;
+    }
+  }
+}

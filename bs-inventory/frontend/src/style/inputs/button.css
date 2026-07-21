@@ -1,0 +1,2077 @@
+/* --------------------------- */
+/* Button */
+/* --------------------------- */
+
+@layer style {
+  /* Root */
+  .MuiButtonBase-root {
+    @apply font-body font-medium tracking-normal normal-case transition-all;
+    &.icon-only > span {
+      @apply mx-0;
+    }
+    &.icon-only {
+      @apply min-w-0;
+    }
+
+    &.MuiButton-loadingPositionCenter {
+      @apply text-transparent!;
+    }
+  }
+
+  .MuiButton-icon.MuiButton-startIcon {
+    @apply -ms-1 me-2;
+  }
+  .MuiButton-icon.MuiButton-endIcon {
+    @apply ms-2 -me-1;
+  }
+
+  /* Sizes */
+  .MuiButton-sizeLarge {
+    @apply min-w-10 rounded-lg px-6 py-2 text-base leading-6;
+
+    &.icon-only {
+      @apply px-2;
+    }
+
+    &.hover-icon-shrink {
+      svg {
+        @apply transition-transform!;
+      }
+      &:hover,
+      &:active,
+      &.active {
+        svg {
+          @apply scale-[0.85];
+        }
+      }
+    }
+
+    .MuiCircularProgress-root {
+      height: 1.125rem !important;
+      width: 1.125rem !important;
+    }
+
+    &.MuiButton-loadingPositionStart .MuiButton-loadingIndicator {
+      @apply left-6 rtl:right-6 rtl:left-[unset];
+    }
+
+    &.MuiButton-loadingPositionEnd .MuiButton-loadingIndicator {
+      @apply right-6 rtl:right-[unset] rtl:left-6;
+    }
+  }
+
+  .MuiButton-sizeMedium {
+    @apply min-w-9 rounded-md px-5 py-2 text-base leading-5;
+
+    &.icon-only {
+      @apply px-2;
+    }
+
+    &.hover-icon-shrink {
+      @apply transition-all;
+      &:hover,
+      &:active,
+      &.active {
+        svg {
+          transform: scale(0.8);
+        }
+      }
+    }
+
+    .MuiCircularProgress-root {
+      height: 1rem !important;
+      width: 1rem !important;
+    }
+
+    &.MuiButton-loadingPositionStart .MuiButton-loadingIndicator {
+      @apply left-4.5 rtl:right-4.5 rtl:left-[unset];
+    }
+
+    &.MuiButton-loadingPositionEnd .MuiButton-loadingIndicator {
+      @apply right-4.5 rtl:right-[unset] rtl:left-4.5;
+    }
+  }
+
+  .MuiButton-sizeSmall {
+    @apply min-w-8 rounded-sm px-4 py-2 text-base leading-4;
+
+    &.icon-only {
+      @apply px-2;
+    }
+
+    .MuiCircularProgress-root {
+      height: 1rem !important;
+      width: 1rem !important;
+    }
+
+    &.MuiButton-loadingPositionStart .MuiButton-loadingIndicator {
+      @apply left-3.5 rtl:right-3.5 rtl:left-[unset];
+    }
+
+    &.MuiButton-loadingPositionEnd .MuiButton-loadingIndicator {
+      @apply right-3.5 rtl:right-[unset] rtl:left-3.5;
+    }
+  }
+
+  .MuiButton-sizeTiny {
+    @apply min-w-7 rounded-xs px-3.5 py-1.5 text-sm leading-4;
+
+    &.icon-only {
+      @apply px-1.5;
+    }
+
+    .MuiCircularProgress-root {
+      height: 0.875rem !important;
+      width: 0.875rem !important;
+    }
+
+    &.MuiButton-loadingPositionStart .MuiButton-loadingIndicator {
+      @apply left-3 rtl:right-3 rtl:left-[unset];
+    }
+
+    &.MuiButton-loadingPositionEnd .MuiButton-loadingIndicator {
+      @apply right-3 rtl:right-[unset] rtl:left-3;
+    }
+  }
+
+  .MuiIconButton-root {
+    &.MuiIconButton-sizeLarge {
+      @apply rounded-lg px-2 py-2 text-base leading-6;
+    }
+
+    &.MuiIconButton-sizeMedium {
+      @apply rounded-md px-2 py-2 text-base leading-5;
+    }
+
+    &.MuiIconButton-sizeSmall {
+      @apply rounded-sm px-2 py-2 text-base leading-4;
+    }
+
+    &.MuiIconButton-sizeTiny {
+      @apply rounded-xs px-1.5 py-1.5 text-sm leading-4;
+    }
+  }
+
+  /* Contained Buttons*/
+  *[class*="MuiButton-contained"] {
+    .MuiButton-loadingIndicator {
+      @apply text-text-contrast;
+    }
+  }
+
+  .MuiButton-contained.MuiButton-colorPrimary {
+    &:hover {
+      @apply bg-primary-light;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-primary-dark;
+    }
+
+    &.Mui-disabled {
+      @apply bg-primary text-text-contrast opacity-disabled;
+    }
+  }
+
+  .MuiButton-contained.MuiButton-colorSecondary {
+    &:hover {
+      @apply bg-secondary-light;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-secondary-dark;
+    }
+
+    &.Mui-disabled {
+      @apply bg-secondary text-text-contrast opacity-disabled;
+    }
+  }
+
+  .MuiButton-contained.MuiButton-colorAccent-1 {
+    &:hover {
+      @apply bg-accent-1-light;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-1-dark;
+    }
+
+    &.Mui-disabled {
+      @apply bg-accent-1 text-text-contrast opacity-disabled;
+    }
+  }
+
+  .MuiButton-contained.MuiButton-colorAccent-2 {
+    &:hover {
+      @apply bg-accent-2-light;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-2-dark;
+    }
+
+    &.Mui-disabled {
+      @apply bg-accent-2 text-text-contrast opacity-disabled;
+    }
+  }
+
+  .MuiButton-contained.MuiButton-colorAccent-3 {
+    &:hover {
+      @apply bg-accent-3-light;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-3-dark;
+    }
+
+    &.Mui-disabled {
+      @apply bg-accent-3 text-text-contrast opacity-disabled;
+    }
+  }
+
+  .MuiButton-contained.MuiButton-colorAccent-4 {
+    &:hover {
+      @apply bg-accent-4-light;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-4-dark;
+    }
+
+    &.Mui-disabled {
+      @apply bg-accent-4 text-text-contrast opacity-disabled;
+    }
+  }
+
+  .MuiButton-contained.MuiButton-colorAccent-5 {
+    &:hover {
+      @apply bg-accent-5-light;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-5-dark;
+    }
+
+    &.Mui-disabled {
+      @apply bg-accent-5 text-text-contrast opacity-disabled;
+    }
+  }
+
+  .MuiButton-contained.MuiButton-colorAccent-6 {
+    &:hover {
+      @apply bg-accent-6-light;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-6-dark;
+    }
+
+    &.Mui-disabled {
+      @apply bg-accent-6 text-text-contrast opacity-disabled;
+    }
+  }
+
+  .MuiButton-contained.MuiButton-colorText-primary {
+    &:hover {
+      @apply bg-text-primary-light;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-text-primary-dark;
+    }
+
+    &.Mui-disabled {
+      @apply bg-text-primary text-text-contrast opacity-disabled;
+    }
+  }
+
+  .MuiButton-contained.MuiButton-colorText-secondary {
+    &:hover {
+      @apply bg-text-secondary-light;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-text-secondary-dark;
+    }
+
+    &.Mui-disabled {
+      @apply bg-text-secondary text-text-contrast opacity-disabled;
+    }
+  }
+
+  .MuiButton-contained.MuiButton-colorText-disabled {
+    &:hover {
+      @apply bg-text-disabled-light;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-text-disabled-dark;
+    }
+
+    &.Mui-disabled {
+      @apply bg-text-disabled text-text-contrast opacity-disabled;
+    }
+  }
+
+  .MuiButton-contained.MuiButton-colorSuccess {
+    &:hover {
+      @apply bg-success-light;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-success-dark;
+    }
+
+    &.Mui-disabled {
+      @apply bg-success text-text-contrast opacity-disabled;
+    }
+  }
+
+  .MuiButton-contained.MuiButton-colorError {
+    &:hover {
+      @apply bg-error-light;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-error-dark;
+    }
+
+    &.Mui-disabled {
+      @apply bg-error text-text-contrast opacity-disabled;
+    }
+  }
+
+  .MuiButton-contained.MuiButton-colorWarning {
+    &:hover {
+      @apply bg-warning-light;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-warning-dark;
+    }
+
+    &.Mui-disabled {
+      @apply bg-warning text-text-contrast opacity-disabled;
+    }
+  }
+
+  .MuiButton-contained.MuiButton-colorInfo {
+    &:hover {
+      @apply bg-info-light;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-info-dark;
+    }
+
+    &.Mui-disabled {
+      @apply bg-info text-text-contrast opacity-disabled;
+    }
+  }
+
+  .MuiButton-contained.MuiButton-colorGrey {
+    @apply bg-grey-25 text-text-primary;
+    &:hover {
+      @apply bg-grey-50;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-grey-100;
+    }
+
+    &.Mui-disabled {
+      @apply bg-grey-25 text-text-primary opacity-disabled;
+    }
+  }
+
+  /* Outlined Buttons */
+  .MuiButton-outlined {
+    @apply border;
+  }
+
+  .MuiButton-sizeLarge.MuiButton-outlined {
+    @apply px-5.75 py-[calc(.5rem-1px)];
+
+    &.icon-only {
+      @apply px-[calc(.5rem-1px)];
+    }
+  }
+
+  .MuiButton-sizeMedium.MuiButton-outlined {
+    @apply px-4.75 py-[calc(.5rem-1px)];
+
+    &.icon-only {
+      @apply px-[calc(.5rem-1px)];
+    }
+  }
+
+  .MuiButton-sizeSmall.MuiButton-outlined {
+    @apply px-[calc(1.rem-1px)] py-[calc(.5rem-1px)];
+
+    &.icon-only {
+      @apply px-[calc(.5rem-1px)];
+    }
+  }
+
+  .MuiButton-sizeTiny.MuiButton-outlined {
+    @apply px-[calc(0.875-1px)] py-[calc(.375rem-1px)];
+
+    &.icon-only {
+      @apply px-[calc(.375rem-1px)];
+    }
+  }
+
+  .MuiButton-outlined.MuiButton-colorPrimary {
+    &:hover {
+      @apply bg-primary-light/10 text-primary-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-primary-light/15 text-primary-dark;
+    }
+
+    &.Mui-disabled {
+      @apply border-primary text-primary opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-primary;
+    }
+  }
+
+  .MuiButton-outlined.MuiButton-colorSecondary {
+    &:hover {
+      @apply bg-secondary-light/10 text-secondary-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-secondary-light/15 text-secondary-dark;
+    }
+
+    &.Mui-disabled {
+      @apply border-secondary text-secondary opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-secondary;
+    }
+  }
+
+  .MuiButton-outlined.MuiButton-colorAccent-1 {
+    &:hover {
+      @apply bg-accent-1-light/10 text-accent-1-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-1-light/15 text-accent-1-dark;
+    }
+
+    &.Mui-disabled {
+      @apply border-accent-1 text-accent-1 opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-1;
+    }
+  }
+
+  .MuiButton-outlined.MuiButton-colorAccent-2 {
+    &:hover {
+      @apply bg-accent-2-light/10 text-accent-2-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-2-light/15 text-accent-2-dark;
+    }
+
+    &.Mui-disabled {
+      @apply border-accent-2 text-accent-2 opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-2;
+    }
+  }
+
+  .MuiButton-outlined.MuiButton-colorAccent-3 {
+    &:hover {
+      @apply bg-accent-3-light/10 text-accent-3-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-3-light/15 text-accent-3-dark;
+    }
+
+    &.Mui-disabled {
+      @apply border-accent-3 text-accent-3 opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-3;
+    }
+  }
+
+  .MuiButton-outlined.MuiButton-colorAccent-4 {
+    &:hover {
+      @apply bg-accent-4-light/10 text-accent-4-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-4-light/15 text-accent-4-dark;
+    }
+
+    &.Mui-disabled {
+      @apply border-accent-4 text-accent-4 opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-4;
+    }
+  }
+
+  .MuiButton-outlined.MuiButton-colorAccent-5 {
+    &:hover {
+      @apply bg-accent-5-light/10 text-accent-5-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-5-light/15 text-accent-5-dark;
+    }
+
+    &.Mui-disabled {
+      @apply border-accent-5 text-accent-5 opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-5;
+    }
+  }
+
+  .MuiButton-outlined.MuiButton-colorAccent-6 {
+    &:hover {
+      @apply bg-accent-6-light/10 text-accent-6-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-6-light/15 text-accent-6-dark;
+    }
+
+    &.Mui-disabled {
+      @apply border-accent-6 text-accent-6 opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-6;
+    }
+  }
+
+  .MuiButton-outlined.MuiButton-colorSuccess {
+    &:hover {
+      @apply bg-success-light/10 text-success-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-success-light/15 text-success-dark;
+    }
+
+    &.Mui-disabled {
+      @apply border-success text-success opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-success;
+    }
+  }
+
+  .MuiButton-outlined.MuiButton-colorError {
+    &:hover {
+      @apply bg-error-light/10 text-error-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-error-light/15 text-error-dark;
+    }
+
+    &.Mui-disabled {
+      @apply border-error text-error opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-error;
+    }
+  }
+
+  .MuiButton-outlined.MuiButton-colorWarning {
+    &:hover {
+      @apply bg-warning-light/10 text-warning-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-warning-light/15 text-warning-dark;
+    }
+
+    &.Mui-disabled {
+      @apply border-warning text-warning opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-warning;
+    }
+  }
+
+  .MuiButton-outlined.MuiButton-colorInfo {
+    &:hover {
+      @apply bg-info-light/10 text-info-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-info-light/15 text-info-dark;
+    }
+
+    &.Mui-disabled {
+      @apply border-info text-info opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-info;
+    }
+  }
+
+  .MuiButton-outlined.MuiButton-colorText-primary {
+    &:hover {
+      @apply bg-grey-500/10 text-text-primary;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-grey-500/15 text-text-primary;
+    }
+
+    &.Mui-disabled {
+      @apply border-text-primary text-text-primary opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-text-primary;
+    }
+  }
+
+  .MuiButton-outlined.MuiButton-colorText-secondary {
+    &:hover {
+      @apply bg-grey-500/10 text-text-secondary;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-grey-500/15 text-text-secondary;
+    }
+
+    &.Mui-disabled {
+      @apply border-text-secondary text-text-secondary opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-text-secondary;
+    }
+  }
+
+  .MuiButton-outlined.MuiButton-colorText-disabled {
+    &:hover {
+      @apply bg-grey-500/10 text-text-disabled;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-grey-500/15 text-text-disabled;
+    }
+
+    &.Mui-disabled {
+      @apply border-text-disabled text-text-disabled opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-text-disabled;
+    }
+  }
+
+  .MuiButton-outlined.MuiButton-colorGrey {
+    @apply border-grey-200 text-text-primary;
+    &:hover {
+      @apply bg-grey-200/10 text-text-primary-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-grey-200/15 text-text-primary-dark;
+    }
+
+    &.Mui-disabled {
+      @apply border-grey-200 text-text-primary opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-text-primary;
+    }
+  }
+
+  /* Text Buttons */
+  .MuiButton-text.MuiButton-colorPrimary {
+    &:hover {
+      @apply bg-primary-light/10 text-primary-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-primary-light/15 text-primary-dark;
+    }
+
+    &.Mui-disabled {
+      @apply text-primary opacity-disabled bg-transparent;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-primary;
+    }
+  }
+
+  .MuiButton-text.MuiButton-colorSecondary {
+    &:hover {
+      @apply bg-secondary-light/10 text-secondary-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-secondary-light/15 text-secondary-dark;
+    }
+
+    &.Mui-disabled {
+      @apply text-secondary opacity-disabled bg-transparent;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-secondary;
+    }
+  }
+
+  .MuiButton-text.MuiButton-colorAccent-1 {
+    &:hover {
+      @apply bg-accent-1-light/10 text-accent-1-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-1-light/15 text-accent-1-dark;
+    }
+
+    &.Mui-disabled {
+      @apply text-accent-1 opacity-disabled bg-transparent;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-1;
+    }
+  }
+
+  .MuiButton-text.MuiButton-colorAccent-2 {
+    &:hover {
+      @apply bg-accent-2-light/10 text-accent-2-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-2-light/15 text-accent-2-dark;
+    }
+
+    &.Mui-disabled {
+      @apply text-accent-2 opacity-disabled bg-transparent;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-2;
+    }
+  }
+
+  .MuiButton-text.MuiButton-colorAccent-3 {
+    &:hover {
+      @apply bg-accent-3-light/10 text-accent-3-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-3-light/15 text-accent-3-dark;
+    }
+
+    &.Mui-disabled {
+      @apply text-accent-3 opacity-disabled bg-transparent;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-3;
+    }
+  }
+
+  .MuiButton-text.MuiButton-colorAccent-4 {
+    &:hover {
+      @apply bg-accent-4-light/10 text-accent-4-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-4-light/15 text-accent-4-dark;
+    }
+
+    &.Mui-disabled {
+      @apply text-accent-4 opacity-disabled bg-transparent;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-4;
+    }
+  }
+
+  .MuiButton-text.MuiButton-colorAccent-5 {
+    &:hover {
+      @apply bg-accent-5-light/10 text-accent-5-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-5-light/15 text-accent-5-dark;
+    }
+
+    &.Mui-disabled {
+      @apply text-accent-5 opacity-disabled bg-transparent;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-5;
+    }
+  }
+
+  .MuiButton-text.MuiButton-colorAccent-6 {
+    &:hover {
+      @apply bg-accent-6-light/10 text-accent-6-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-6-light/15 text-accent-6-dark;
+    }
+
+    &.Mui-disabled {
+      @apply text-accent-6 opacity-disabled bg-transparent;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-6;
+    }
+  }
+
+  .MuiButton-text.MuiButton-colorSuccess {
+    &:hover {
+      @apply bg-success-light/10 text-success-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-success-light/15 text-success-dark;
+    }
+
+    &.Mui-disabled {
+      @apply text-success opacity-disabled bg-transparent;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-success;
+    }
+  }
+
+  .MuiButton-text.MuiButton-colorError {
+    &:hover {
+      @apply bg-error-light/10 text-error-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-error-light/15 text-error-dark;
+    }
+
+    &.Mui-disabled {
+      @apply text-error opacity-disabled bg-transparent;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-error;
+    }
+  }
+
+  .MuiButton-text.MuiButton-colorWarning {
+    &:hover {
+      @apply bg-warning-light/10 text-warning-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-warning-light/15 text-warning-dark;
+    }
+
+    &.Mui-disabled {
+      @apply text-warning opacity-disabled bg-transparent;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-warning;
+    }
+  }
+
+  .MuiButton-text.MuiButton-colorInfo {
+    &:hover {
+      @apply bg-info-light/10 text-info-dark;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-info-light/15 text-info-dark;
+    }
+
+    &.Mui-disabled {
+      @apply text-info opacity-disabled bg-transparent;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-info;
+    }
+  }
+
+  .MuiButton-text.MuiButton-colorText-primary {
+    &:hover {
+      @apply bg-grey-500/10 text-text-primary;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-grey-500/15 text-text-primary;
+    }
+
+    &.Mui-disabled {
+      @apply text-text-primary opacity-disabled bg-transparent;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-text-primary;
+    }
+  }
+
+  .MuiButton-text.MuiButton-colorText-secondary {
+    &:hover {
+      @apply bg-grey-500/10 text-text-secondary;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-grey-500/15 text-text-secondary;
+    }
+
+    &.Mui-disabled {
+      @apply text-text-secondary opacity-disabled bg-transparent;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-text-secondary;
+    }
+  }
+
+  .MuiButton-text.MuiButton-colorText-disabled {
+    &:hover {
+      @apply bg-grey-500/10 text-text-disabled;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-grey-500/15 text-text-disabled;
+    }
+
+    &.Mui-disabled {
+      @apply text-text-disabled opacity-disabled bg-transparent;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-text-disabled;
+    }
+  }
+
+  .MuiButton-text.MuiButton-colorGrey {
+    @apply text-text-primary;
+    &:hover {
+      @apply bg-grey-25;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-grey-50 text-text-primary;
+    }
+
+    &.Mui-disabled {
+      @apply text-text-primary opacity-disabled bg-transparent;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-text-primary;
+    }
+  }
+
+  /* Pastel Buttons */
+  .MuiButton-pastel {
+    @apply outline-0 outline-transparent;
+  }
+
+  .MuiButton-pastel.MuiButton-colorPrimary {
+    @apply bg-primary-light/10 text-primary-dark;
+    &:hover {
+      @apply bg-primary-light/20;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-primary-light/25;
+    }
+
+    &.Mui-disabled {
+      @apply bg-primary-light/10 text-primary-dark opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-primary-dark;
+    }
+  }
+
+  .MuiButton-pastel.MuiButton-colorSecondary {
+    @apply bg-secondary-light/10 text-secondary-dark;
+    &:hover {
+      @apply bg-secondary-light/20;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-secondary-light/25;
+    }
+
+    &.Mui-disabled {
+      @apply bg-secondary-light/10 text-secondary-dark opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-secondary-dark;
+    }
+  }
+
+  .MuiButton-pastel.MuiButton-colorAccent-1 {
+    @apply bg-accent-1-light/10 text-accent-1-dark;
+    &:hover {
+      @apply bg-accent-1-light/20;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-1-light/25;
+    }
+
+    &.Mui-disabled {
+      @apply bg-accent-1-light/10 text-accent-1-dark opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-1-dark;
+    }
+  }
+
+  .MuiButton-pastel.MuiButton-colorAccent-2 {
+    @apply bg-accent-2-light/10 text-accent-2-dark;
+    &:hover {
+      @apply bg-accent-2-light/20;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-2-light/25;
+    }
+
+    &.Mui-disabled {
+      @apply bg-accent-2-light/10 text-accent-2-dark opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-2-dark;
+    }
+  }
+
+  .MuiButton-pastel.MuiButton-colorAccent-3 {
+    @apply bg-accent-3-light/10 text-accent-3-dark;
+    &:hover {
+      @apply bg-accent-3-light/20;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-3-light/25;
+    }
+
+    &.Mui-disabled {
+      @apply bg-accent-3-light/10 text-accent-3-dark opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-3-dark;
+    }
+  }
+
+  .MuiButton-pastel.MuiButton-colorAccent-4 {
+    @apply bg-accent-4-light/10 text-accent-4-dark;
+    &:hover {
+      @apply bg-accent-4-light/20;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-4-light/25;
+    }
+
+    &.Mui-disabled {
+      @apply bg-accent-4-light/10 text-accent-4-dark opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-4-dark;
+    }
+  }
+
+  .MuiButton-pastel.MuiButton-colorAccent-5 {
+    @apply bg-accent-5-light/10 text-accent-5-dark;
+    &:hover {
+      @apply bg-accent-5-light/20;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-5-light/25;
+    }
+
+    &.Mui-disabled {
+      @apply bg-accent-5-light/10 text-accent-5-dark opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-5-dark;
+    }
+  }
+
+  .MuiButton-pastel.MuiButton-colorAccent-6 {
+    @apply bg-accent-6-light/10 text-accent-6-dark;
+    &:hover {
+      @apply bg-accent-6-light/20;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-6-light/25;
+    }
+
+    &.Mui-disabled {
+      @apply bg-accent-6-light/10 text-accent-6-dark opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-6-dark;
+    }
+  }
+
+  .MuiButton-pastel.MuiButton-colorError {
+    @apply bg-error-light/10 text-error-dark;
+    &:hover {
+      @apply bg-error-light/20;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-error-light/25;
+    }
+
+    &.Mui-disabled {
+      @apply bg-error-light/10 text-error-dark opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-error-dark;
+    }
+  }
+
+  .MuiButton-pastel.MuiButton-colorInfo {
+    @apply bg-info-light/10 text-info-dark;
+    &:hover {
+      @apply bg-info-light/20;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-info-light/25;
+    }
+
+    &.Mui-disabled {
+      @apply bg-info-light/10 text-info-dark opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-info-dark;
+    }
+  }
+
+  .MuiButton-pastel.MuiButton-colorWarning {
+    @apply bg-warning-light/10 text-warning-dark;
+    &:hover {
+      @apply bg-warning-light/20;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-warning-light/25;
+    }
+
+    &.Mui-disabled {
+      @apply bg-warning-light/10 text-warning-dark opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-warning-dark;
+    }
+  }
+
+  .MuiButton-pastel.MuiButton-colorSuccess {
+    @apply bg-success-light/10 text-success-dark;
+    &:hover {
+      @apply bg-success-light/20;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-success-light/25;
+    }
+
+    &.Mui-disabled {
+      @apply bg-success-light/10 text-success-dark opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-success-dark;
+    }
+  }
+
+  .MuiButton-pastel.MuiButton-colorText-primary {
+    @apply bg-grey-500/10 text-text-primary;
+    &:hover {
+      @apply bg-grey-500/20;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-grey-500/25;
+    }
+
+    &.Mui-disabled {
+      @apply bg-grey-500/10 text-text-primary opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-text-primary;
+    }
+  }
+
+  .MuiButton-pastel.MuiButton-colorText-secondary {
+    @apply bg-grey-500/10 text-text-secondary;
+    &:hover {
+      @apply bg-grey-500/20;
+    }
+
+    &:active,
+    &.active {
+      @apply bg-grey-500/25;
+    }
+
+    &.Mui-disabled {
+      @apply bg-grey-500/10 text-text-secondary opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-text-secondary;
+    }
+  }
+
+  .MuiButton-pastel.MuiButton-colorText-disabled {
+    @apply bg-grey-500/10 text-text-disabled;
+    &:hover {
+      @apply bg-grey-500/20;
+    }
+
+    &:active,
+    &.active {
+      @apply bg-grey-500/25;
+    }
+
+    &.Mui-disabled {
+      @apply bg-grey-500/10 text-text-disabled opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-text-disabled;
+    }
+  }
+
+  .MuiButton-pastel.MuiButton-colorGrey {
+    @apply bg-grey-25 text-text-primary;
+    &:hover {
+      @apply bg-grey-50;
+    }
+
+    &:active,
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-grey-50;
+    }
+
+    &.Mui-disabled {
+      @apply bg-grey-25 text-text-primary opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-text-primary;
+    }
+  }
+
+  .MuiButton-paper {
+    @apply text-text-primary outline -outline-offset-1 outline-transparent;
+
+    &:hover {
+      @apply bg-background-paper outline-grey-50! outline -outline-offset-1;
+    }
+
+    &:active,
+    &:focus,
+    &.active {
+      @apply bg-background-paper outline-grey-50! outline! -outline-offset-1!;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-primary;
+    }
+  }
+
+  .MuiButton-paper.MuiButton-colorPrimary {
+    @apply text-primary;
+
+    &.Mui-disabled {
+      @apply text-primary opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-primary;
+    }
+  }
+
+  .MuiButton-surface {
+    @apply outline -outline-offset-1 outline-transparent!;
+    &:hover {
+      @apply bg-foreground outline-line! shadow-sm outline -outline-offset-1 backdrop-blur-sm;
+    }
+
+    &:focus,
+    &:active,
+    &.active {
+      @apply bg-foreground outline-line! shadow-sm outline! -outline-offset-1 backdrop-blur-sm;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-primary;
+    }
+
+    &.surface-standard {
+      @apply bg-background-paper outline-grey-50! outline! -outline-offset-1 backdrop-blur-sm;
+      &:hover {
+        @apply text-primary;
+      }
+    }
+  }
+
+  .MuiButton-surface.MuiButton-colorPrimary {
+    @apply text-primary;
+
+    &.Mui-disabled {
+      @apply text-primary opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-primary;
+    }
+  }
+
+  .MuiButton-surface.MuiButton-colorSecondary {
+    @apply text-secondary;
+    &.Mui-disabled {
+      @apply text-secondary opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-secondary;
+    }
+  }
+
+  .MuiButton-surface.MuiButton-colorAccent-1 {
+    @apply text-accent-1;
+    &.Mui-disabled {
+      @apply text-accent-1 opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-1;
+    }
+  }
+
+  .MuiButton-surface.MuiButton-colorAccent-2 {
+    @apply text-accent-2;
+    &.Mui-disabled {
+      @apply text-accent-2 opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-2;
+    }
+  }
+
+  .MuiButton-surface.MuiButton-colorAccent-3 {
+    @apply text-accent-3;
+    &.Mui-disabled {
+      @apply text-accent-3 opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-3;
+    }
+  }
+
+  .MuiButton-surface.MuiButton-colorAccent-4 {
+    @apply text-accent-4;
+    &.Mui-disabled {
+      @apply text-accent-4 opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-4;
+    }
+  }
+
+  .MuiButton-surface.MuiButton-colorAccent-5 {
+    @apply text-accent-5;
+    &.Mui-disabled {
+      @apply text-accent-5 opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-5;
+    }
+  }
+
+  .MuiButton-surface.MuiButton-colorAccent-6 {
+    @apply text-accent-6;
+    &.Mui-disabled {
+      @apply text-accent-6 opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-accent-6;
+    }
+  }
+
+  .MuiButton-surface.MuiButton-colorText-primary {
+    @apply text-text-primary;
+    &.Mui-disabled {
+      @apply text-text-primary opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-text-primary;
+    }
+  }
+
+  .MuiButton-surface.MuiButton-colorText-secondary {
+    @apply text-text-secondary;
+    &.Mui-disabled {
+      @apply text-text-secondary opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-text-secondary;
+    }
+  }
+
+  .MuiButton-surface.MuiButton-colorText-disabled {
+    @apply text-text-disabled;
+    &.Mui-disabled {
+      @apply text-text-disabled opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-text-disabled;
+    }
+  }
+
+  .MuiButton-surface.MuiButton-colorSuccess {
+    @apply text-success;
+    &.Mui-disabled {
+      @apply text-success opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-success;
+    }
+  }
+
+  .MuiButton-surface.MuiButton-colorError {
+    @apply text-error;
+    &.Mui-disabled {
+      @apply text-error opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-error;
+    }
+  }
+
+  .MuiButton-surface.MuiButton-colorWarning {
+    @apply text-warning;
+    &.Mui-disabled {
+      @apply text-warning opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-warning;
+    }
+  }
+
+  .MuiButton-surface.MuiButton-colorInfo {
+    @apply text-info;
+    &.Mui-disabled {
+      @apply text-info opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-info;
+    }
+  }
+
+  .MuiButton-surface.MuiButton-colorGrey {
+    @apply text-text-primary;
+    &.Mui-disabled {
+      @apply text-text-primary opacity-disabled;
+    }
+
+    .MuiButton-loadingIndicator {
+      @apply text-text-primary;
+    }
+  }
+
+  .full-width-button {
+    @apply w-full justify-start;
+
+    .MuiButton-endIcon {
+      @apply ms-auto;
+    }
+  }
+
+  /* Focus inside form */
+  form .MuiButton-contained.MuiButton-colorPrimary:focus,
+  .MuiButton-contained.MuiButton-colorPrimary.focusable:focus {
+    @apply ring-primary/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-contained.MuiButton-colorSecondary:focus,
+  .MuiButton-contained.MuiButton-colorSecondary.focusable:focus {
+    @apply ring-secondary/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-contained.MuiButton-colorAccent-1:focus,
+  .MuiButton-contained.MuiButton-colorAccent-1.focusable:focus {
+    @apply ring-accent-1/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-contained.MuiButton-colorAccent-2:focus,
+  .MuiButton-contained.MuiButton-colorAccent-2.focusable:focus {
+    @apply ring-accent-2/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-contained.MuiButton-colorAccent-3:focus,
+  .MuiButton-contained.MuiButton-colorAccent-3.focusable:focus {
+    @apply ring-accent-3/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-contained.MuiButton-colorAccent-4:focus,
+  .MuiButton-contained.MuiButton-colorAccent-4.focusable:focus {
+    @apply ring-accent-4/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-contained.MuiButton-colorAccent-5:focus,
+  .MuiButton-contained.MuiButton-colorAccent-5.focusable:focus {
+    @apply ring-accent-5/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-contained.MuiButton-colorAccent-6:focus,
+  .MuiButton-contained.MuiButton-colorAccent-6.focusable:focus {
+    @apply ring-accent-6/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-contained.MuiButton-colorText-primary:focus,
+  .MuiButton-contained.MuiButton-colorText-primary.focusable:focus {
+    @apply ring-text-primary/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-contained.MuiButton-colorText-secondary:focus,
+  .MuiButton-contained.MuiButton-colorText-secondary.focusable:focus {
+    @apply ring-text-secondary/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-contained.MuiButton-colorText-disabled:focus,
+  .MuiButton-contained.MuiButton-colorText-disabled.focusable:focus {
+    @apply ring-text-disabled/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-contained.MuiButton-colorSuccess:focus,
+  .MuiButton-contained.MuiButton-colorSuccess.focusable:focus {
+    @apply ring-success/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-contained.MuiButton-colorError:focus,
+  .MuiButton-contained.MuiButton-colorError.focusable:focus {
+    @apply ring-error/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-contained.MuiButton-colorWarning:focus,
+  .MuiButton-contained.MuiButton-colorWarning.focusable:focus {
+    @apply ring-warning/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-contained.MuiButton-colorInfo:focus,
+  .MuiButton-contained.MuiButton-colorInfo.focusable:focus {
+    @apply ring-info/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-contained.MuiButton-colorGrey:focus,
+  .MuiButton-contained.MuiButton-colorGrey.focusable:focus {
+    @apply ring-grey-100 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-outlined.MuiButton-colorPrimary:focus,
+  .MuiButton-outlined.MuiButton-colorPrimary.focusable:focus {
+    @apply ring-primary/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-outlined.MuiButton-colorSecondary:focus,
+  .MuiButton-outlined.MuiButton-colorSecondary.focusable:focus {
+    @apply ring-secondary/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-outlined.MuiButton-colorAccent-1:focus,
+  .MuiButton-outlined.MuiButton-colorAccent-1.focusable:focus {
+    @apply ring-accent-1/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-outlined.MuiButton-colorAccent-2:focus,
+  .MuiButton-outlined.MuiButton-colorAccent-2.focusable:focus {
+    @apply ring-accent-2/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-outlined.MuiButton-colorAccent-3:focus,
+  .MuiButton-outlined.MuiButton-colorAccent-3.focusable:focus {
+    @apply ring-accent-3/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-outlined.MuiButton-colorAccent-4:focus,
+  .MuiButton-outlined.MuiButton-colorAccent-4.focusable:focus {
+    @apply ring-accent-4/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-outlined.MuiButton-colorAccent-5:focus,
+  .MuiButton-outlined.MuiButton-colorAccent-5.focusable:focus {
+    @apply ring-accent-5/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-outlined.MuiButton-colorAccent-6:focus,
+  .MuiButton-outlined.MuiButton-colorAccent-6.focusable:focus {
+    @apply ring-accent-6/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-outlined.MuiButton-colorSuccess:focus,
+  .MuiButton-outlined.MuiButton-colorSuccess.focusable:focus {
+    @apply ring-success/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-outlined.MuiButton-colorError:focus,
+  .MuiButton-outlined.MuiButton-colorError.focusable:focus {
+    @apply ring-error/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-outlined.MuiButton-colorWarning:focus,
+  .MuiButton-outlined.MuiButton-colorWarning.focusable:focus {
+    @apply ring-warning/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-outlined.MuiButton-colorInfo:focus,
+  .MuiButton-outlined.MuiButton-colorInfo.focusable:focus {
+    @apply ring-info/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-outlined.MuiButton-colorText-primary:focus,
+  .MuiButton-outlined.MuiButton-colorText-primary.focusable:focus {
+    @apply ring-text-primary/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-outlined.MuiButton-colorText-secondary:focus,
+  .MuiButton-outlined.MuiButton-colorText-secondary.focusable:focus {
+    @apply ring-text-secondary/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-outlined.MuiButton-colorText-disabled:focus,
+  .MuiButton-outlined.MuiButton-colorText-disabled.focusable:focus {
+    @apply ring-text-disabled/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-outlined.MuiButton-colorGrey:focus,
+  .MuiButton-outlined.MuiButton-colorGrey.focusable:focus {
+    @apply ring-grey-100 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-text.MuiButton-colorPrimary:focus,
+  .MuiButton-text.MuiButton-colorPrimary.focusable:focus {
+    @apply ring-primary/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-text.MuiButton-colorSecondary:focus,
+  .MuiButton-text.MuiButton-colorSecondary.focusable:focus {
+    @apply ring-secondary/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-text.MuiButton-colorAccent-1:focus,
+  .MuiButton-text.MuiButton-colorAccent-1.focusable:focus {
+    @apply ring-accent-1/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-text.MuiButton-colorAccent-2:focus,
+  .MuiButton-text.MuiButton-colorAccent-2.focusable:focus {
+    @apply ring-accent-2/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-text.MuiButton-colorAccent-3:focus,
+  .MuiButton-text.MuiButton-colorAccent-3.focusable:focus {
+    @apply ring-accent-3/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-text.MuiButton-colorAccent-4:focus,
+  .MuiButton-text.MuiButton-colorAccent-4.focusable:focus {
+    @apply ring-accent-4/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-text.MuiButton-colorAccent-5:focus,
+  .MuiButton-text.MuiButton-colorAccent-5.focusable:focus {
+    @apply ring-accent-5/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-text.MuiButton-colorAccent-6:focus,
+  .MuiButton-text.MuiButton-colorAccent-6.focusable:focus {
+    @apply ring-accent-6/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-text.MuiButton-colorSuccess:focus,
+  .MuiButton-text.MuiButton-colorSuccess.focusable:focus {
+    @apply ring-success/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-text.MuiButton-colorError:focus,
+  .MuiButton-text.MuiButton-colorError.focusable:focus {
+    @apply ring-error/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-text.MuiButton-colorWarning:focus,
+  .MuiButton-text.MuiButton-colorWarning.focusable:focus {
+    @apply ring-warning/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-text.MuiButton-colorInfo:focus,
+  .MuiButton-text.MuiButton-colorInfo.focusable:focus {
+    @apply ring-info/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-text.MuiButton-colorText-primary:focus,
+  .MuiButton-text.MuiButton-colorText-primary.focusable:focus {
+    @apply ring-text-primary/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-text.MuiButton-colorText-secondary:focus,
+  .MuiButton-text.MuiButton-colorText-secondary.focusable:focus {
+    @apply ring-text-secondary/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-text.MuiButton-colorText-disabled:focus,
+  .MuiButton-text.MuiButton-colorText-disabled.focusable:focus {
+    @apply ring-text-disabled/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-text.MuiButton-colorGrey:focus,
+  .MuiButton-text.MuiButton-colorGrey.focusable:focus {
+    @apply ring-grey-100 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-pastel.MuiButton-colorPrimary:focus,
+  .MuiButton-pastel.MuiButton-colorPrimary.focusable:focus {
+    @apply ring-primary/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-pastelSecondary:focus,
+  .MuiButton-pastelSecondary.focusable:focus {
+    @apply ring-secondary/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-pastel.MuiButton-colorAccent-1:focus,
+  .MuiButton-pastel.MuiButton-colorAccent-1.focusable:focus {
+    @apply ring-accent-1/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-pastel.MuiButton-colorAccent-2:focus,
+  .MuiButton-pastel.MuiButton-colorAccent-2.focusable:focus {
+    @apply ring-accent-2/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-pastel.MuiButton-colorAccent-3:focus,
+  .MuiButton-pastel.MuiButton-colorAccent-3.focusable:focus {
+    @apply ring-accent-3/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-pastel.MuiButton-colorAccent-4:focus,
+  .MuiButton-pastel.MuiButton-colorAccent-4.focusable:focus {
+    @apply ring-accent-4/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-pastel.MuiButton-colorAccent-5:focus,
+  .MuiButton-pastel.MuiButton-colorAccent-5.focusable:focus {
+    @apply ring-accent-5/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-pastel.MuiButton-colorAccent-6:focus,
+  .MuiButton-pastel.MuiButton-colorAccent-6.focusable:focus {
+    @apply ring-accent-6/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-pastel.MuiButton-colorError:focus,
+  .MuiButton-pastel.MuiButton-colorError.focusable:focus {
+    @apply ring-error/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-pastel.MuiButton-colorInfo:focus,
+  .MuiButton-pastel.MuiButton-colorInfo.focusable:focus {
+    @apply ring-info/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-pastel.MuiButton-colorWarning:focus,
+  .MuiButton-pastel.MuiButton-colorWarning.focusable:focus {
+    @apply ring-warning/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-pastel.MuiButton-colorSuccess:focus,
+  .MuiButton-pastel.MuiButton-colorSuccess.focusable:focus {
+    @apply ring-success/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-pastel.MuiButton-colorText-primary:focus,
+  .MuiButton-pastel.MuiButton-colorText-primary.focusable:focus {
+    @apply ring-text-primary/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-pastel.MuiButton-colorText-secondary:focus,
+  .MuiButton-pastel.MuiButton-colorText-secondary.focusable:focus {
+    @apply ring-text-secondary/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-pastel.MuiButton-colorText-disabled:focus,
+  .MuiButton-pastel.MuiButton-colorText-disabled.focusable:focus {
+    @apply ring-text-disabled/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-pastel.MuiButton-colorGrey:focus,
+  .MuiButton-pastel.MuiButton-colorGrey.focusable:focus {
+    @apply ring-grey-100 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-surface.MuiButton-colorPrimary:focus,
+  .MuiButton-surface.MuiButton-colorPrimary.focusable:focus {
+    @apply ring-primary/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-surface.MuiButton-colorSecondary:focus,
+  .MuiButton-surface.MuiButton-colorSecondary.focusable:focus {
+    @apply ring-secondary/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-surface.MuiButton-colorAccent-1:focus,
+  .MuiButton-surface.MuiButton-colorAccent-1.focusable:focus {
+    @apply ring-accent-1/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-surface.MuiButton-colorAccent-2:focus,
+  .MuiButton-surface.MuiButton-colorAccent-2.focusable:focus {
+    @apply ring-accent-2/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-surface.MuiButton-colorAccent-3:focus,
+  .MuiButton-surface.MuiButton-colorAccent-3.focusable:focus {
+    @apply ring-accent-3/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-surface.MuiButton-colorAccent-4:focus,
+  .MuiButton-surface.MuiButton-colorAccent-4.focusable:focus {
+    @apply ring-accent-4/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-surface.MuiButton-colorAccent-5:focus,
+  .MuiButton-surface.MuiButton-colorAccent-5.focusable:focus {
+    @apply ring-accent-5/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-surface.MuiButton-colorAccent-6:focus,
+  .MuiButton-surface.MuiButton-colorAccent-6.focusable:focus {
+    @apply ring-accent-6/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-surface.MuiButton-colorText-primary:focus,
+  .MuiButton-surface.MuiButton-colorText-primary.focusable:focus {
+    @apply ring-text-primary/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-surface.MuiButton-colorText-secondary:focus,
+  .MuiButton-surface.MuiButton-colorText-secondary.focusable:focus {
+    @apply ring-text-secondary/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-surface.MuiButton-colorText-disabled:focus,
+  .MuiButton-surface.MuiButton-colorText-disabled.focusable:focus {
+    @apply ring-text-disabled/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-surface.MuiButton-colorSuccess:focus,
+  .MuiButton-surface.MuiButton-colorSuccess.focusable:focus {
+    @apply ring-success/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-surface.MuiButton-colorError:focus,
+  .MuiButton-surface.MuiButton-colorError.focusable:focus {
+    @apply ring-error/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-surface.MuiButton-colorWarning:focus,
+  .MuiButton-surface.MuiButton-colorWarning.focusable:focus {
+    @apply ring-warning/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-surface.MuiButton-colorInfo:focus,
+  .MuiButton-surface.MuiButton-colorInfo.focusable:focus {
+    @apply ring-info/40 ring-2 ring-offset-1;
+  }
+
+  form .MuiButton-surface.MuiButton-colorGrey:focus,
+  .MuiButton-surface.MuiButton-colorGrey.focusable:focus {
+    @apply ring-grey-100 ring-2 ring-offset-1;
+  }
+}

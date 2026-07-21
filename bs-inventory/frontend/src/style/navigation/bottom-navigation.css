@@ -1,0 +1,21 @@
+/* --------------------------- */
+/* Bottom Navigation */
+/* --------------------------- */
+
+@layer style {
+  .MuiBottomNavigationAction-root svg {
+    @apply mb-1;
+  }
+
+  .MuiBottomNavigationAction-label {
+    @apply font-body text-base! font-medium tracking-normal normal-case;
+  }
+
+  .MuiBreadcrumbs-root .MuiButtonBase-root {
+    @apply bg-grey-50 rounded-md;
+
+    &:hover {
+      @apply bg-grey-100;
+    }
+  }
+}

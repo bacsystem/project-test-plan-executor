@@ -1,0 +1,42 @@
+/* --------------------------- */
+/* Snackbar */
+/* --------------------------- */
+
+@layer style {
+  .MuiSnackbar-root .MuiSnackbarContent-root {
+    @apply border-grey-100 bg-background-paper shadow-darker-sm rounded-lg border border-solid;
+  }
+
+  .MuiSnackbarContent-message {
+    @apply font-body text-text-primary! text-base;
+  }
+
+  .notistack-Snackbar .notistack-MuiContent {
+    @apply border-grey-100 bg-background-paper! font-body text-text-primary! shadow-darker-sm! rounded-lg! border border-solid text-base;
+  }
+
+  .notistack-MuiContent-success {
+    @apply bg-background-paper! shadow-darker-sm! border-grey-100 font-body rounded-lg! border border-solid text-base;
+    svg {
+      @apply text-success;
+    }
+  }
+  .notistack-MuiContent-info {
+    @apply bg-background-paper! shadow-darker-sm! border-grey-100 font-body rounded-lg! border border-solid text-base;
+    svg {
+      @apply text-info;
+    }
+  }
+  .notistack-MuiContent-error {
+    @apply bg-background-paper! shadow-darker-sm! border-grey-100 font-body rounded-lg! border border-solid text-base;
+    svg {
+      @apply text-error;
+    }
+  }
+  .notistack-MuiContent-warning {
+    @apply bg-background-paper! shadow-darker-sm! border-grey-100 font-body rounded-lg! border border-solid text-base;
+    svg {
+      @apply text-warning;
+    }
+  }
+}

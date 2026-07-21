@@ -1,0 +1,82 @@
+/* --------------------------- */
+/* Theme Purple */
+/* --------------------------- */
+
+@layer base {
+  .theme-purple {
+    --primary: 278 79% 59%;
+    --primary-light: 278 79% 69%;
+    --primary-dark: 278 79% 49%;
+
+    --secondary: 299 77% 57%;
+    --secondary-light: 299 77% 67%;
+    --secondary-dark: 299 77% 47%;
+
+    --accent-1: 16 77% 64%;
+    --accent-1-light: 16 77% 74%;
+    --accent-1-dark: 16 77% 54%;
+
+    --accent-2: 44 77% 57%;
+    --accent-2-light: 44 77% 67%;
+    --accent-2-dark: 44 77% 47%;
+
+    --accent-3: 85 49% 49%;
+    --accent-3-light: 85 49% 59%;
+    --accent-3-dark: 85 49% 39%;
+
+    --accent-4: 136 49% 49%;
+    --accent-4-light: 136 49% 59%;
+    --accent-4-dark: 136 49% 39%;
+
+    --accent-5: 177 56% 55%;
+    --accent-5-light: 177 56% 65%;
+    --accent-5-dark: 177 56% 45%;
+
+    --accent-6: 207 98% 66%;
+    --accent-6-light: 207 98% 76%;
+    --accent-6-dark: 207 98% 56%;
+
+    --bg-waves: url("/images/backgrounds/waves-light.jpg");
+    --bg-spheres: url("/images/backgrounds/theme-purple-light-spheres.jpg");
+
+    color-scheme: light;
+  }
+  .theme-purple.dark {
+    --primary: 278 74% 64%;
+    --primary-light: 278 74% 74%;
+    --primary-dark: 278 74% 54%;
+
+    --secondary: 299 72% 62%;
+    --secondary-light: 299 72% 72%;
+    --secondary-dark: 299 72% 52%;
+
+    --accent-1: 16 72% 69%;
+    --accent-1-light: 16 72% 79%;
+    --accent-1-dark: 16 72% 59%;
+
+    --accent-2: 44 72% 62%;
+    --accent-2-light: 44 72% 72%;
+    --accent-2-dark: 44 72% 52%;
+
+    --accent-3: 85 44% 54%;
+    --accent-3-light: 85 44% 64%;
+    --accent-3-dark: 85 44% 44%;
+
+    --accent-4: 136 44% 54%;
+    --accent-4-light: 136 44% 64%;
+    --accent-4-dark: 136 44% 44%;
+
+    --accent-5: 177 51% 60%;
+    --accent-5-light: 177 51% 70%;
+    --accent-5-dark: 177 51% 50%;
+
+    --accent-6: 207 93% 71%;
+    --accent-6-light: 207 93% 81%;
+    --accent-6-dark: 207 93% 61%;
+
+    --bg-waves: url("/images/backgrounds/waves-dark.jpg");
+    --bg-spheres: url("/images/backgrounds/theme-purple-dark-spheres.jpg");
+
+    color-scheme: dark;
+  }
+}
