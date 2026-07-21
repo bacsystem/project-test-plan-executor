@@ -189,8 +189,7 @@ func TestCatalogServer_ProductMovements(t *testing.T) {
 	_ = products.Create(ctx, domain.Product{TenantID: tenant.ID, SKU: "SKU-1", Name: "Widget", UnitOfMeasureCode: "NIU"})
 
 	m := domain.StockMovement{TenantID: tenant.ID, ProductSKU: "SKU-1", WarehouseID: wh.ID, SectionID: sec.ID, Quantity: 10, UnitCost: 5.00, Type: domain.MovementIn, OccurredAt: time.Now().UTC()}
-	next, _ := domain.ApplyMovement(domain.StockLevel{}, m)
-	if _, err := stock.ApplyMovement(ctx, m, next); err != nil {
+	if _, _, err := stock.ApplyMovement(ctx, m); err != nil {
 		t.Fatalf("ApplyMovement() error = %v", err)
 	}
 

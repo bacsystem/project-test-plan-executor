@@ -61,11 +61,6 @@ func (s *StockServer) handleCreateMovement(w http.ResponseWriter, r *http.Reques
 	}
 
 	tenantID := middleware.TenantID(r.Context())
-	current, err := s.Stock.GetLevel(r.Context(), tenantID, req.ProductSKU, req.WarehouseID, req.SectionID)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to read current stock level")
-		return
-	}
 	prevTotal, err := s.Stock.TotalQuantityBySKU(r.Context(), tenantID, req.ProductSKU)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to read current stock total")
@@ -78,14 +73,16 @@ func (s *StockServer) handleCreateMovement(w http.ResponseWriter, r *http.Reques
 		DocumentType: req.DocumentType, DocumentSeries: req.DocumentSeries, DocumentNumber: req.DocumentNumber,
 		GuideNumber: req.GuideNumber, OccurredAt: time.Now().UTC(),
 	}
-	next, err := domain.ApplyMovement(current, m)
+	// current is read and next is computed inside ApplyMovement itself,
+	// under a lock on this exact location — never here, and never from a
+	// snapshot taken before the transaction (a stale read is exactly the
+	// lost-update race whole-branch review Important #5 flagged).
+	saved, next, err := s.Stock.ApplyMovement(r.Context(), m)
 	if err != nil {
-		writeError(w, http.StatusConflict, err.Error())
-		return
-	}
-
-	saved, err := s.Stock.ApplyMovement(r.Context(), m, next)
-	if err != nil {
+		if err == domain.ErrInsufficientStock {
+			writeError(w, http.StatusConflict, err.Error())
+			return
+		}
 		if err == postgres.ErrInvalidReference {
 			writeError(w, http.StatusNotFound, "unknown product, warehouse, or section")
 			return
@@ -100,7 +97,10 @@ func (s *StockServer) handleCreateMovement(w http.ResponseWriter, r *http.Reques
 		OccurredAt: m.OccurredAt.Format(time.RFC3339),
 	})
 
-	newTotal := prevTotal - current.Quantity + next.Quantity
+	newTotal, err := s.Stock.TotalQuantityBySKU(r.Context(), tenantID, req.ProductSKU)
+	if err != nil {
+		newTotal = prevTotal
+	}
 	if tenant, err := s.Tenants.GetByID(r.Context(), tenantID); err == nil {
 		if domain.IsLowStockCrossing(prevTotal, newTotal, tenant.LowStockThreshold) {
 			s.publishStockLow(r.Context(), events.StockLowPayload{
@@ -141,14 +141,12 @@ func (s *StockServer) handleCreateTransfer(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, "productSku, source/destination warehouse+section, and a positive quantity are required")
 		return
 	}
-
-	tenantID := middleware.TenantID(r.Context())
-	source, err := s.Stock.GetLevel(r.Context(), tenantID, req.ProductSKU, req.FromWarehouseID, req.FromSectionID)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to read source stock level")
+	if req.FromWarehouseID == req.ToWarehouseID && req.FromSectionID == req.ToSectionID {
+		writeError(w, http.StatusBadRequest, "source and destination location must be different")
 		return
 	}
 
+	tenantID := middleware.TenantID(r.Context())
 	transferID := uuid.NewString()
 	occurredAt := time.Now().UTC()
 	out := domain.StockMovement{
@@ -157,33 +155,22 @@ func (s *StockServer) handleCreateTransfer(w http.ResponseWriter, r *http.Reques
 		DocumentType: req.DocumentType, DocumentSeries: req.DocumentSeries, DocumentNumber: req.DocumentNumber,
 		GuideNumber: req.GuideNumber, OccurredAt: occurredAt,
 	}
-	outNext, err := domain.ApplyMovement(source, out)
-	if err != nil {
-		writeError(w, http.StatusConflict, err.Error())
-		return
-	}
-
-	// The destination receives already-owned, already-valued stock at the
-	// source's current average cost — not a new purchase (design §5).
-	dest, err := s.Stock.GetLevel(r.Context(), tenantID, req.ProductSKU, req.ToWarehouseID, req.ToSectionID)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to read destination stock level")
-		return
-	}
+	// in.UnitCost is filled in by ApplyTransfer itself, from the source's
+	// locked, up-to-date average cost — not computed here, which would
+	// reopen the exact lost-update race Important #5 closes.
 	in := domain.StockMovement{
 		TenantID: tenantID, ProductSKU: req.ProductSKU, WarehouseID: req.ToWarehouseID, SectionID: req.ToSectionID,
-		Quantity: req.Quantity, UnitCost: source.AvgUnitCost, Type: domain.MovementIn, TransferID: transferID,
+		Quantity: req.Quantity, Type: domain.MovementIn, TransferID: transferID,
 		DocumentType: req.DocumentType, DocumentSeries: req.DocumentSeries, DocumentNumber: req.DocumentNumber,
 		GuideNumber: req.GuideNumber, OccurredAt: occurredAt,
 	}
-	inNext, err := domain.ApplyMovement(dest, in)
-	if err != nil {
-		writeError(w, http.StatusConflict, err.Error())
-		return
-	}
 
-	savedOut, savedIn, err := s.Stock.ApplyTransfer(r.Context(), out, outNext, in, inNext)
+	result, err := s.Stock.ApplyTransfer(r.Context(), out, in)
 	if err != nil {
+		if err == domain.ErrInsufficientStock {
+			writeError(w, http.StatusConflict, err.Error())
+			return
+		}
 		if err == postgres.ErrInvalidReference {
 			writeError(w, http.StatusNotFound, "unknown product, warehouse, or section")
 			return
@@ -194,16 +181,16 @@ func (s *StockServer) handleCreateTransfer(w http.ResponseWriter, r *http.Reques
 
 	s.publishStockUpdated(r.Context(), events.StockUpdatedPayload{
 		TenantID: tenantID, SKU: req.ProductSKU, WarehouseID: req.FromWarehouseID, SectionID: req.FromSectionID,
-		Quantity: outNext.Quantity, AvgUnitCost: outNext.AvgUnitCost, MovementType: string(domain.MovementOut),
+		Quantity: result.OutNext.Quantity, AvgUnitCost: result.OutNext.AvgUnitCost, MovementType: string(domain.MovementOut),
 		OccurredAt: occurredAt.Format(time.RFC3339),
 	})
 	s.publishStockUpdated(r.Context(), events.StockUpdatedPayload{
 		TenantID: tenantID, SKU: req.ProductSKU, WarehouseID: req.ToWarehouseID, SectionID: req.ToSectionID,
-		Quantity: inNext.Quantity, AvgUnitCost: inNext.AvgUnitCost, MovementType: string(domain.MovementIn),
+		Quantity: result.InNext.Quantity, AvgUnitCost: result.InNext.AvgUnitCost, MovementType: string(domain.MovementIn),
 		OccurredAt: occurredAt.Format(time.RFC3339),
 	})
 
-	writeJSON(w, http.StatusCreated, transferResponse{TransferID: transferID, Out: savedOut, In: savedIn})
+	writeJSON(w, http.StatusCreated, transferResponse{TransferID: transferID, Out: result.Out, In: result.In})
 }
 
 func (s *StockServer) handleGetStock(w http.ResponseWriter, r *http.Request) {

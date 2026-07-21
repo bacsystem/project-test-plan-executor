@@ -185,6 +185,48 @@ func TestStockServer_CreateTransfer_MovesBetweenWarehouses(t *testing.T) {
 	}
 }
 
+func TestStockServer_CreateTransfer_SameSourceAndDestinationReturns400(t *testing.T) {
+	pool := setupTestDB(t)
+	tenants := postgres.NewTenantRepository(pool)
+	warehouses := postgres.NewWarehouseRepository(pool)
+	sections := postgres.NewSectionRepository(pool)
+	products := postgres.NewProductRepository(pool)
+	stock := postgres.NewStockRepository(pool)
+	ctx := context.Background()
+
+	tenant, _ := tenants.Create(ctx, domain.Tenant{Name: "Acme Corp", CountryCode: "PE"})
+	wh, _ := warehouses.Create(ctx, domain.Warehouse{TenantID: tenant.ID, Name: "A", Code: "A", RucEstablishmentCode: "0001"})
+	sec, _ := sections.Create(ctx, domain.Section{WarehouseID: wh.ID, Name: "General", Code: "GEN"})
+	_ = products.Create(ctx, domain.Product{TenantID: tenant.ID, SKU: "SKU-1", Name: "Widget", UnitOfMeasureCode: "NIU"})
+
+	server := &bshttp.StockServer{Stock: stock, Products: products, Tenants: tenants}
+	ts := httptest.NewServer(withTenant(tenant.ID, server.Routes()))
+	defer ts.Close()
+
+	seedBody, _ := json.Marshal(map[string]any{
+		"productSku": "SKU-1", "warehouseId": wh.ID, "sectionId": sec.ID,
+		"quantity": 100, "unitCost": 5.00, "type": "IN",
+	})
+	http.Post(ts.URL+"/api/v1/stock/movements", "application/json", bytes.NewReader(seedBody))
+
+	transferBody, _ := json.Marshal(map[string]any{
+		"productSku": "SKU-1", "fromWarehouseId": wh.ID, "fromSectionId": sec.ID,
+		"toWarehouseId": wh.ID, "toSectionId": sec.ID, "quantity": 40,
+	})
+	resp, err := http.Post(ts.URL+"/api/v1/stock/transfers", "application/json", bytes.NewReader(transferBody))
+	if err != nil {
+		t.Fatalf("POST transfers error = %v", err)
+	}
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d (same source and destination must be rejected, not fabricate stock)", resp.StatusCode, http.StatusBadRequest)
+	}
+
+	level, err := stock.GetLevel(ctx, tenant.ID, "SKU-1", wh.ID, sec.ID)
+	if err != nil || level.Quantity != 100 {
+		t.Errorf("GetLevel() after rejected transfer = %+v, %v, want Quantity=100 (unchanged)", level, err)
+	}
+}
+
 func TestStockServer_LowStockReport(t *testing.T) {
 	pool := setupTestDB(t)
 	tenants := postgres.NewTenantRepository(pool)

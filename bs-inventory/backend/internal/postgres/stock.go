@@ -28,12 +28,16 @@ func NewStockRepository(pool *pgxpool.Pool) *StockRepository {
 	return &StockRepository{pool: pool}
 }
 
-// GetLevel returns the current StockLevel for a location, zero-valued if
-// no row exists yet — a product that never moved at a location has no
-// stock there, not an error.
-func (r *StockRepository) GetLevel(ctx context.Context, tenantID, sku, warehouseID, sectionID string) (domain.StockLevel, error) {
+// querier is the subset of pgxpool.Pool and pgx.Tx that getLevel needs —
+// lets the same read logic run either standalone (GetLevel) or inside an
+// already-open, already-locked transaction (ApplyMovement/ApplyTransfer).
+type querier interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+func getLevel(ctx context.Context, q querier, tenantID, sku, warehouseID, sectionID string) (domain.StockLevel, error) {
 	var lvl domain.StockLevel
-	err := r.pool.QueryRow(ctx,
+	err := q.QueryRow(ctx,
 		`SELECT tenant_id, product_sku, warehouse_id, section_id, quantity, avg_unit_cost, total_value, updated_at
 		 FROM stock_levels WHERE tenant_id = $1 AND product_sku = $2 AND warehouse_id = $3 AND section_id = $4`,
 		tenantID, sku, warehouseID, sectionID,
@@ -42,6 +46,27 @@ func (r *StockRepository) GetLevel(ctx context.Context, tenantID, sku, warehouse
 		return domain.StockLevel{TenantID: tenantID, ProductSKU: sku, WarehouseID: warehouseID, SectionID: sectionID}, nil
 	}
 	return lvl, err
+}
+
+// GetLevel returns the current StockLevel for a location, zero-valued if
+// no row exists yet — a product that never moved at a location has no
+// stock there, not an error.
+func (r *StockRepository) GetLevel(ctx context.Context, tenantID, sku, warehouseID, sectionID string) (domain.StockLevel, error) {
+	return getLevel(ctx, r.pool, tenantID, sku, warehouseID, sectionID)
+}
+
+// lockLevelTx takes a transaction-scoped Postgres advisory lock keyed by
+// the stock_levels row identity. A plain SELECT ... FOR UPDATE can't
+// protect a row that doesn't exist yet — and a location's first-ever
+// movement is exactly that case — so the lock is keyed on the logical
+// identity instead of an actual row. Automatically released at
+// commit/rollback; this is what makes the read-current/compute-next/write
+// cycle in ApplyMovement and ApplyTransfer safe under concurrency
+// (whole-branch review Important #5: lost-update race on stock levels).
+func lockLevelTx(ctx context.Context, tx pgx.Tx, tenantID, sku, warehouseID, sectionID string) error {
+	key := tenantID + "|" + sku + "|" + warehouseID + "|" + sectionID
+	_, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtext($1))`, key)
+	return err
 }
 
 // insertMovementTx inserts m inside an already-open transaction. Shared
@@ -95,60 +120,123 @@ func upsertLevelTx(ctx context.Context, tx pgx.Tx, m domain.StockMovement, next 
 	return err
 }
 
-// ApplyMovement inserts m and upserts stock_levels to next, both inside
-// one transaction — this is the ONLY way stock_movements/stock_levels
-// are written, so the two can never disagree.
-func (r *StockRepository) ApplyMovement(ctx context.Context, m domain.StockMovement, next domain.StockLevel) (domain.StockMovement, error) {
+// ApplyMovement locks the location, reads its current level, computes the
+// resulting level via domain.ApplyMovement, then inserts m and upserts
+// stock_levels — all inside one transaction, so a concurrent movement at
+// the same location can never read a stale current level (whole-branch
+// review Important #5) and stock_movements/stock_levels can never
+// disagree.
+func (r *StockRepository) ApplyMovement(ctx context.Context, m domain.StockMovement) (domain.StockMovement, domain.StockLevel, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return domain.StockMovement{}, err
+		return domain.StockMovement{}, domain.StockLevel{}, err
 	}
 	defer tx.Rollback(ctx)
+
+	if err := lockLevelTx(ctx, tx, m.TenantID, m.ProductSKU, m.WarehouseID, m.SectionID); err != nil {
+		return domain.StockMovement{}, domain.StockLevel{}, err
+	}
+	current, err := getLevel(ctx, tx, m.TenantID, m.ProductSKU, m.WarehouseID, m.SectionID)
+	if err != nil {
+		return domain.StockMovement{}, domain.StockLevel{}, err
+	}
+	next, err := domain.ApplyMovement(current, m)
+	if err != nil {
+		return domain.StockMovement{}, domain.StockLevel{}, err
+	}
 
 	saved, err := insertMovementTx(ctx, tx, m)
 	if err != nil {
-		return domain.StockMovement{}, err
+		return domain.StockMovement{}, domain.StockLevel{}, err
 	}
 	if err := upsertLevelTx(ctx, tx, m, next); err != nil {
-		return domain.StockMovement{}, err
+		return domain.StockMovement{}, domain.StockLevel{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {
-		return domain.StockMovement{}, err
+		return domain.StockMovement{}, domain.StockLevel{}, err
 	}
-	return saved, nil
+	return saved, next, nil
 }
 
-// ApplyTransfer inserts both legs of an atomic transfer (an OUT from the
-// source location and an IN to the destination, sharing out.TransferID
-// == in.TransferID) and upserts both stock_levels rows, all inside ONE
-// transaction — per the design's atomicity requirement, a transfer must
-// never be observable as only one leg having happened.
-func (r *StockRepository) ApplyTransfer(ctx context.Context, out domain.StockMovement, outNext domain.StockLevel, in domain.StockMovement, inNext domain.StockLevel) (domain.StockMovement, domain.StockMovement, error) {
+// TransferResult is what a successful ApplyTransfer produced: both saved
+// movements and both resulting levels, needed by the caller to publish
+// stock.updated events for each leg.
+type TransferResult struct {
+	Out     domain.StockMovement
+	In      domain.StockMovement
+	OutNext domain.StockLevel
+	InNext  domain.StockLevel
+}
+
+// ApplyTransfer locks both locations (in a fixed key order, so two
+// concurrent transfers between the same pair of locations in opposite
+// directions can't deadlock on each other's locks), reads each current
+// level, computes both resulting levels, then inserts both legs of the
+// transfer (an OUT from the source and an IN to the destination, sharing
+// out.TransferID == in.TransferID) and upserts both stock_levels rows —
+// all inside ONE transaction, per the design's atomicity requirement that
+// a transfer must never be observable as only one leg having happened.
+func (r *StockRepository) ApplyTransfer(ctx context.Context, out domain.StockMovement, in domain.StockMovement) (TransferResult, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return domain.StockMovement{}, domain.StockMovement{}, err
+		return TransferResult{}, err
 	}
 	defer tx.Rollback(ctx)
 
+	sourceKey := out.WarehouseID + "|" + out.SectionID
+	destKey := in.WarehouseID + "|" + in.SectionID
+	first, second := out, in
+	if destKey < sourceKey {
+		first, second = in, out
+	}
+	if err := lockLevelTx(ctx, tx, first.TenantID, first.ProductSKU, first.WarehouseID, first.SectionID); err != nil {
+		return TransferResult{}, err
+	}
+	if err := lockLevelTx(ctx, tx, second.TenantID, second.ProductSKU, second.WarehouseID, second.SectionID); err != nil {
+		return TransferResult{}, err
+	}
+
+	source, err := getLevel(ctx, tx, out.TenantID, out.ProductSKU, out.WarehouseID, out.SectionID)
+	if err != nil {
+		return TransferResult{}, err
+	}
+	outNext, err := domain.ApplyMovement(source, out)
+	if err != nil {
+		return TransferResult{}, err
+	}
+	// The destination receives already-owned, already-valued stock at the
+	// source's current average cost, read under the same lock as outNext
+	// above — not a new purchase (design §5), and not a value the caller
+	// could have precomputed without re-opening the Important #5 race.
+	in.UnitCost = source.AvgUnitCost
+	dest, err := getLevel(ctx, tx, in.TenantID, in.ProductSKU, in.WarehouseID, in.SectionID)
+	if err != nil {
+		return TransferResult{}, err
+	}
+	inNext, err := domain.ApplyMovement(dest, in)
+	if err != nil {
+		return TransferResult{}, err
+	}
+
 	savedOut, err := insertMovementTx(ctx, tx, out)
 	if err != nil {
-		return domain.StockMovement{}, domain.StockMovement{}, err
+		return TransferResult{}, err
 	}
 	if err := upsertLevelTx(ctx, tx, out, outNext); err != nil {
-		return domain.StockMovement{}, domain.StockMovement{}, err
+		return TransferResult{}, err
 	}
 	savedIn, err := insertMovementTx(ctx, tx, in)
 	if err != nil {
-		return domain.StockMovement{}, domain.StockMovement{}, err
+		return TransferResult{}, err
 	}
 	if err := upsertLevelTx(ctx, tx, in, inNext); err != nil {
-		return domain.StockMovement{}, domain.StockMovement{}, err
+		return TransferResult{}, err
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return domain.StockMovement{}, domain.StockMovement{}, err
+		return TransferResult{}, err
 	}
-	return savedOut, savedIn, nil
+	return TransferResult{Out: savedOut, In: savedIn, OutNext: outNext, InNext: inNext}, nil
 }
 
 func (r *StockRepository) ListMovementsByProduct(ctx context.Context, tenantID, sku string) ([]domain.StockMovement, error) {

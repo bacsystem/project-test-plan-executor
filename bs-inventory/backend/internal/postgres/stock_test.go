@@ -2,6 +2,7 @@ package postgres_test
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -73,11 +74,7 @@ func TestStockRepository_ApplyMovement_INThenOUT(t *testing.T) {
 	}
 
 	inMove := domain.StockMovement{TenantID: tenant.ID, ProductSKU: "SKU-1", WarehouseID: wh.ID, SectionID: sec.ID, Quantity: 100, UnitCost: 5.00, Type: domain.MovementIn, OccurredAt: time.Now().UTC()}
-	next, err := domain.ApplyMovement(current, inMove)
-	if err != nil {
-		t.Fatalf("domain.ApplyMovement() error = %v", err)
-	}
-	if _, err := stock.ApplyMovement(ctx, inMove, next); err != nil {
+	if _, _, err := stock.ApplyMovement(ctx, inMove); err != nil {
 		t.Fatalf("stock.ApplyMovement() error = %v", err)
 	}
 
@@ -90,11 +87,7 @@ func TestStockRepository_ApplyMovement_INThenOUT(t *testing.T) {
 	}
 
 	outMove := domain.StockMovement{TenantID: tenant.ID, ProductSKU: "SKU-1", WarehouseID: wh.ID, SectionID: sec.ID, Quantity: 30, Type: domain.MovementOut, OccurredAt: time.Now().UTC()}
-	next2, err := domain.ApplyMovement(afterIn, outMove)
-	if err != nil {
-		t.Fatalf("domain.ApplyMovement() OUT error = %v", err)
-	}
-	if _, err := stock.ApplyMovement(ctx, outMove, next2); err != nil {
+	if _, _, err := stock.ApplyMovement(ctx, outMove); err != nil {
 		t.Fatalf("stock.ApplyMovement() OUT error = %v", err)
 	}
 
@@ -133,8 +126,7 @@ func TestStockRepository_TotalQuantityAggregatesAcrossWarehouses(t *testing.T) {
 		qty         int
 	}{{whA.ID, secA.ID, 40}, {whB.ID, secB.ID, 60}} {
 		m := domain.StockMovement{TenantID: tenant.ID, ProductSKU: "SKU-1", WarehouseID: loc.whID, SectionID: loc.secID, Quantity: loc.qty, UnitCost: 1.0, Type: domain.MovementIn, OccurredAt: time.Now().UTC()}
-		next, _ := domain.ApplyMovement(domain.StockLevel{}, m)
-		if _, err := stock.ApplyMovement(ctx, m, next); err != nil {
+		if _, _, err := stock.ApplyMovement(ctx, m); err != nil {
 			t.Fatalf("ApplyMovement() error = %v", err)
 		}
 	}
@@ -159,8 +151,7 @@ func TestStockRepository_ApplyMovement_RejectsUnknownWarehouse(t *testing.T) {
 	_ = products.Create(ctx, domain.Product{TenantID: tenant.ID, SKU: "SKU-1", Name: "Widget", UnitOfMeasureCode: "NIU"})
 
 	m := domain.StockMovement{TenantID: tenant.ID, ProductSKU: "SKU-1", WarehouseID: uuid.NewString(), SectionID: uuid.NewString(), Quantity: 10, UnitCost: 1.0, Type: domain.MovementIn, OccurredAt: time.Now().UTC()}
-	next, _ := domain.ApplyMovement(domain.StockLevel{}, m)
-	if _, err := stock.ApplyMovement(ctx, m, next); err != postgres.ErrInvalidReference {
+	if _, _, err := stock.ApplyMovement(ctx, m); err != postgres.ErrInvalidReference {
 		t.Errorf("ApplyMovement() with unknown warehouse error = %v, want ErrInvalidReference", err)
 	}
 }
@@ -185,8 +176,7 @@ func TestStockRepository_LowStockProducts(t *testing.T) {
 		qty int
 	}{{"SKU-LOW", 5}, {"SKU-HIGH", 500}} {
 		m := domain.StockMovement{TenantID: tenant.ID, ProductSKU: mv.sku, WarehouseID: wh.ID, SectionID: sec.ID, Quantity: mv.qty, UnitCost: 1.0, Type: domain.MovementIn, OccurredAt: time.Now().UTC()}
-		next, _ := domain.ApplyMovement(domain.StockLevel{}, m)
-		if _, err := stock.ApplyMovement(ctx, m, next); err != nil {
+		if _, _, err := stock.ApplyMovement(ctx, m); err != nil {
 			t.Fatalf("ApplyMovement() error = %v", err)
 		}
 	}
@@ -217,24 +207,15 @@ func TestStockRepository_ApplyTransfer_MovesBetweenWarehousesAtomically(t *testi
 	_ = products.Create(ctx, domain.Product{TenantID: tenant.ID, SKU: "SKU-1", Name: "Widget", UnitOfMeasureCode: "NIU"})
 
 	seed := domain.StockMovement{TenantID: tenant.ID, ProductSKU: "SKU-1", WarehouseID: whA.ID, SectionID: secA.ID, Quantity: 100, UnitCost: 5.00, Type: domain.MovementIn, OccurredAt: time.Now().UTC()}
-	seedNext, _ := domain.ApplyMovement(domain.StockLevel{}, seed)
-	if _, err := stock.ApplyMovement(ctx, seed, seedNext); err != nil {
+	if _, _, err := stock.ApplyMovement(ctx, seed); err != nil {
 		t.Fatalf("seed ApplyMovement() error = %v", err)
 	}
 
 	transferID := uuid.NewString()
 	out := domain.StockMovement{TenantID: tenant.ID, ProductSKU: "SKU-1", WarehouseID: whA.ID, SectionID: secA.ID, Quantity: 40, Type: domain.MovementOut, TransferID: transferID, OccurredAt: time.Now().UTC()}
-	outNext, err := domain.ApplyMovement(seedNext, out)
-	if err != nil {
-		t.Fatalf("domain.ApplyMovement() OUT error = %v", err)
-	}
-	in := domain.StockMovement{TenantID: tenant.ID, ProductSKU: "SKU-1", WarehouseID: whB.ID, SectionID: secB.ID, Quantity: 40, UnitCost: seedNext.AvgUnitCost, Type: domain.MovementIn, TransferID: transferID, OccurredAt: time.Now().UTC()}
-	inNext, err := domain.ApplyMovement(domain.StockLevel{}, in)
-	if err != nil {
-		t.Fatalf("domain.ApplyMovement() IN error = %v", err)
-	}
+	in := domain.StockMovement{TenantID: tenant.ID, ProductSKU: "SKU-1", WarehouseID: whB.ID, SectionID: secB.ID, Quantity: 40, Type: domain.MovementIn, TransferID: transferID, OccurredAt: time.Now().UTC()}
 
-	if _, _, err := stock.ApplyTransfer(ctx, out, outNext, in, inNext); err != nil {
+	if _, err := stock.ApplyTransfer(ctx, out, in); err != nil {
 		t.Fatalf("ApplyTransfer() error = %v", err)
 	}
 
@@ -270,8 +251,7 @@ func TestStockRepository_ListMovementsByTenantAndPeriod(t *testing.T) {
 		at  time.Time
 	}{{"SKU-1", inJuly}, {"SKU-2", inAugust}} {
 		m := domain.StockMovement{TenantID: tenant.ID, ProductSKU: mv.sku, WarehouseID: wh.ID, SectionID: sec.ID, Quantity: 10, UnitCost: 1.0, Type: domain.MovementIn, OccurredAt: mv.at}
-		next, _ := domain.ApplyMovement(domain.StockLevel{}, m)
-		if _, err := stock.ApplyMovement(ctx, m, next); err != nil {
+		if _, _, err := stock.ApplyMovement(ctx, m); err != nil {
 			t.Fatalf("ApplyMovement() error = %v", err)
 		}
 	}
@@ -284,5 +264,75 @@ func TestStockRepository_ListMovementsByTenantAndPeriod(t *testing.T) {
 	}
 	if len(movements) != 1 || movements[0].ProductSKU != "SKU-1" {
 		t.Errorf("ListMovementsByTenantAndPeriod() = %+v, want 1 movement for SKU-1", movements)
+	}
+}
+
+// TestStockRepository_ApplyMovement_ConcurrentOUTsNeverOversell guards
+// against the lost-update race the whole-branch review flagged as
+// Important #5: without a lock spanning the read-current/compute-next/
+// write cycle, concurrent goroutines can all read the same stale current
+// level, each independently decide they have enough stock, and each
+// commit an absolute (not relative) quantity — so more stock leaves than
+// ever existed, or the final quantity doesn't reflect every accepted
+// movement. With the fix, exactly floor(seedQty/eachQty) requests must
+// succeed, the rest must fail with ErrInsufficientStock, and the final
+// quantity must land at exactly zero — never negative, never stale.
+func TestStockRepository_ApplyMovement_ConcurrentOUTsNeverOversell(t *testing.T) {
+	pool := setupTestDB(t)
+	tenants := postgres.NewTenantRepository(pool)
+	warehouses := postgres.NewWarehouseRepository(pool)
+	sections := postgres.NewSectionRepository(pool)
+	products := postgres.NewProductRepository(pool)
+	stock := postgres.NewStockRepository(pool)
+	ctx := context.Background()
+
+	tenant, _ := tenants.Create(ctx, domain.Tenant{Name: "Acme Corp", CountryCode: "PE"})
+	wh, _ := warehouses.Create(ctx, domain.Warehouse{TenantID: tenant.ID, Name: "A", Code: "A", RucEstablishmentCode: "0001"})
+	sec, _ := sections.Create(ctx, domain.Section{WarehouseID: wh.ID, Name: "General", Code: "GEN"})
+	_ = products.Create(ctx, domain.Product{TenantID: tenant.ID, SKU: "SKU-1", Name: "Widget", UnitOfMeasureCode: "NIU"})
+
+	seed := domain.StockMovement{TenantID: tenant.ID, ProductSKU: "SKU-1", WarehouseID: wh.ID, SectionID: sec.ID, Quantity: 100, UnitCost: 5.00, Type: domain.MovementIn, OccurredAt: time.Now().UTC()}
+	if _, _, err := stock.ApplyMovement(ctx, seed); err != nil {
+		t.Fatalf("seed ApplyMovement() error = %v", err)
+	}
+
+	const attempts = 30
+	const eachQty = 5
+	errs := make([]error, attempts)
+	var wg sync.WaitGroup
+	for i := 0; i < attempts; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			m := domain.StockMovement{TenantID: tenant.ID, ProductSKU: "SKU-1", WarehouseID: wh.ID, SectionID: sec.ID, Quantity: eachQty, Type: domain.MovementOut, OccurredAt: time.Now().UTC()}
+			_, _, err := stock.ApplyMovement(ctx, m)
+			errs[i] = err
+		}(i)
+	}
+	wg.Wait()
+
+	succeeded, insufficient := 0, 0
+	for _, err := range errs {
+		switch err {
+		case nil:
+			succeeded++
+		case domain.ErrInsufficientStock:
+			insufficient++
+		default:
+			t.Fatalf("unexpected error = %v, want nil or ErrInsufficientStock", err)
+		}
+	}
+	wantSucceeded := 100 / eachQty
+	if succeeded != wantSucceeded || insufficient != attempts-wantSucceeded {
+		t.Errorf("succeeded = %d, insufficient = %d, want succeeded = %d, insufficient = %d (lost updates or a missing lock would let more OUTs through than stock allows)",
+			succeeded, insufficient, wantSucceeded, attempts-wantSucceeded)
+	}
+
+	final, err := stock.GetLevel(ctx, tenant.ID, "SKU-1", wh.ID, sec.ID)
+	if err != nil {
+		t.Fatalf("GetLevel() error = %v", err)
+	}
+	if final.Quantity != 0 {
+		t.Errorf("final Quantity = %d, want 0 (every accepted OUT must be reflected, none lost or double-applied)", final.Quantity)
 	}
 }
