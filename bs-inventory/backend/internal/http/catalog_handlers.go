@@ -99,6 +99,10 @@ func (s *CatalogServer) handleCreateSection(w http.ResponseWriter, r *http.Reque
 
 func (s *CatalogServer) handleListSections(w http.ResponseWriter, r *http.Request) {
 	warehouseID := chi.URLParam(r, "warehouseID")
+	if _, err := s.Warehouses.GetByID(r.Context(), middleware.TenantID(r.Context()), warehouseID); err != nil {
+		writeError(w, http.StatusNotFound, "warehouse not found")
+		return
+	}
 	list, err := s.Sections.ListByWarehouse(r.Context(), warehouseID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to list sections")

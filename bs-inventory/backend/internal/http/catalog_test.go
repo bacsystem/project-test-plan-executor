@@ -81,6 +81,35 @@ func TestCatalogServer_CreateAndListWarehousesAndSections(t *testing.T) {
 	}
 }
 
+func TestCatalogServer_ListSections_ScopedToTenant(t *testing.T) {
+	pool := setupTestDB(t)
+	tenants := postgres.NewTenantRepository(pool)
+	warehouses := postgres.NewWarehouseRepository(pool)
+	sections := postgres.NewSectionRepository(pool)
+	server := &bshttp.CatalogServer{
+		Warehouses: warehouses,
+		Sections:   sections,
+		Products:   postgres.NewProductRepository(pool),
+		Stock:      postgres.NewStockRepository(pool),
+	}
+	ctx := context.Background()
+	tenantA, _ := tenants.Create(ctx, domain.Tenant{Name: "Tenant A", CountryCode: "PE"})
+	tenantB, _ := tenants.Create(ctx, domain.Tenant{Name: "Tenant B", CountryCode: "PE"})
+	whA, _ := warehouses.Create(ctx, domain.Warehouse{TenantID: tenantA.ID, Name: "Lima Norte", Code: "LIM-N", RucEstablishmentCode: "0001"})
+	sections.Create(ctx, domain.Section{WarehouseID: whA.ID, Name: "Electrónica", Code: "ELEC"})
+
+	ts := httptest.NewServer(withTestTenant(tenantB.ID, server.Routes()))
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/api/v1/warehouses/" + whA.ID + "/sections")
+	if err != nil {
+		t.Fatalf("GET sections error = %v", err)
+	}
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("GET sections for another tenant's warehouse status = %d, want %d", resp.StatusCode, http.StatusNotFound)
+	}
+}
+
 func TestCatalogServer_CreateAndGetProduct(t *testing.T) {
 	pool := setupTestDB(t)
 	tenants := postgres.NewTenantRepository(pool)
