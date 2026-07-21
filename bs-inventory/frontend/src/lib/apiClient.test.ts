@@ -16,6 +16,32 @@ describe("apiClient", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    window.localStorage.clear();
+  });
+
+  it("setAuthToken() persists the token so a hard navigation doesn't drop it", () => {
+    setAuthToken("jwt-abc");
+    expect(window.localStorage.getItem("bs-inventory-token")).toBe("jwt-abc");
+
+    setAuthToken(null);
+    expect(window.localStorage.getItem("bs-inventory-token")).toBeNull();
+  });
+
+  it("rehydrates the token from localStorage when the module is (re)loaded", async () => {
+    window.localStorage.setItem("bs-inventory-token", "jwt-persisted");
+    vi.resetModules();
+    const fresh = await import("./apiClient");
+    const fetchMock = vi
+      .spyOn(global, "fetch")
+      .mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
+
+    await fresh.listWarehouses();
+
+    const [, options] = fetchMock.mock.calls[0];
+    const headers = options?.headers as Record<string, string>;
+    expect(headers.Authorization).toBe(
+      "Bearer jwt-persisted"
+    );
   });
 
   it("login() posts credentials and returns the token", async () => {

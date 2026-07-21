@@ -1,9 +1,29 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+const TOKEN_STORAGE_KEY = "bs-inventory-token";
 
-let authToken: string | null = null;
+function readStoredToken(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  return window.localStorage.getItem(TOKEN_STORAGE_KEY);
+}
+
+// Rehydrated once at module load so a hard navigation or full page reload
+// doesn't drop the token even though it only ever lived in this
+// module-level variable before (login/page.tsx wrote to localStorage, but
+// nothing ever read it back — whole-branch review Important #3).
+let authToken: string | null = readStoredToken();
 
 export function setAuthToken(token: string | null): void {
   authToken = token;
+  if (typeof window === "undefined") {
+    return;
+  }
+  if (token) {
+    window.localStorage.setItem(TOKEN_STORAGE_KEY, token);
+  } else {
+    window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+  }
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {

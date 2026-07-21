@@ -25,7 +25,6 @@ export default function LoginPage() {
     try {
       const { token } = await login(email, password);
       setAuthToken(token);
-      window.localStorage.setItem("bs-inventory-token", token);
       router.push("/warehouses");
     } catch (err) {
       setError(err instanceof Error ? err.message : "login failed");
