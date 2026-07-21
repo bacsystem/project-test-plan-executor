@@ -11,16 +11,8 @@ import (
 
 	"bs-inventory/internal/domain"
 	bshttp "bs-inventory/internal/http"
-	"bs-inventory/internal/http/middleware"
 	"bs-inventory/internal/postgres"
 )
-
-func withTestTenant(tenantID string, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := middleware.ContextWithClaims(r.Context(), tenantID, "test-user", "admin")
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
 
 func TestCatalogServer_CreateAndListWarehousesAndSections(t *testing.T) {
 	pool := setupTestDB(t)
@@ -34,7 +26,7 @@ func TestCatalogServer_CreateAndListWarehousesAndSections(t *testing.T) {
 	ctx := context.Background()
 	tenant, _ := tenants.Create(ctx, domain.Tenant{Name: "Acme Corp", CountryCode: "PE"})
 
-	ts := httptest.NewServer(withTestTenant(tenant.ID, server.Routes()))
+	ts := httptest.NewServer(withTenant(tenant.ID, server.Routes()))
 	defer ts.Close()
 
 	whBody, _ := json.Marshal(map[string]string{"name": "Lima Norte", "code": "LIM-N", "rucEstablishmentCode": "0001"})
@@ -98,7 +90,7 @@ func TestCatalogServer_ListSections_ScopedToTenant(t *testing.T) {
 	whA, _ := warehouses.Create(ctx, domain.Warehouse{TenantID: tenantA.ID, Name: "Lima Norte", Code: "LIM-N", RucEstablishmentCode: "0001"})
 	sections.Create(ctx, domain.Section{WarehouseID: whA.ID, Name: "Electrónica", Code: "ELEC"})
 
-	ts := httptest.NewServer(withTestTenant(tenantB.ID, server.Routes()))
+	ts := httptest.NewServer(withTenant(tenantB.ID, server.Routes()))
 	defer ts.Close()
 
 	resp, err := http.Get(ts.URL + "/api/v1/warehouses/" + whA.ID + "/sections")
@@ -122,7 +114,7 @@ func TestCatalogServer_CreateAndGetProduct(t *testing.T) {
 	ctx := context.Background()
 	tenant, _ := tenants.Create(ctx, domain.Tenant{Name: "Acme Corp", CountryCode: "PE"})
 
-	ts := httptest.NewServer(withTestTenant(tenant.ID, server.Routes()))
+	ts := httptest.NewServer(withTenant(tenant.ID, server.Routes()))
 	defer ts.Close()
 
 	body, _ := json.Marshal(map[string]string{"sku": "SKU-1", "name": "Widget", "category": "tools", "unitOfMeasureCode": "NIU"})
@@ -168,7 +160,7 @@ func TestCatalogServer_DuplicateSKU(t *testing.T) {
 	ctx := context.Background()
 	tenant, _ := tenants.Create(ctx, domain.Tenant{Name: "Acme Corp", CountryCode: "PE"})
 
-	ts := httptest.NewServer(withTestTenant(tenant.ID, server.Routes()))
+	ts := httptest.NewServer(withTenant(tenant.ID, server.Routes()))
 	defer ts.Close()
 
 	body, _ := json.Marshal(map[string]string{"sku": "SKU-DUP", "name": "Widget", "unitOfMeasureCode": "NIU"})
@@ -208,7 +200,7 @@ func TestCatalogServer_ProductMovements(t *testing.T) {
 		Products:   products,
 		Stock:      stock,
 	}
-	ts := httptest.NewServer(withTestTenant(tenant.ID, server.Routes()))
+	ts := httptest.NewServer(withTenant(tenant.ID, server.Routes()))
 	defer ts.Close()
 
 	resp, err := http.Get(ts.URL + "/api/v1/products/SKU-1/movements")

@@ -10,21 +10,11 @@ import (
 
 	"bs-inventory/internal/domain"
 	bshttp "bs-inventory/internal/http"
-	"bs-inventory/internal/http/middleware"
 	"bs-inventory/internal/postgres"
 )
 
-// withTestTenant wraps next so every request carries tenantID in its
-// context, the same way middleware.Auth would after validating a real
-// JWT — lets these tests exercise StockServer's routes directly without
-// a login round-trip per test (middleware.ContextWithClaims is an
-// exported test seam for exactly this).
-func withTestTenant(tenantID string, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := middleware.ContextWithClaims(r.Context(), tenantID, "", "")
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
+// withTenant is declared in catalog_test.go (same package); these
+// tests reuse it.
 
 func TestStockServer_CreateMovement_INThenOUT(t *testing.T) {
 	pool := setupTestDB(t)
@@ -41,7 +31,7 @@ func TestStockServer_CreateMovement_INThenOUT(t *testing.T) {
 	_ = products.Create(ctx, domain.Product{TenantID: tenant.ID, SKU: "SKU-1", Name: "Widget", UnitOfMeasureCode: "NIU"})
 
 	server := &bshttp.StockServer{Stock: stock, Products: products, Tenants: tenants}
-	ts := httptest.NewServer(withTestTenant(tenant.ID, server.Routes()))
+	ts := httptest.NewServer(withTenant(tenant.ID, server.Routes()))
 	defer ts.Close()
 
 	inBody, _ := json.Marshal(map[string]any{
@@ -104,7 +94,7 @@ func TestStockServer_CreateMovement_InsufficientStockReturns409(t *testing.T) {
 	_ = products.Create(ctx, domain.Product{TenantID: tenant.ID, SKU: "SKU-1", Name: "Widget", UnitOfMeasureCode: "NIU"})
 
 	server := &bshttp.StockServer{Stock: stock, Products: products, Tenants: tenants}
-	ts := httptest.NewServer(withTestTenant(tenant.ID, server.Routes()))
+	ts := httptest.NewServer(withTenant(tenant.ID, server.Routes()))
 	defer ts.Close()
 
 	body, _ := json.Marshal(map[string]any{
@@ -131,7 +121,7 @@ func TestStockServer_CreateMovement_UnknownWarehouseReturns404(t *testing.T) {
 	_ = products.Create(ctx, domain.Product{TenantID: tenant.ID, SKU: "SKU-1", Name: "Widget", UnitOfMeasureCode: "NIU"})
 
 	server := &bshttp.StockServer{Stock: stock, Products: products, Tenants: tenants}
-	ts := httptest.NewServer(withTestTenant(tenant.ID, server.Routes()))
+	ts := httptest.NewServer(withTenant(tenant.ID, server.Routes()))
 	defer ts.Close()
 
 	body, _ := json.Marshal(map[string]any{
@@ -164,7 +154,7 @@ func TestStockServer_CreateTransfer_MovesBetweenWarehouses(t *testing.T) {
 	_ = products.Create(ctx, domain.Product{TenantID: tenant.ID, SKU: "SKU-1", Name: "Widget", UnitOfMeasureCode: "NIU"})
 
 	server := &bshttp.StockServer{Stock: stock, Products: products, Tenants: tenants}
-	ts := httptest.NewServer(withTestTenant(tenant.ID, server.Routes()))
+	ts := httptest.NewServer(withTenant(tenant.ID, server.Routes()))
 	defer ts.Close()
 
 	seedBody, _ := json.Marshal(map[string]any{
@@ -210,7 +200,7 @@ func TestStockServer_LowStockReport(t *testing.T) {
 	_ = products.Create(ctx, domain.Product{TenantID: tenant.ID, SKU: "SKU-LOW", Name: "Low", UnitOfMeasureCode: "NIU"})
 
 	server := &bshttp.StockServer{Stock: stock, Products: products, Tenants: tenants}
-	ts := httptest.NewServer(withTestTenant(tenant.ID, server.Routes()))
+	ts := httptest.NewServer(withTenant(tenant.ID, server.Routes()))
 	defer ts.Close()
 
 	body, _ := json.Marshal(map[string]any{
