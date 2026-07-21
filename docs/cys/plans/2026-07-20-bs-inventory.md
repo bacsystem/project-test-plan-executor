@@ -1903,7 +1903,7 @@ git commit -m "feat(events): add RabbitMQ publisher for stock.updated and stock.
 - Test: `bs-inventory/backend/internal/compliance/peru_test.go`
 
 **Interfaces:**
-- Consumes: `StockMovement`, `MovementIn`, `MovementOut`, `Product`
+- Consumes: `StockMovement`, `MovementIn`, `MovementOut`, `Product`, `Warehouse`
 - Produces: `RegulatoryProfile`, `PeruProfile`, `NewPeruProfile`, `KardexEntry`, `BuildKardex`
 
 - [ ] **Step 1: Write the failing tests**
@@ -1997,10 +1997,16 @@ func sampleProducts() map[string]domain.Product {
 	}
 }
 
+func sampleWarehouses() map[string]domain.Warehouse {
+	return map[string]domain.Warehouse{
+		"wh-01": {TenantID: "t1", ID: "wh-01", Name: "Lima Norte", Code: "LIM-N", RucEstablishmentCode: "0001"},
+	}
+}
+
 func TestPeruProfile_ExportLedger_ProducesPipeDelimitedRowsWith27Fields(t *testing.T) {
 	profile := compliance.NewPeruProfile()
 
-	out, err := profile.ExportLedger(context.Background(), sampleMovements(), sampleProducts(), "202607")
+	out, err := profile.ExportLedger(context.Background(), sampleMovements(), sampleProducts(), sampleWarehouses(), "202607")
 	if err != nil {
 		t.Fatalf("ExportLedger() error = %v", err)
 	}
@@ -2015,6 +2021,9 @@ func TestPeruProfile_ExportLedger_ProducesPipeDelimitedRowsWith27Fields(t *testi
 	}
 	if fields[0] != "202607" {
 		t.Errorf("field[0] (período) = %q, want %q", fields[0], "202607")
+	}
+	if fields[3] != "0001" {
+		t.Errorf("field[3] (código de establecimiento anexo) = %q, want the warehouse's RucEstablishmentCode %q, not its internal WarehouseID", fields[3], "0001")
 	}
 	if fields[15] != "NIU" {
 		t.Errorf("field[15] (código unidad de medida) = %q, want %q", fields[15], "NIU")
@@ -2044,13 +2053,15 @@ import (
 // is implemented in this version — adding another LATAM country means a
 // new implementation of this interface, not a domain-model change.
 type RegulatoryProfile interface {
-	// products maps SKU to its full record — callers must join product
-	// data before calling ExportLedger; a movement whose SKU is missing
-	// from the map exports its unit-of-measure field empty rather than
-	// erroring, since the FK constraint on stock_movements already
-	// guarantees the product exists in the database (a missing map entry
-	// means the caller forgot to include it, not a data-integrity issue).
-	ExportLedger(ctx context.Context, movements []domain.StockMovement, products map[string]domain.Product, period string) ([]byte, error)
+	// products maps SKU to its full record, and warehouses maps warehouse
+	// ID to its full record — callers must join both before calling
+	// ExportLedger. A movement whose SKU or warehouse ID is missing from
+	// its map exports that row's dependent field(s) empty rather than
+	// erroring, since the FK constraints on stock_movements already
+	// guarantee the product and warehouse exist in the database (a
+	// missing map entry means the caller forgot to include it, not a
+	// data-integrity issue).
+	ExportLedger(ctx context.Context, movements []domain.StockMovement, products map[string]domain.Product, warehouses map[string]domain.Warehouse, period string) ([]byte, error)
 }
 
 // KardexEntry is one row of a product's valorized ledger: the movement
@@ -2139,7 +2150,7 @@ const (
 	entryTypeOut = "OUT"
 )
 
-func (p *PeruProfile) ExportLedger(ctx context.Context, movements []domain.StockMovement, products map[string]domain.Product, period string) ([]byte, error) {
+func (p *PeruProfile) ExportLedger(ctx context.Context, movements []domain.StockMovement, products map[string]domain.Product, warehouses map[string]domain.Warehouse, period string) ([]byte, error) {
 	entries := BuildKardex(movements)
 
 	var buf bytes.Buffer
@@ -2166,7 +2177,7 @@ func (p *PeruProfile) ExportLedger(ctx context.Context, movements []domain.Stock
 			period,                             // 1: Período
 			fmt.Sprintf("CUO-%d", i+1),          // 2: CUO
 			"M",                                 // 3: Correlativo del asiento
-			m.WarehouseID,                       // 4: Código de establecimiento anexo
+			warehouses[m.WarehouseID].RucEstablishmentCode, // 4: Código de establecimiento anexo
 			"03",                                // 6: Tipo de existencia (03 = mercadería)
 			m.ProductSKU,                        // 7: Código propio de la existencia
 			m.OccurredAt.Format("02/01/2006"),   // 10: Fecha de emisión del documento
@@ -3574,7 +3585,7 @@ git commit -m "feat(http): add stock movement, transfer, and low-stock report ha
 - Test: `bs-inventory/backend/internal/http/compliance_test.go`
 
 **Interfaces:**
-- Consumes: `TotalValuation`, `ListMovementsByProduct`, `ListMovementsByTenantAndPeriod`, `Product`, `ProductRepository`, `TenantRepository`, `RegulatoryProfile`, `NewPeruProfile`, `BuildKardex`, `KardexEntry`, `middleware.TenantID`, `writeJSON`, `writeError`
+- Consumes: `TotalValuation`, `ListMovementsByProduct`, `ListMovementsByTenantAndPeriod`, `Product`, `ProductRepository`, `TenantRepository`, `WarehouseRepository`, `Warehouse`, `RegulatoryProfile`, `NewPeruProfile`, `BuildKardex`, `KardexEntry`, `middleware.TenantID`, `writeJSON`, `writeError`
 - Produces: `ReportsServer`, `ComplianceServer`
 
 **Design note:** the tenant's `CountryCode` selects the regulatory
@@ -3660,7 +3671,7 @@ func TestComplianceServer_Kardex(t *testing.T) {
 		t.Fatalf("ApplyMovement() error = %v", err)
 	}
 
-	server := &bshttp.ComplianceServer{Stock: stock, Products: products, Tenants: tenants}
+	server := &bshttp.ComplianceServer{Stock: stock, Products: products, Tenants: tenants, Warehouses: warehouses}
 	ts := httptest.NewServer(withTestTenant(tenant.ID, server.Routes()))
 	defer ts.Close()
 
@@ -3698,7 +3709,7 @@ func TestComplianceServer_PLEExport(t *testing.T) {
 		t.Fatalf("ApplyMovement() error = %v", err)
 	}
 
-	server := &bshttp.ComplianceServer{Stock: stock, Products: products, Tenants: tenants}
+	server := &bshttp.ComplianceServer{Stock: stock, Products: products, Tenants: tenants, Warehouses: warehouses}
 	ts := httptest.NewServer(withTestTenant(tenant.ID, server.Routes()))
 	defer ts.Close()
 
@@ -3722,18 +3733,22 @@ func TestComplianceServer_PLEExport(t *testing.T) {
 	if fields[15] != "NIU" {
 		t.Errorf("ple-export field[15] (código unidad de medida) = %q, want %q", fields[15], "NIU")
 	}
+	if fields[3] != "0001" {
+		t.Errorf("ple-export field[3] (código de establecimiento anexo) = %q, want the warehouse's RucEstablishmentCode %q", fields[3], "0001")
+	}
 }
 
 func TestComplianceServer_PLEExport_UnimplementedCountryReturns400(t *testing.T) {
 	pool := setupTestDB(t)
 	tenants := postgres.NewTenantRepository(pool)
+	warehouses := postgres.NewWarehouseRepository(pool)
 	products := postgres.NewProductRepository(pool)
 	stock := postgres.NewStockRepository(pool)
 	ctx := context.Background()
 
 	tenant, _ := tenants.Create(ctx, domain.Tenant{Name: "Acme Corp", CountryCode: "CO"})
 
-	server := &bshttp.ComplianceServer{Stock: stock, Products: products, Tenants: tenants}
+	server := &bshttp.ComplianceServer{Stock: stock, Products: products, Tenants: tenants, Warehouses: warehouses}
 	ts := httptest.NewServer(withTestTenant(tenant.ID, server.Routes()))
 	defer ts.Close()
 
@@ -3802,9 +3817,10 @@ func (s *ReportsServer) handleValuation(w http.ResponseWriter, r *http.Request) 
 }
 
 type ComplianceServer struct {
-	Stock    *postgres.StockRepository
-	Products *postgres.ProductRepository
-	Tenants  *postgres.TenantRepository
+	Stock      *postgres.StockRepository
+	Products   *postgres.ProductRepository
+	Tenants    *postgres.TenantRepository
+	Warehouses *postgres.WarehouseRepository
 }
 
 func (s *ComplianceServer) Routes() chi.Router {
@@ -3859,8 +3875,9 @@ func (s *ComplianceServer) handlePLEExport(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// PLE needs each movement's unit-of-measure, which lives on Product,
-	// not StockMovement — join it here rather than growing the domain
+	// PLE needs each movement's unit-of-measure (on Product) and its
+	// warehouse's RUC establishment code (on Warehouse) — neither lives on
+	// StockMovement, so join both here rather than growing the domain
 	// type (see Task 6's ExportLedger signature note).
 	products, err := s.Products.List(r.Context(), tenantID, 10000, 0)
 	if err != nil {
@@ -3872,7 +3889,17 @@ func (s *ComplianceServer) handlePLEExport(w http.ResponseWriter, r *http.Reques
 		productsBySKU[p.SKU] = p
 	}
 
-	out, err := profile.ExportLedger(r.Context(), movements, productsBySKU, period)
+	warehouseList, err := s.Warehouses.ListByTenant(r.Context(), tenantID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to read warehouses")
+		return
+	}
+	warehousesByID := make(map[string]domain.Warehouse, len(warehouseList))
+	for _, wh := range warehouseList {
+		warehousesByID[wh.ID] = wh
+	}
+
+	out, err := profile.ExportLedger(r.Context(), movements, productsBySKU, warehousesByID, period)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to build export")
 		return
@@ -4058,7 +4085,7 @@ func NewRouter(deps Dependencies) chi.Router {
 	catalogServer := &CatalogServer{Warehouses: warehouses, Sections: sections, Products: products, Stock: stock}
 	stockServer := &StockServer{Stock: stock, Products: products, Tenants: tenants, Events: deps.Publisher}
 	reportsServer := &ReportsServer{Stock: stock}
-	complianceServer := &ComplianceServer{Stock: stock, Products: products, Tenants: tenants}
+	complianceServer := &ComplianceServer{Stock: stock, Products: products, Tenants: tenants, Warehouses: warehouses}
 
 	r := chi.NewRouter()
 	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
