@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import Link from "next/link";
+import { type FormEvent, useEffect, useState } from "react";
+
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
@@ -10,7 +12,6 @@ import DialogTitle from "@mui/material/DialogTitle";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
-import Link from "next/link";
 
 import { createProduct, listProducts, type Product } from "@/lib/apiClient";
 
@@ -73,12 +74,7 @@ export default function ProductsPage() {
             <TextField label="SKU" value={sku} onChange={(e) => setSku(e.target.value)} required />
             <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} required />
             <TextField label="Category" value={category} onChange={(e) => setCategory(e.target.value)} />
-            <TextField
-              label="Unit of measure code"
-              value={unit}
-              onChange={(e) => setUnit(e.target.value)}
-              required
-            />
+            <TextField label="Unit of measure code" value={unit} onChange={(e) => setUnit(e.target.value)} required />
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setOpen(false)}>Cancel</Button>

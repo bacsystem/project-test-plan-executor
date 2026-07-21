@@ -1,5 +1,6 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 const listProductsMock = vi.fn();
 const createProductMock = vi.fn();
@@ -16,9 +17,7 @@ describe("ProductsPage", () => {
   });
 
   it("lists products", async () => {
-    listProductsMock.mockResolvedValue([
-      { sku: "SKU-1", name: "Widget", category: "tools", unitOfMeasureCode: "NIU" },
-    ]);
+    listProductsMock.mockResolvedValue([{ sku: "SKU-1", name: "Widget", category: "tools", unitOfMeasureCode: "NIU" }]);
 
     render(<ProductsPage />);
 
@@ -49,7 +48,7 @@ describe("ProductsPage", () => {
         name: "Gadget",
         category: "",
         unitOfMeasureCode: "NIU",
-      })
+      }),
     );
     expect(await screen.findByText("Gadget")).toBeInTheDocument();
   });
