@@ -48,9 +48,15 @@ func (p *PeruProfile) ExportLedger(ctx context.Context, movements []domain.Stock
 		// emitted empty, not omitted — PLE's own rule is "empty field,
 		// still present" for optional-but-defined columns, distinct from
 		// truly free-use fields 28-56 (which this exporter doesn't emit
-		// at all).
+		// at all). The pipe layout must place each argument at the field
+		// number its own trailing comment names: a prior run of this
+		// exact task caught an extra blank slot after "03" that pushed
+		// ProductSKU one column past its field-7 comment (silently
+		// landing at field 8) — guarded by
+		// TestPeruProfile_ExportLedger_ProducesPipeDelimitedRowsWith27Fields's
+		// fields[6]/[4,7,8] assertions below.
 		row := fmt.Sprintf(
-			"%s|%s|%s|%s||%s||%s||%s|%s|%s|%s|%s||%s|%s|%d|%.4f|%.4f|%d|%.4f|%.4f|%d|%.4f|%.4f|1",
+			"%s|%s|%s|%s||%s|%s|||%s|%s|%s|%s|%s||%s|%s|%d|%.4f|%.4f|%d|%.4f|%.4f|%d|%.4f|%.4f|1",
 			period,                     // 1: Período
 			fmt.Sprintf("CUO-%d", i+1), // 2: CUO
 			"M",                        // 3: Correlativo del asiento

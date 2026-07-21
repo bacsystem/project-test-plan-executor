@@ -115,4 +115,18 @@ func TestPeruProfile_ExportLedger_ProducesPipeDelimitedRowsWith27Fields(t *testi
 	if fields[15] != "NIU" {
 		t.Errorf("field[15] (código unidad de medida) = %q, want %q", fields[15], "NIU")
 	}
+	// field[6] is PLE field 7 ("código propio de la existencia") per the
+	// row's own inline field-number comments; fields[4],[7],[8] (PLE
+	// fields 5, 8, 9) are undefined catalog slots this exporter doesn't
+	// populate and so must stay empty. A prior run of this exact task
+	// caught a real defect here: an extra blank slot pushed the SKU one
+	// column to the right of where its own comment said it belonged.
+	if fields[6] != "SKU-1" {
+		t.Errorf("field[6] (código propio de la existencia) = %q, want %q — the SKU must sit at PLE field 7, not be pushed right by an extra empty slot", fields[6], "SKU-1")
+	}
+	for _, i := range []int{4, 7, 8} {
+		if fields[i] != "" {
+			t.Errorf("field[%d] is an unused catalog slot, want empty, got %q", i, fields[i])
+		}
+	}
 }
