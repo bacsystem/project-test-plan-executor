@@ -20,5 +20,9 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
+    // e2e/ holds Playwright specs (run via `npm run test:e2e`), not Vitest
+    // tests — without this, Vitest tries to collect them too and fails on
+    // @playwright/test's import (a different test runner's API).
+    exclude: ["**/node_modules/**", "**/e2e/**"],
   },
 });

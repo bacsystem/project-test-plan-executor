@@ -11,7 +11,8 @@
     "prettier": "prettier --write './src/**/*.{js,jsx,json,ts,tsx,scss,css,md}'",
     "prepare": "husky",
     "pre-commit": "lint-staged",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test"
   },
   "engines": {
     "node": ">=22.14.0",
@@ -62,6 +63,7 @@
   "devDependencies": {
     "@eslint/js": "9.39.4",
     "@next/eslint-plugin-next": "15.3.3",
+    "@playwright/test": "^1.48.0",
     "@tailwindcss/postcss": "4.2.2",
     "@types/node": "22.15.32",
     "@types/react": "^19",
