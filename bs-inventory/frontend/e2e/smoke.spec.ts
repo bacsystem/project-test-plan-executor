@@ -23,16 +23,16 @@ test("login, create warehouse/section/product, record a movement, see it in stoc
 }) => {
   const { adminEmail, adminPassword } = await registerTenant(request);
 
-  await page.goto("/login");
-  await page.getByLabel(/email/i).fill(adminEmail);
+  await page.goto("login");
+  await page.getByRole("textbox", { name: /email/i }).fill(adminEmail);
   await page.getByLabel(/password/i).fill(adminPassword);
   await page.getByRole("button", { name: /sign in/i }).click();
   await expect(page).toHaveURL(/\/warehouses$/);
 
   const warehouseName = `E2E Warehouse ${Date.now()}`;
-  await page.getByLabel(/^name$/i).fill(warehouseName);
-  await page.getByLabel(/^code$/i).fill("E2E-WH");
-  await page.getByLabel(/ruc establishment code/i).fill("0001");
+  await page.getByRole("textbox", { name: /^name$/i }).fill(warehouseName);
+  await page.getByRole("textbox", { name: /^code$/i }).fill("E2E-WH");
+  await page.getByRole("textbox", { name: /ruc establishment code/i }).fill("0001");
   const [createWhResponse] = await Promise.all([
     page.waitForResponse(
       (r) => r.url().includes("/api/v1/warehouses") && r.request().method() === "POST"
@@ -42,8 +42,8 @@ test("login, create warehouse/section/product, record a movement, see it in stoc
   const warehouse = await createWhResponse.json();
 
   await page.getByText(`${warehouseName} (E2E-WH)`).click();
-  await page.getByLabel(/section name/i).fill("E2E Section");
-  await page.getByLabel(/section code/i).fill("E2E-SEC");
+  await page.getByRole("textbox", { name: /section name/i }).fill("E2E Section");
+  await page.getByRole("textbox", { name: /section code/i }).fill("E2E-SEC");
   const [createSecResponse] = await Promise.all([
     page.waitForResponse(
       (r) =>
@@ -54,25 +54,27 @@ test("login, create warehouse/section/product, record a movement, see it in stoc
   ]);
   const section = await createSecResponse.json();
 
-  await page.goto("/products");
+  await page.goto("products");
   await page.getByRole("button", { name: /new product/i }).click();
   const sku = `E2E-SKU-${Date.now()}`;
-  await page.getByLabel(/^sku$/i).fill(sku);
-  await page.getByLabel(/^name$/i).fill("E2E Product");
-  await page.getByLabel(/unit of measure code/i).fill("NIU");
+  await page.getByRole("textbox", { name: /^sku$/i }).fill(sku);
+  await page.getByRole("textbox", { name: /^name$/i }).fill("E2E Product");
+  await page.getByRole("textbox", { name: /unit of measure code/i }).fill("NIU");
   await page.getByRole("button", { name: /^create$/i }).click();
   await expect(page.getByText("E2E Product")).toBeVisible();
 
-  await page.goto("/stock/movements/new");
-  await page.getByLabel(/product sku/i).fill(sku);
-  await page.getByLabel(/warehouse id/i).fill(warehouse.id);
-  await page.getByLabel(/section id/i).fill(section.id);
-  await page.getByLabel(/quantity/i).fill("50");
-  await page.getByLabel(/unit cost/i).fill("9.99");
+  await page.goto("stock/movements/new");
+  await page.getByRole("textbox", { name: /product sku/i }).fill(sku);
+  await page.getByRole("textbox", { name: /warehouse id/i }).fill(warehouse.id);
+  await page.getByRole("textbox", { name: /section id/i }).fill(section.id);
+  // Quantity/unit cost are numeric inputs — ARIA maps input[type=number]
+  // to role="spinbutton", not "textbox".
+  await page.getByRole("spinbutton", { name: /quantity/i }).fill("50");
+  await page.getByRole("spinbutton", { name: /unit cost/i }).fill("9.99");
   await page.getByRole("button", { name: /record movement/i }).click();
   await expect(page.getByText("Movement recorded.")).toBeVisible();
 
-  await page.goto(`/products/${sku}`);
+  await page.goto(`products/${sku}`);
   await expect(page.getByText("IN")).toBeVisible();
   await expect(page.getByText("50")).toBeVisible();
 });
