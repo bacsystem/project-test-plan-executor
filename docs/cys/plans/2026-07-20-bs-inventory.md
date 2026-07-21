@@ -25,6 +25,14 @@ pages. Both branches join at docker-compose + the end-to-end test.
 - Go >= 1.23. Node >= 22.14.0, mechanically enforced via `engine-strict=true`
   in the frontend's `.npmrc` (reconciling the template's own disagreeing
   `.nvmrc`/`package.json engines.node`, same finding as v1 of this plan).
+  **After any `go get`/`go mod tidy` (every task that adds a Go dependency),
+  check `go.mod`'s `go` directive and hand-edit it back to `1.23` if the
+  local toolchain bumped it** — a real regression a first run of this plan
+  hit (Task 2's `go get` silently raised it to `1.25.0`, failing review for
+  raising the whole module's minimum Go version as an unreviewed side
+  effect). Task 1 already does this correctly; every later task doing its
+  own `go get` must re-check it, since each runs in its own worktree and
+  can re-trigger the same toolchain behavior independently.
 - Docker required for all backend integration tests (Postgres, RabbitMQ
   via `testcontainers-go`) and the end-to-end/k6 runs — no mocked
   database or broker anywhere.
@@ -1947,6 +1955,42 @@ func TestBuildKardex_TracksRunningBalance(t *testing.T) {
 	}
 }
 
+// TestBuildKardex_TracksIndependentBalancesPerProductAndWarehouse guards
+// against a real bug caught in review: BuildKardex must never let a
+// single shared accumulator mix balances across different products or
+// warehouses — exactly what the Kardex endpoint (one product, multiple
+// warehouses) and the PLE export (one tenant, multiple products) each
+// feed it in practice.
+func TestBuildKardex_TracksIndependentBalancesPerProductAndWarehouse(t *testing.T) {
+	base := time.Date(2026, 7, 1, 9, 0, 0, 0, time.UTC)
+	movements := []domain.StockMovement{
+		{TenantID: "t1", ProductSKU: "SKU-1", WarehouseID: "wh-01", SectionID: "sec-01", Quantity: 100, UnitCost: 5.00, Type: domain.MovementIn, OccurredAt: base},
+		{TenantID: "t1", ProductSKU: "SKU-2", WarehouseID: "wh-01", SectionID: "sec-01", Quantity: 50, UnitCost: 20.00, Type: domain.MovementIn, OccurredAt: base.Add(1 * time.Hour)},
+		{TenantID: "t1", ProductSKU: "SKU-1", WarehouseID: "wh-02", SectionID: "sec-01", Quantity: 10, UnitCost: 9.00, Type: domain.MovementIn, OccurredAt: base.Add(2 * time.Hour)},
+		{TenantID: "t1", ProductSKU: "SKU-1", WarehouseID: "wh-01", SectionID: "sec-01", Quantity: 40, UnitCost: 5.00, Type: domain.MovementIn, OccurredAt: base.Add(3 * time.Hour)},
+	}
+
+	entries := compliance.BuildKardex(movements)
+	if len(entries) != 4 {
+		t.Fatalf("BuildKardex() returned %d entries, want 4", len(entries))
+	}
+
+	// SKU-1 @ wh-01: 100 -> +40 = 140, average unchanged at 5.00 (same cost).
+	if entries[3].BalanceQuantity != 140 || entries[3].BalanceUnitCost != 5.00 {
+		t.Errorf("entries[3] (SKU-1@wh-01 second IN) = qty=%d cost=%v, want qty=140 cost=5.00 — SKU-2's and SKU-1@wh-02's movements must not have leaked into this balance",
+			entries[3].BalanceQuantity, entries[3].BalanceUnitCost)
+	}
+	// SKU-2 @ wh-01: independent from SKU-1's balance entirely.
+	if entries[1].BalanceQuantity != 50 || entries[1].BalanceUnitCost != 20.00 {
+		t.Errorf("entries[1] (SKU-2@wh-01) = qty=%d cost=%v, want qty=50 cost=20.00", entries[1].BalanceQuantity, entries[1].BalanceUnitCost)
+	}
+	// SKU-1 @ wh-02: independent from SKU-1 @ wh-01 despite the same SKU.
+	if entries[2].BalanceQuantity != 10 || entries[2].BalanceUnitCost != 9.00 {
+		t.Errorf("entries[2] (SKU-1@wh-02) = qty=%d cost=%v, want qty=10 cost=9.00 — same SKU as wh-01 but a different warehouse, must not share a balance",
+			entries[2].BalanceQuantity, entries[2].BalanceUnitCost)
+	}
+}
+
 func sampleProducts() map[string]domain.Product {
 	return map[string]domain.Product{
 		"SKU-1": {TenantID: "t1", SKU: "SKU-1", Name: "Widget", UnitOfMeasureCode: "NIU"},
@@ -2018,16 +2062,32 @@ type KardexEntry struct {
 	BalanceValue    float64              `json:"balanceValue"`
 }
 
+// kardexKey identifies one independent running-balance series — the same
+// (product, warehouse, section) key domain.StockLevel itself uses.
+type kardexKey struct {
+	sku, warehouseID, sectionID string
+}
+
 // BuildKardex replays movements (assumed already sorted by OccurredAt) to
-// produce the balance progression. This is the one place a full replay
-// remains correct and appropriate — an on-demand compliance export, not
-// cys-inventory's hot read path (see design spec §5 for why the hot path
-// uses the materialized stock_levels table instead).
+// produce the balance progression, one independent running balance PER
+// (ProductSKU, WarehouseID, SectionID) — never a single shared accumulator
+// across the whole slice. This matters because both call sites feed in
+// movements that span more than one such key: the Kardex endpoint passes
+// one product's movements across ALL its warehouses, and the PLE export
+// passes an entire tenant's movements across ALL products — mixing those
+// into one running balance would silently corrupt every saldo after the
+// first product/warehouse (caught in review before this ever merged; see
+// TestBuildKardex_TracksIndependentBalancesPerProductAndWarehouse below).
+// This is the one place a full replay remains correct and appropriate —
+// an on-demand compliance export, not cys-inventory's hot read path (see
+// design spec §5 for why the hot path uses the materialized stock_levels
+// table instead).
 func BuildKardex(movements []domain.StockMovement) []KardexEntry {
 	entries := make([]KardexEntry, 0, len(movements))
-	var balance domain.StockLevel
+	balances := make(map[kardexKey]domain.StockLevel)
 	for _, m := range movements {
-		next, err := domain.ApplyMovement(balance, m)
+		key := kardexKey{sku: m.ProductSKU, warehouseID: m.WarehouseID, sectionID: m.SectionID}
+		next, err := domain.ApplyMovement(balances[key], m)
 		if err != nil {
 			// A compliance export must not silently drop a movement that
 			// the live system already accepted; surfacing here would need
@@ -2035,12 +2095,12 @@ func BuildKardex(movements []domain.StockMovement) []KardexEntry {
 			// of scope until a real export has actually hit this case.
 			continue
 		}
-		balance = next
+		balances[key] = next
 		entries = append(entries, KardexEntry{
 			Movement:        m,
-			BalanceQuantity: balance.Quantity,
-			BalanceUnitCost: balance.AvgUnitCost,
-			BalanceValue:    balance.TotalValue,
+			BalanceQuantity: next.Quantity,
+			BalanceUnitCost: next.AvgUnitCost,
+			BalanceValue:    next.TotalValue,
 		})
 	}
 	return entries
@@ -2070,19 +2130,28 @@ func NewPeruProfile() *PeruProfile {
 	return &PeruProfile{}
 }
 
+// entryType values for PLE field 14 ("Tipo de operación") — both
+// space-padded to the same 3-character width so the pipe-delimited
+// columns that follow always start at a fixed offset in a fixed-width
+// viewer, matching how the rest of this row's literals are aligned.
+const (
+	entryTypeIn  = "IN "
+	entryTypeOut = "OUT"
+)
+
 func (p *PeruProfile) ExportLedger(ctx context.Context, movements []domain.StockMovement, products map[string]domain.Product, period string) ([]byte, error) {
 	entries := BuildKardex(movements)
 
 	var buf bytes.Buffer
 	for i, e := range entries {
 		m := e.Movement
-		entryType := "IN "
+		entryType := entryTypeIn
 		outQty, outCost, outTotal := 0, 0.0, 0.0
 		inQty, inCost, inTotal := 0, 0.0, 0.0
 		if m.Type == domain.MovementIn {
 			inQty, inCost, inTotal = m.Quantity, m.UnitCost, float64(m.Quantity)*m.UnitCost
 		} else {
-			entryType = "OUT"
+			entryType = entryTypeOut
 			outQty, outCost, outTotal = m.Quantity, e.BalanceUnitCost, float64(m.Quantity)*e.BalanceUnitCost
 		}
 
@@ -2110,6 +2179,9 @@ func (p *PeruProfile) ExportLedger(ctx context.Context, movements []domain.Stock
 			inQty, inCost, inTotal,               // 18-20: Entrada
 			outQty, outCost, outTotal,             // 21-23: Salida
 			e.BalanceQuantity, e.BalanceUnitCost, e.BalanceValue, // 24-26: Saldo final
+			// 27: Estado de la operación — always "1" (vigente/normal) in
+			// this version; no cancellation/correction workflow exists yet
+			// that would ever emit another value here.
 		)
 		buf.WriteString(row)
 		buf.WriteString("\n")
