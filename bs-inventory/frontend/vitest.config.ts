@@ -9,8 +9,9 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    // Mirrors the "@/*" -> "./src/*" path mapping from tsconfig.json, which
-    // Next.js resolves natively but Vite/Vitest does not pick up on its own.
+    // Mirrors tsconfig.json's "@/*" -> "./src/*" path mapping — Vite/Vitest
+    // don't read tsconfig `paths` on their own, so tests importing via "@/"
+    // (e.g. `vi.mock("@/lib/apiClient", ...)`) fail to resolve without this.
     alias: {
       "@": path.resolve(dirname, "./src"),
     },
