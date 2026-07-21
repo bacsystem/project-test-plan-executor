@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { type FormEvent, useState } from "react";
+
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -75,12 +76,7 @@ export default function NewTransferPage() {
         onChange={(e) => setToWarehouseId(e.target.value)}
         required
       />
-      <TextField
-        label="To section ID"
-        value={toSectionId}
-        onChange={(e) => setToSectionId(e.target.value)}
-        required
-      />
+      <TextField label="To section ID" value={toSectionId} onChange={(e) => setToSectionId(e.target.value)} required />
       <TextField
         label="Quantity"
         type="number"

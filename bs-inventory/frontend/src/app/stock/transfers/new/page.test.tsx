@@ -1,5 +1,6 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 const createTransferMock = vi.fn();
 vi.mock("@/lib/apiClient", () => ({
@@ -34,7 +35,7 @@ describe("NewTransferPage", () => {
         toSectionId: "sec-b",
         quantity: 40,
         guideNumber: "",
-      })
+      }),
     );
     expect(await screen.findByText("Transfer recorded.")).toBeInTheDocument();
   });
