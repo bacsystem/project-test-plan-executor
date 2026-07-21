@@ -71,3 +71,31 @@ func TestNewRouter_ProtectedRoutesRequireAuth(t *testing.T) {
 		t.Errorf("with token: status = %d, want %d", authedResp.StatusCode, http.StatusOK)
 	}
 }
+
+// TestNewRouter_CORSPreflightSucceeds guards against a bug only a real
+// browser-based client (or an explicit preflight, as here) can catch: a
+// missing CORS policy makes the browser reject every cross-origin
+// request before it reaches this server at all — invisible to every
+// other test in this suite, which all call the API directly rather than
+// through a browser's fetch().
+func TestNewRouter_CORSPreflightSucceeds(t *testing.T) {
+	pool := setupTestDB(t)
+	issuer := auth.NewTokenIssuer("test-secret", time.Hour)
+	router := bshttp.NewRouter(bshttp.Dependencies{Pool: pool, Issuer: issuer})
+	ts := httptest.NewServer(router)
+	defer ts.Close()
+
+	req, _ := http.NewRequest(http.MethodOptions, ts.URL+"/api/v1/auth/login", nil)
+	req.Header.Set("Origin", "http://localhost:3000")
+	req.Header.Set("Access-Control-Request-Method", "POST")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("OPTIONS preflight error = %v", err)
+	}
+	if resp.StatusCode != http.StatusNoContent {
+		t.Errorf("preflight status = %d, want %d", resp.StatusCode, http.StatusNoContent)
+	}
+	if got := resp.Header.Get("Access-Control-Allow-Origin"); got == "" {
+		t.Error("Access-Control-Allow-Origin header is missing — a browser would block the real request")
+	}
+}

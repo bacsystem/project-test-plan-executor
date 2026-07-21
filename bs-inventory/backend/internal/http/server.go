@@ -19,6 +19,9 @@ type Dependencies struct {
 	Pool      *pgxpool.Pool
 	Issuer    *auth.TokenIssuer
 	Publisher *events.Publisher
+	// AllowedOrigin is the CORS origin the frontend is served from;
+	// empty defaults to "*" (see middleware.CORS).
+	AllowedOrigin string
 }
 
 func NewRouter(deps Dependencies) chi.Router {
@@ -36,6 +39,7 @@ func NewRouter(deps Dependencies) chi.Router {
 	complianceServer := &ComplianceServer{Stock: stock, Products: products, Tenants: tenants, Warehouses: warehouses}
 
 	r := chi.NewRouter()
+	r.Use(middleware.CORS(deps.AllowedOrigin))
 	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
