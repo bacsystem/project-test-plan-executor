@@ -18,6 +18,11 @@ Lives at `authentication/`, self-contained with its own Maven build — the same
 `subtract/`, `persons/`), on a new stack (Java 21 + Spring Authorization Server +
 PostgreSQL).
 
+**This is a `cys`/parallel-plan-executor pilot within this repository, not a
+distributable module** — same status as `factorial/`, `subtract/`, and
+`persons/`. Its secondary value is exercising the executor's DAG against a wider,
+less sequential dependency graph than the earlier pilots (§3).
+
 ## 2. Scope
 
 ### In scope for MVP
@@ -166,11 +171,17 @@ Rules carried over from the closed decisions plus this session's answers:
   migration per known app, not through an API.
 - `login_attempts.user_id` nullable + `email_attempted` column, to record attempts
   against nonexistent emails (the probing pattern this table exists to detect).
-  Also carries `ip_address` for the IP-level burst signal (§12).
+  Also carries `ip_address` for the IP-level burst signal (§13).
 - Everything hashed except the TOTP secret (needs reversible encryption to
   generate codes for verification): passwords, refresh tokens, backup codes,
   one-time tokens.
 - `user_roles` records `assigned_by` and `assigned_at`.
+- **MFA challenge ticket is deliberately not a table** — it lives in **Redis**,
+  not `one_time_tokens` and not a dedicated table. Redis is already a hard
+  dependency (rate limiting, §13), automatic TTL expiry needs no purge job
+  unlike a table row, and a ticket's few-minutes lifetime doesn't belong mixed
+  into a table whose other rows live for hours (password reset). Full
+  contract in §8.4.
 - `roles.is_template` boolean distinguishes shared template roles from
   tenant-custom roles — a flag, not an ambiguous null.
 - `permissions.deprecated_at` (nullable) — soft-deprecation from catalog sync
@@ -179,7 +190,18 @@ Rules carried over from the closed decisions plus this session's answers:
   admin-created accounts; checked at login, forces a password-change step before
   a normal token is issued.
 - `users.password_changed_at` — informational/audit only; no forced expiration
-  policy is derived from it (§12).
+  policy is derived from it (§13).
+
+**Retention:** `audit_log` is retained **24 months** — an identity/security
+audit trail needs to survive a typical compliance review window, and unlike
+`login_attempts` its value is historical, not just operational.
+`login_attempts` is retained **90 days** — its value is spotting live
+brute-force/spraying patterns (§13), not a historical record; nothing in this
+spec needs a failed-login row older than that. Both retentions are enforced by
+a scheduled job that partitions each table by date and **drops partitions**
+past the retention window, rather than row-by-row `DELETE` — avoids the
+vacuum/lock cost of deleting at this volume. The job emits a metric on every
+run (rows/partitions dropped), consistent with §16.
 
 ## 7. Bootstrap
 
@@ -244,7 +266,7 @@ app, never a global token valid everywhere).
     immediately, with no overlap — tokens signed with it are deliberately
     invalidated.
   - Every rotation (scheduled or emergency) is recorded in `audit_log` and emits a
-    metric, so that a *missing* rotation is itself detectable by alert (§13).
+    metric, so that a *missing* rotation is itself detectable by alert (§16).
 
 ### 8.4 MFA — enrollment, verification, recovery
 
@@ -256,6 +278,20 @@ app, never a global token valid everywhere).
   returns an `mfa_required` response with a short-lived challenge ticket when the
   user has MFA enrolled; `POST /v1/auth/mfa/verify` exchanges
   `{challenge, totp_code}` for the actual token pair.
+  - **Challenge ticket contract** (location decided in §6: Redis, not a table):
+    a random opaque ticket is returned to the client; the server stores
+    `mfa:challenge:{sha256(ticket)} → user_id` in Redis with a **3-minute TTL**
+    — hashed at rest like every other temporary credential in this spec, and
+    single-use (deleted the moment `/v1/auth/mfa/verify` succeeds, whether or
+    not the underlying Redis TTL has expired yet). If it expires or is reused,
+    the user restarts login from the password step — there is no separate
+    "ticket expired" recovery flow.
+  - **Conscious tradeoff:** §13 already makes rate limiting fail **closed** on
+    auth endpoints when Redis is unreachable. Storing the challenge in Redis
+    means the same is now true of MFA login end-to-end — a Redis outage blocks
+    every MFA-protected login, not just rate limiting. Accepted deliberately,
+    not overlooked: Redis was already a hard dependency on this exact code
+    path before this decision, so the failure mode isn't new, just extended.
 - **Recovery (device lost, backup codes exhausted)** — administrative reset, with
   guards against social engineering:
   - Out-of-band identity verification is **required** before an admin executes the
@@ -285,8 +321,12 @@ here):** in-memory cache per app instance, refreshed on a scheduled poll (defaul
 every 5 minutes, configurable) using conditional GET with `ETag`/
 `If-None-Match` to avoid re-transferring an unchanged catalog. On fetch failure,
 the app keeps its last-known-good cache indefinitely rather than failing closed —
-consistent with §14's decision that the ecosystem's availability during an outage
-rides entirely on cache TTLs, not on retries succeeding.
+consistent with §15's decision that the ecosystem's availability during an outage
+rides entirely on cache TTLs, not on retries succeeding. Keeping a stale cache
+indefinitely is only safe if staleness is observable: each consuming app must
+expose a **cache-age metric** (time since the last successful fetch), so that
+an app stuck on a days-old catalog is alertable (§16) instead of silently
+running on stale permissions with no signal.
 
 ### 9.2 Permission catalog registration
 
@@ -310,10 +350,16 @@ Full CRUD via API (create, list, get, delete-if-unreferenced).
 must be atomic and safe under concurrent writers; two admins editing the same role
 at once must never produce a silent union of both sets.
 
-- Optimistic locking on `roles.version`: the request must include the version it
-  read; a mismatch is rejected **before** touching `role_permissions`.
+- **Full cycle:** `GET /v1/roles/{id}` → response includes `version` → client
+  sends `PUT /v1/roles/{id}/permissions` with that `version` → server rejects
+  with `409` if the stored `version` has moved on, before touching
+  `role_permissions`; otherwise applies the replacement and increments
+  `version`. `GET /v1/roles/{id}`'s response documenting `version` (§11) is
+  not optional — without it a client cannot implement optimistic locking at
+  all, and the k6 concurrency scenario (§17) has nowhere to read the shared
+  starting version its virtual users all need.
 - A version conflict is a `409`, not a `5xx` — see §11 for the error envelope.
-- Verified by a k6 scenario (§16), not just unit/integration tests — see its
+- Verified by a k6 scenario (§17), not just unit/integration tests — see its
   binary (non-percentage) thresholds there.
 
 ## 10. API contract
@@ -372,19 +418,46 @@ Business API (`/v1`):
 | PATCH | `/v1/users/{id}` | Update profile fields (not password/MFA — dedicated endpoints) | `400`, `404` |
 | DELETE | `/v1/users/{id}` | Deactivate (not hard-delete, §5) | `404` |
 | POST | `/v1/roles` | Create role | `409` duplicate name |
-| GET | `/v1/roles` / `/v1/roles/{id}` | List/get roles | `404` |
-| PUT | `/v1/roles/{id}/permissions` | Replace permission set, optimistic-locked (§9.4) | `409` version conflict |
+| GET | `/v1/roles?cursor=&size=` | List roles | — |
+| GET | `/v1/roles/{id}` | Get a role — response body includes the role, its **`version`** (required verbatim in the `PUT` below, §9.4), and its current permission set | `404` |
+| PUT | `/v1/roles/{id}/permissions` | Replace permission set, optimistic-locked on the `version` read from `GET` above (§9.4) | `409` version conflict |
 | DELETE | `/v1/roles/{id}` | Delete role | `409` if referenced by `user_roles` |
 | GET | `/v1/permissions` | List the full catalog (admin visibility) | — |
 | PUT | `/v1/applications/{app}/permissions` | Sync an app's permission catalog (§9.2) | scope `permissions:sync` required |
 | POST | `/v1/users/{id}/roles` | Assign role | `409` already assigned |
+| GET | `/v1/users/{id}/roles` | List a user's assigned roles | `404` |
 | DELETE | `/v1/users/{id}/roles/{roleId}` | Revoke role | `404` |
 
 Every mutating endpoint above writes an `audit_log` entry as a side effect
 (actor, action, target, timestamp) — not listed per-row to avoid repeating it 20
 times.
 
-## 12. Security operations: passwords, lockout, rate limiting
+## 12. Email notifications
+
+Two flows depend on sending email — password reset (§11) and MFA-reset
+notification (§8.4) — so this is part of the spec, not an implementation detail
+left open.
+
+- **Mechanism:** `JavaMailSender` over configurable SMTP. No SaaS email provider
+  dependency for the MVP — keeps the service's external dependencies limited to
+  PostgreSQL and Redis, both already required.
+- **Asynchronous, queued** — not sent inline on the request thread. A slow SMTP
+  provider must never add latency to `/v1/auth/password/reset-request` or the
+  MFA-reset endpoint, let alone make either fail.
+- **Send failure never changes the API response:**
+  - `POST /v1/auth/password/reset-request` **always** returns `202` regardless of
+    whether the email actually sends — varying the status code on send failure
+    would leak whether the address exists, breaking §10.2's rule.
+  - A send failure is logged (structured, no PII beyond what §16 already allows)
+    and emits a metric; it is never propagated to the caller.
+  - Retry: up to 3 attempts with backoff before the failure is logged as final.
+- **Template content:** no sensitive data, no tokens in the body other than the
+  one-time reset link itself, nothing that reveals account state (existence,
+  lock status, MFA enrollment).
+- **MVP emails, exhaustive list:** (a) password-reset link, (b) "your MFA was
+  reset by an admin" notification. No other email is in scope.
+
+## 13. Security operations: passwords, lockout, rate limiting
 
 - **Password policy:** minimum length 12, no forced composition rules and no
   forced expiration (NIST 800-63B-aligned) — instead, rejection against
@@ -403,15 +476,15 @@ times.
   `X-Forwarded-For` only against a configured trusted-proxy list — never trusted
   unvalidated, or the per-IP limit is trivially bypassed with a forged header.
   Thresholds are explicit configuration constants (not hardcoded), because they
-  are exactly what the k6 thresholds in §16 assert against.
+  are exactly what the k6 thresholds in §17 assert against.
 
-## 13. Revocation
+## 14. Revocation
 
 Three layers, no denylist checked on every request (that would destroy local
 validation and reintroduce a per-request dependency on this service):
 
 1. Exposure window bounded by access-token lifetime (15 minutes) — no exceptions,
-   no grace period on expiry (§14): expiration is the control that limits the
+   no grace period on expiry (§15): expiration is the control that limits the
    blast radius of a leaked token, and cannot have exceptions, least of all ones
    implemented independently in every consuming app.
 2. Refresh token revoked immediately in the database — the user cannot renew.
@@ -419,7 +492,7 @@ validation and reintroduce a per-request dependency on this service):
    deletions, other sensitive operations) — everything else validates signature
    only.
 
-## 14. Degradation
+## 15. Degradation
 
 If the service is fully down: apps keep operating on the access token they
 already hold until it expires (15 minutes) — no logins, no refreshes succeed
@@ -428,7 +501,7 @@ cached copy. Availability during an outage is protected entirely by generous TTL
 on the JWKS cache and the catalog cache (§9.1) plus this service's own HA, not by
 any grace period on token expiry.
 
-## 15. Observability
+## 16. Observability
 
 - Micrometer metrics exposed via `/actuator/prometheus`: per-endpoint latency,
   error rate, lockouts, key rotations, connection-pool sizing. **Never tagged by
@@ -448,11 +521,11 @@ any grace period on token expiry.
   - Login-failure burst by IP (distinct from the per-account counter).
   - Lockout rate and `429` rate.
 
-## 16. Testing strategy
+## 17. Testing strategy
 
 Both layers are mandatory; neither substitutes for the other.
 
-### 16.1 Unit / integration
+### 17.1 Unit / integration
 
 - Mockito for service-layer unit tests (mirrors `persons-crud`'s pattern).
 - **Testcontainers with real PostgreSQL** for repository/integration tests — an
@@ -461,7 +534,7 @@ Both layers are mandatory; neither substitutes for the other.
   production, i.e., not verified. Confirmed viable in this environment (§4).
 - `@WebMvcTest` + MockMvc for controllers, per endpoint/status code in §11.
 
-### 16.2 k6 — correctness gate (blocks CI) vs. latency trend (does not block)
+### 17.2 k6 — correctness gate (blocks CI) vs. latency trend (does not block)
 
 Run against a docker-compose environment (packaged jar, not `mvn spring-boot:run`,
 + real Postgres + real Redis) as a CI job — confirmed viable in this environment
@@ -494,7 +567,7 @@ is the real latency gate.
 - Load seed has realistic volume (on the order of thousands of users, dozens of
   roles with assignments) so query plans resemble production, not a toy dataset.
 
-## 17. Risks & decisions explicitly discarded
+## 18. Risks & decisions explicitly discarded
 
 - **Password grant is not built into Spring Authorization Server** — requires a
   custom `AuthenticationConverter`/`AuthenticationProvider` (§8.1). Worth an early
@@ -502,7 +575,7 @@ is the real latency gate.
   protocol/crypto correctness (still delegated to Spring Authorization Server).
 - **Grace period on token expiry during an outage** — discarded. Expiration is a
   non-negotiable blast-radius control; a distributed, per-app exception would
-  undermine it. Availability is bought with cache TTLs instead (§14).
+  undermine it. Availability is bought with cache TTLs instead (§15).
 - **Denylist checked on every request for revocation** — discarded. Would
   reintroduce a hard per-request dependency on this service, defeating local JWKS
   validation.
@@ -514,7 +587,7 @@ is the real latency gate.
   pipeline (false-red risk on shared runners); kept as a non-blocking trend plus a
   separate scheduled gate on dedicated hardware.
 
-## 18. Out of scope (explicit YAGNI)
+## 19. Out of scope (explicit YAGNI)
 
 - Tenant-creation endpoint (§2 — deferred, not forgotten).
 - Dynamic/third-party OAuth2 client registration; consent screens.
