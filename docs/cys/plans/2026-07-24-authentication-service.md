@@ -404,10 +404,9 @@ Spec: `docs/cys/specs/2026-07-23-authentication-service-design.md` (all
 8. There is no production code to add yet beyond what's above — the context
    fails because Flyway finds zero migrations while `ddl-auto=validate`
    expects a schema. Add a placeholder baseline migration so the context can
-   load: create `authentication/src/main/resources/db/migration/V1__baseline.sql`
-   with just a comment (`-- baseline, tables created by later migrations`).
-   **Task 2 owns the real `V1`** — rename this file's version to `V0` instead:
-   `authentication/src/main/resources/db/migration/V0__baseline.sql`.
+   load — create `authentication/src/main/resources/db/migration/V0__baseline.sql`
+   directly (version `V0`, not `V1` — Task 2 owns the real `V1`) with just a
+   comment: `-- baseline, tables created by later migrations`.
 
 9. Run: `cd authentication && mvn -q test -Dtest=AuthApplicationContextTest`.
    Expect **PASS**.
@@ -1111,13 +1110,17 @@ Spec: `docs/cys/specs/2026-07-23-authentication-service-design.md` (all
 
        private final Set<String> breachedShaHashes;
 
+       @org.springframework.beans.factory.annotation.Autowired
        public BreachedPasswordChecker(@Value("classpath:breached-passwords-sample.txt")
                                        org.springframework.core.io.Resource resource) {
            this(loadPlaintextSet(resource));
        }
 
-       // constructor used directly by tests with an in-memory sample set
-       public BreachedPasswordChecker(Set<String> plaintextSample) {
+       // Package-private, not a second injection candidate: two public constructors with
+       // no @Autowired on a @Component leaves Spring unable to pick one and fails context
+       // startup for every test extending PostgresRedisTestBase, not just this class's own.
+       // This one exists only for tests to pass an in-memory sample set directly.
+       BreachedPasswordChecker(Set<String> plaintextSample) {
            this.breachedShaHashes = new HashSet<>();
            plaintextSample.forEach(p -> breachedShaHashes.add(sha1Hex(p)));
        }
@@ -3061,7 +3064,7 @@ Spec: `docs/cys/specs/2026-07-23-authentication-service-design.md` (all
            User created = service.createUser(tenantId, "new@test.com", "TempPassw0rd!23", UUID.randomUUID());
 
            assertThat(created.isMustChangePassword()).isTrue();
-           assertThat(created.getPasswordHash()).startsWith("$argon2");
+           assertThat(created.getPasswordHash()).startsWith("{argon2}");
        }
 
        @Test
@@ -3099,18 +3102,25 @@ Spec: `docs/cys/specs/2026-07-23-authentication-service-design.md` (all
            service.changePassword(user, "BrandNewPassw0rd!42");
 
            assertThat(user.isMustChangePassword()).isFalse();
-           assertThat(user.getPasswordHash()).startsWith("$argon2");
+           assertThat(user.getPasswordHash()).startsWith("{argon2}");
        }
    }
    ```
 
 2. Run `mvn -q test -Dtest=UserServiceTest`. Expect **FAIL**.
 
-3. Create `PasswordEncoderConfig.java` — Argon2id via Spring Security's
-   `Argon2PasswordEncoder`, parameters tuned for the ~250-500ms hashing cost
-   the spec's login latency threshold is derived from (§17.2); the exact
-   parameters are a starting point recorded here, meant to be recalibrated
-   against real target hardware, never loosened to chase a latency number:
+3. Create `PasswordEncoderConfig.java`. **Must be a `DelegatingPasswordEncoder`,
+   not a bare `Argon2PasswordEncoder`**: this single bean serves two
+   consumers with different hash formats — user passwords (Argon2id, hashed
+   here) and the OAuth2 client secret Spring Authorization Server verifies
+   against the BCrypt hash Task 3's migration seeded (`{bcrypt}$2a$12$...`).
+   An Argon2-only encoder returns `false` for that BCrypt hash regardless of
+   the secret being correct, silently breaking client authentication and
+   with it every password/refresh grant test in Task 25. Argon2id is the
+   default id for new hashes; its parameters are tuned for the ~250-500ms
+   hashing cost the spec's login latency threshold is derived from (§17.2)
+   — a starting point meant to be recalibrated against real target
+   hardware, never loosened to chase a latency number:
 
    ```java
    package com.bacsystem.auth.identity;
@@ -3118,7 +3128,11 @@ Spec: `docs/cys/specs/2026-07-23-authentication-service-design.md` (all
    import org.springframework.context.annotation.Bean;
    import org.springframework.context.annotation.Configuration;
    import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
+   import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+   import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
    import org.springframework.security.crypto.password.PasswordEncoder;
+
+   import java.util.Map;
 
    @Configuration
    public class PasswordEncoderConfig {
@@ -3129,10 +3143,19 @@ Spec: `docs/cys/specs/2026-07-23-authentication-service-design.md` (all
            // iterations=2 — OWASP's baseline Argon2id profile, ~250-350ms on
            // typical CI/cloud CPU. Recalibrate against target hardware (§17.2)
            // before relying on the derived login latency threshold.
-           return new Argon2PasswordEncoder(16, 32, 1, 19456, 2);
+           String defaultId = "argon2";
+           Map<String, PasswordEncoder> encoders = Map.of(
+                   "argon2", new Argon2PasswordEncoder(16, 32, 1, 19456, 2),
+                   "bcrypt", new BCryptPasswordEncoder(12));
+           return new DelegatingPasswordEncoder(defaultId, encoders);
        }
    }
    ```
+
+   `DelegatingPasswordEncoder` prefixes every hash it produces with the
+   encoder id in braces — `{argon2}$argon2id$...` — which is why step 1's
+   test assertions above check `startsWith("{argon2}")` rather than the raw
+   Argon2 hash prefix.
 
 4. Create the three exception types:
 
@@ -3726,8 +3749,14 @@ exists to close.
         * Postgres row-level locking makes this safe under real concurrency:
         * two transactions racing on the same WHERE clause serialize on the
         * row lock, and only the first to commit sees its predicate still hold.
+        * {@code clearAutomatically}: without it, the persistence context keeps
+        * serving the pre-update (stale-version) {@code Role} instance to the
+        * {@code findById} calls later in {@code replacePermissions} — not a
+        * concurrency-safety issue (the UPDATE itself is still atomic), but it
+        * would hand the client back a `version` that's already one behind,
+        * producing a spurious 409 on their very next legitimate request.
         */
-       @Modifying
+       @Modifying(clearAutomatically = true, flushAutomatically = true)
        @Query("UPDATE Role r SET r.version = r.version + 1 WHERE r.id = :id AND r.version = :expectedVersion")
        int touchVersion(@Param("id") UUID id, @Param("expectedVersion") long expectedVersion);
    }
@@ -5720,7 +5749,7 @@ actually handle it — the default one never sees a token it would recognize.
 - Test: `authentication/src/test/java/com/bacsystem/auth/config/RefreshGrantIT.java`
 
 **Interfaces:**
-- Consumes: `com.bacsystem.auth.identity.User`, `com.bacsystem.auth.identity.UserService`, `com.bacsystem.auth.identity.UserRepository`, `com.bacsystem.auth.security.LoginAttemptService`, `com.bacsystem.auth.security.AccountLockedException`, `com.bacsystem.auth.mfa.MfaService`, `com.bacsystem.auth.token.SigningKeyService`, `com.bacsystem.auth.token.RefreshTokenService`, `com.bacsystem.auth.token.RefreshTokenReuseException`, `com.bacsystem.auth.tenancy.TenantRepository`, `com.bacsystem.auth.rbac.UserRoleRepository`, `com.bacsystem.auth.rbac.JpaRegisteredClientRepository`, `com.bacsystem.auth.audit.AuditLogService`, `com.bacsystem.auth.audit.AuditAction`, `com.bacsystem.auth.support.PostgresRedisTestBase`
+- Consumes: `com.bacsystem.auth.identity.User`, `com.bacsystem.auth.identity.UserService`, `com.bacsystem.auth.identity.UserRepository`, `com.bacsystem.auth.security.LoginAttemptService`, `com.bacsystem.auth.security.AccountLockedException`, `com.bacsystem.auth.security.ClientIpResolver`, `com.bacsystem.auth.mfa.MfaService`, `com.bacsystem.auth.token.SigningKeyService`, `com.bacsystem.auth.token.RefreshTokenService`, `com.bacsystem.auth.token.RefreshTokenReuseException`, `com.bacsystem.auth.tenancy.TenantRepository`, `com.bacsystem.auth.rbac.UserRoleRepository`, `com.bacsystem.auth.rbac.JpaRegisteredClientRepository`, `com.bacsystem.auth.audit.AuditLogService`, `com.bacsystem.auth.audit.AuditAction`, `com.bacsystem.auth.support.PostgresRedisTestBase`
 - Produces: `com.bacsystem.auth.token.IssuedTokens`, `com.bacsystem.auth.token.TokenIssuer`, `com.bacsystem.auth.token.RefreshTokenRotationResult`, `com.bacsystem.auth.config.PasswordGrantAuthenticationToken`, `com.bacsystem.auth.config.PasswordGrantAuthenticationConverter`, `com.bacsystem.auth.config.PasswordGrantAuthenticationProvider`, `com.bacsystem.auth.config.RefreshGrantAuthenticationToken`, `com.bacsystem.auth.config.RefreshGrantAuthenticationConverter`, `com.bacsystem.auth.config.RefreshGrantAuthenticationProvider`, `com.bacsystem.auth.config.AuthorizationServerConfig`
 
 **Steps:**
@@ -5912,12 +5941,22 @@ actually handle it — the default one never sees a token it would recognize.
    import org.springframework.beans.factory.annotation.Autowired;
    import org.springframework.boot.test.web.client.TestRestTemplate;
    import org.springframework.http.*;
+   import org.springframework.test.context.DynamicPropertyRegistry;
+   import org.springframework.test.context.DynamicPropertySource;
    import org.springframework.util.LinkedMultiValueMap;
    import org.springframework.util.MultiValueMap;
 
    import static org.assertj.core.api.Assertions.assertThat;
 
    class PasswordGrantIT extends PostgresRedisTestBase {
+
+       // TestRestTemplate calls the embedded server from loopback — trust it as the one
+       // proxy hop so X-Forwarded-For is honored below (§13's trusted-proxy rule, same
+       // as RateLimiter's, Task 24).
+       @DynamicPropertySource
+       static void trustLoopbackProxy(DynamicPropertyRegistry registry) {
+           registry.add("auth.rate-limit.trusted-proxies", () -> "127.0.0.1");
+       }
 
        @Autowired private TenantRepository tenantRepository;
        @Autowired private UserService userService;
@@ -5983,6 +6022,69 @@ actually handle it — the default one never sees a token it would recognize.
            ResponseEntity<String> response = restTemplate.getForEntity("/oauth2/jwks", String.class);
            assertThat(response.getHeaders().getCacheControl()).contains("max-age=3600");
        }
+
+       @Test
+       void perIpLockoutTracksTheRealForwardedIpNotAPlaceholder() {
+           // The regression this guards against: the converter passing a constant
+           // (e.g. "unknown") instead of the real client IP. Under that bug every
+           // request — regardless of its real IP — shares one fake bucket, so a
+           // DIFFERENT real IP would incorrectly inherit the lockout too. A test that
+           // only checks "lockout triggers after 5 failures" can't tell the two apart
+           // (a shared fake bucket also "locks out" after 5 hits); this one can,
+           // because it asserts the attacker's IP is blocked AND an unrelated IP is not.
+           Tenant tenant = new Tenant();
+           tenant.setSlug("pwgrant-ip-" + System.nanoTime());
+           tenant.setName("IP Lockout Test");
+           tenant = tenantRepository.saveAndFlush(tenant);
+           userService.createUser(tenant.getId(), "attacked@test.com", "ValidPassw0rd!123", null);
+           userService.createUser(tenant.getId(), "bystander@test.com", "ValidPassw0rd!123", null);
+
+           HttpHeaders attackerHeaders = new HttpHeaders();
+           attackerHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+           attackerHeaders.setBasicAuth("example-app", "example-secret");
+           attackerHeaders.set("X-Forwarded-For", "203.0.113.55");
+
+           MultiValueMap<String, String> wrongPasswordForm = new LinkedMultiValueMap<>();
+           wrongPasswordForm.add("grant_type", "password");
+           wrongPasswordForm.add("tenant", tenant.getSlug());
+           wrongPasswordForm.add("username", "attacked@test.com");
+           wrongPasswordForm.add("password", "WrongOnPurpose!1");
+
+           for (int i = 0; i < 5; i++) {
+               restTemplate.postForEntity("/oauth2/token", new HttpEntity<>(wrongPasswordForm, attackerHeaders),
+                       java.util.Map.class);
+           }
+
+           // (a) the attacker's own IP is now locked, even with the correct password
+           MultiValueMap<String, String> attackerRetryForm = new LinkedMultiValueMap<>();
+           attackerRetryForm.add("grant_type", "password");
+           attackerRetryForm.add("tenant", tenant.getSlug());
+           attackerRetryForm.add("username", "attacked@test.com");
+           attackerRetryForm.add("password", "ValidPassw0rd!123");
+
+           ResponseEntity<java.util.Map> attackerRetry = restTemplate.postForEntity(
+                   "/oauth2/token", new HttpEntity<>(attackerRetryForm, attackerHeaders), java.util.Map.class);
+           assertThat(attackerRetry.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+           assertThat(attackerRetry.getBody().get("error")).isEqualTo("authentication_failed");
+
+           // (b) a genuinely different IP, different account, correct password — succeeds.
+           // Under the "unknown"-placeholder bug this would incorrectly be blocked too.
+           HttpHeaders bystanderHeaders = new HttpHeaders();
+           bystanderHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+           bystanderHeaders.setBasicAuth("example-app", "example-secret");
+           bystanderHeaders.set("X-Forwarded-For", "198.51.100.9");
+
+           MultiValueMap<String, String> bystanderForm = new LinkedMultiValueMap<>();
+           bystanderForm.add("grant_type", "password");
+           bystanderForm.add("tenant", tenant.getSlug());
+           bystanderForm.add("username", "bystander@test.com");
+           bystanderForm.add("password", "ValidPassw0rd!123");
+
+           ResponseEntity<java.util.Map> bystanderResponse = restTemplate.postForEntity(
+                   "/oauth2/token", new HttpEntity<>(bystanderForm, bystanderHeaders), java.util.Map.class);
+           assertThat(bystanderResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+           assertThat(bystanderResponse.getBody()).containsKey("access_token");
+       }
    }
    ```
 
@@ -6009,15 +6111,17 @@ actually handle it — the default one never sees a token it would recognize.
        private final String username;
        private final String password;
        private final Set<String> scopes;
+       private final String clientIp;
 
        public PasswordGrantAuthenticationToken(Authentication clientPrincipal, String tenant, String username,
-                                                String password, Set<String> scopes) {
+                                                String password, Set<String> scopes, String clientIp) {
            super(Collections.emptyList());
            this.clientPrincipal = clientPrincipal;
            this.tenant = tenant;
            this.username = username;
            this.password = password;
            this.scopes = scopes;
+           this.clientIp = clientIp;
            setAuthenticated(false);
        }
 
@@ -6027,14 +6131,23 @@ actually handle it — the default one never sees a token it would recognize.
        public String getTenant() { return tenant; }
        public String getUsername() { return username; }
        public Set<String> getScopes() { return scopes; }
+       public String getClientIp() { return clientIp; }
    }
    ```
 
-9. Create `PasswordGrantAuthenticationConverter.java`:
+9. Create `PasswordGrantAuthenticationConverter.java`. **The client IP must be
+   resolved here, not in the provider below**: this converter is the only
+   place in the grant with direct access to the `HttpServletRequest`, and
+   it's what makes the per-IP lockout in §13 (Task 16's `LoginAttemptService`)
+   actually observe real IPs instead of a placeholder — using
+   `ClientIpResolver` (Task 24) so a forged `X-Forwarded-For` from an
+   untrusted caller can't spoof it (§13's trusted-proxy rule applies here
+   exactly as it does to rate limiting):
 
    ```java
    package com.bacsystem.auth.config;
 
+   import com.bacsystem.auth.security.ClientIpResolver;
    import jakarta.servlet.http.HttpServletRequest;
    import org.springframework.security.core.Authentication;
    import org.springframework.security.core.context.SecurityContextHolder;
@@ -6044,6 +6157,12 @@ actually handle it — the default one never sees a token it would recognize.
    import java.util.Set;
 
    public class PasswordGrantAuthenticationConverter implements AuthenticationConverter {
+
+       private final ClientIpResolver clientIpResolver;
+
+       public PasswordGrantAuthenticationConverter(ClientIpResolver clientIpResolver) {
+           this.clientIpResolver = clientIpResolver;
+       }
 
        @Override
        public Authentication convert(HttpServletRequest request) {
@@ -6056,12 +6175,13 @@ actually handle it — the default one never sees a token it would recognize.
            String username = request.getParameter("username");
            String password = request.getParameter("password");
            String scopeParam = request.getParameter("scope");
+           String clientIp = clientIpResolver.resolve(request);
 
            Set<String> scopes = new LinkedHashSet<>();
            if (scopeParam != null && !scopeParam.isBlank()) {
                for (String s : scopeParam.split(" ")) scopes.add(s);
            }
-           return new PasswordGrantAuthenticationToken(clientPrincipal, tenant, username, password, scopes);
+           return new PasswordGrantAuthenticationToken(clientPrincipal, tenant, username, password, scopes, clientIp);
        }
    }
    ```
@@ -6128,20 +6248,19 @@ actually handle it — the default one never sees a token it would recognize.
            RegisteredClient registeredClient = ((OAuth2ClientAuthenticationToken) grant.getClientPrincipal())
                    .getRegisteredClient();
 
-           String ipAddress = "unknown"; // real client IP is unavailable at this layer; the RateLimitFilter (Task 24)
-                                          // already applied the per-IP check earlier in the filter chain for this path.
+           String clientIp = grant.getClientIp(); // resolved in the converter (§13) — never a placeholder
            try {
-               loginAttemptService.assertNotLocked(grant.getUsername(), ipAddress);
+               loginAttemptService.assertNotLocked(grant.getUsername(), clientIp);
 
                Tenant tenant = tenantRepository.findBySlug(grant.getTenant())
                        .orElseThrow(this::genericAuthFailure);
                Optional<User> user = userService.findByTenantAndEmail(tenant.getId(), grant.getUsername());
                if (user.isEmpty() || !passwordEncoder.matches(grant.getPassword(), user.get().getPasswordHash())) {
-                   loginAttemptService.recordFailure(grant.getUsername(), ipAddress);
+                   loginAttemptService.recordFailure(grant.getUsername(), clientIp);
                    throw genericAuthFailure();
                }
 
-               loginAttemptService.recordSuccess(user.get().getId(), grant.getUsername(), ipAddress);
+               loginAttemptService.recordSuccess(user.get().getId(), grant.getUsername(), clientIp);
 
                if (mfaService.isEnrolled(user.get().getId())) {
                    String challenge = mfaService.issueChallenge(user.get().getId());
@@ -6472,7 +6591,8 @@ actually handle it — the default one never sees a token it would recognize.
        public SecurityFilterChain authorizationServerSecurityFilterChain(
                HttpSecurity http, TenantRepository tenantRepository, UserService userService,
                PasswordEncoder passwordEncoder, LoginAttemptService loginAttemptService, MfaService mfaService,
-               RefreshTokenService refreshTokenService, TokenIssuer tokenIssuer) throws Exception {
+               RefreshTokenService refreshTokenService, TokenIssuer tokenIssuer,
+               com.bacsystem.auth.security.ClientIpResolver clientIpResolver) throws Exception {
 
            OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
                    OAuth2AuthorizationServerConfigurer.authorizationServer();
@@ -6481,7 +6601,7 @@ actually handle it — the default one never sees a token it would recognize.
                    .with(authorizationServerConfigurer, configurer -> configurer
                            .tokenEndpoint(tokenEndpoint -> tokenEndpoint
                                    .accessTokenRequestConverters(converters -> {
-                                       converters.add(0, new PasswordGrantAuthenticationConverter());
+                                       converters.add(0, new PasswordGrantAuthenticationConverter(clientIpResolver));
                                        converters.add(0, new RefreshGrantAuthenticationConverter());
                                    })
                                    .authenticationProviders(providers -> {
@@ -7246,11 +7366,11 @@ it is spelled out here instead.
        @MockBean private UserService userService;
        @Autowired private ObjectMapper objectMapper;
 
-       private Jwt jwtWithTenant(UUID tenantId) {
+       private Jwt jwtWithTenant(UUID tenantId, UUID callerId) {
            return Jwt.withTokenValue("token")
                    .header("alg", "ES256")
                    .claim("tenant", tenantId.toString())
-                   .claim("sub", "caller@test.com")
+                   .claim("sub", callerId.toString()) // always a UUID in this system — TokenIssuer (Task 25) issues no other kind
                    .build();
        }
 
@@ -7265,7 +7385,7 @@ it is spelled out here instead.
            when(userService.createUser(any(), any(), any(), any())).thenReturn(created);
 
            mockMvc.perform(post("/v1/users")
-                           .with(jwt().jwt(jwtWithTenant(tenantId)))
+                           .with(jwt().jwt(jwtWithTenant(tenantId, UUID.randomUUID())))
                            .contentType("application/json")
                            .content(objectMapper.writeValueAsString(
                                    new UserController.CreateUserRequest("new@test.com", "TempPassw0rd!123"))))
@@ -7278,7 +7398,7 @@ it is spelled out here instead.
            when(userService.getById(any())).thenThrow(new com.bacsystem.auth.identity.UserNotFoundException(UUID.randomUUID()));
 
            mockMvc.perform(get("/v1/users/{id}", UUID.randomUUID())
-                           .with(jwt().jwt(jwtWithTenant(UUID.randomUUID()))))
+                           .with(jwt().jwt(jwtWithTenant(UUID.randomUUID(), UUID.randomUUID()))))
                    .andExpect(status().isNotFound());
        }
    }
@@ -7882,7 +8002,14 @@ too, so this controller can resolve the right `RegisteredClient` and call
 
    `hasRole('admin')` requires the JWT's `roles` claim to surface as Spring
    Security authorities named `ROLE_admin`; add a `JwtAuthenticationConverter`
-   bean doing that mapping to `SecurityConfig` (Modify, Task 26):
+   bean doing that mapping to `SecurityConfig` (Modify, Task 26). **Must
+   merge with, not replace, the default scope-based authorities**:
+   `setJwtGrantedAuthoritiesConverter` takes over authority extraction
+   entirely — using only the roles-claim converter would silently strip
+   every `SCOPE_*` authority, breaking Task 30's
+   `@PreAuthorize("hasAuthority('SCOPE_permissions:sync')")` on the
+   permission-catalog-sync endpoint, since no token would ever carry that
+   authority again:
 
    ```java
    @Bean
@@ -7891,8 +8018,16 @@ too, so this controller can resolve the right `RegisteredClient` and call
        var rolesConverter = new org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter();
        rolesConverter.setAuthorityPrefix("ROLE_");
        rolesConverter.setAuthoritiesClaimName("roles");
+       var scopeConverter = new org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter();
+       // default settings: reads the standard "scope"/"scp" claim, prefixes with "SCOPE_"
+
        var converter = new org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter();
-       converter.setJwtGrantedAuthoritiesConverter(rolesConverter);
+       converter.setJwtGrantedAuthoritiesConverter(jwt -> {
+           var authorities = new java.util.HashSet<org.springframework.security.core.GrantedAuthority>();
+           authorities.addAll(rolesConverter.convert(jwt));
+           authorities.addAll(scopeConverter.convert(jwt));
+           return authorities;
+       });
        return converter;
    }
    ```
@@ -8339,6 +8474,13 @@ depends on the full stack existing — role/permission endpoints (Task 30),
 lockout (Task 16), rate limiting (Task 24), and login (Task 25) — so it
 lands last.
 
+The CI job's "prepare role/permissions via the API" step (below) is part of
+the gate itself, not optional scaffolding around it: `k6/correctness.js`
+needs a real role id, its current `version`, a bearer token, and 20 real
+permission ids to run against, and nothing else in this job produces them.
+Skipping or stubbing that step means the gate can't run at all — it isn't
+an extra to trim if the workflow feels long.
+
 **Files:**
 - Create: `authentication/Dockerfile`
 - Create: `authentication/docker-compose.k6.yml`
@@ -8553,10 +8695,76 @@ lands last.
            working-directory: authentication
            run: docker compose -f docker-compose.k6.yml exec -T postgres \
                 psql -U authentication -d authentication -f /dev/stdin < k6/seed.sql
+         - name: Prepare role/permissions via the API (populates the k6 env vars)
+           working-directory: authentication
+           # Same literal value as docker-compose.k6.yml's `auth` service — the
+           # container has it, but this step's own shell (on the runner, not in
+           # the container) needs it too, to log in as the bootstrap admin.
+           env:
+             AUTH_BOOTSTRAP_ADMIN_PASSWORD: "K6LoadTestAdmin!123"
+           run: |
+             set -euo pipefail
+             ACCESS_TOKEN=$(curl -sf -u example-app:example-secret \
+               -d grant_type=password -d tenant=default -d username=admin@default.local \
+               -d "password=${AUTH_BOOTSTRAP_ADMIN_PASSWORD}" -d scope=permissions:sync \
+               http://localhost:8080/oauth2/token | jq -r .access_token)
+
+             ROLE_ID=$(curl -sf -X POST http://localhost:8080/v1/roles \
+               -H "Authorization: Bearer ${ACCESS_TOKEN}" -H "Content-Type: application/json" \
+               -d '{"name":"k6-concurrency-role","isTemplate":false}' | jq -r .id)
+
+             STARTING_VERSION=$(curl -sf http://localhost:8080/v1/roles/${ROLE_ID} \
+               -H "Authorization: Bearer ${ACCESS_TOKEN}" | jq -r .version)
+
+             PERMISSION_NAMES=$(for i in $(seq 1 20); do printf '"k6-perm-%s",' "$i"; done | sed 's/,$//')
+             curl -sf -X PUT http://localhost:8080/v1/applications/example-app/permissions \
+               -H "Authorization: Bearer ${ACCESS_TOKEN}" -H "Content-Type: application/json" \
+               -d "{\"permissionNames\":[${PERMISSION_NAMES}]}" > /dev/null
+
+             ALL_PERMISSIONS=$(curl -sf http://localhost:8080/v1/permissions \
+               -H "Authorization: Bearer ${ACCESS_TOKEN}")
+
+             {
+               echo "ACCESS_TOKEN=${ACCESS_TOKEN}"
+               echo "ROLE_ID=${ROLE_ID}"
+               echo "STARTING_VERSION=${STARTING_VERSION}"
+               for i in $(seq 1 20); do
+                 PID=$(echo "${ALL_PERMISSIONS}" | jq -r ".[] | select(.name==\"k6-perm-${i}\") | .id")
+                 echo "PERMISSION_ID_${i}=${PID}"
+               done
+             } >> "$GITHUB_ENV"
          - name: Run k6 correctness scenario
            uses: grafana/k6-action@v0.3.1
            with:
              filename: authentication/k6/correctness.js
+           # Listed explicitly rather than relying on GITHUB_ENV propagating into
+           # whatever container/process this action wraps k6 in — k6 only sees an
+           # __ENV entry for a variable actually forwarded here.
+           env:
+             BASE_URL: http://localhost:8080
+             ROLE_ID: ${{ env.ROLE_ID }}
+             STARTING_VERSION: ${{ env.STARTING_VERSION }}
+             ACCESS_TOKEN: ${{ env.ACCESS_TOKEN }}
+             PERMISSION_ID_1: ${{ env.PERMISSION_ID_1 }}
+             PERMISSION_ID_2: ${{ env.PERMISSION_ID_2 }}
+             PERMISSION_ID_3: ${{ env.PERMISSION_ID_3 }}
+             PERMISSION_ID_4: ${{ env.PERMISSION_ID_4 }}
+             PERMISSION_ID_5: ${{ env.PERMISSION_ID_5 }}
+             PERMISSION_ID_6: ${{ env.PERMISSION_ID_6 }}
+             PERMISSION_ID_7: ${{ env.PERMISSION_ID_7 }}
+             PERMISSION_ID_8: ${{ env.PERMISSION_ID_8 }}
+             PERMISSION_ID_9: ${{ env.PERMISSION_ID_9 }}
+             PERMISSION_ID_10: ${{ env.PERMISSION_ID_10 }}
+             PERMISSION_ID_11: ${{ env.PERMISSION_ID_11 }}
+             PERMISSION_ID_12: ${{ env.PERMISSION_ID_12 }}
+             PERMISSION_ID_13: ${{ env.PERMISSION_ID_13 }}
+             PERMISSION_ID_14: ${{ env.PERMISSION_ID_14 }}
+             PERMISSION_ID_15: ${{ env.PERMISSION_ID_15 }}
+             PERMISSION_ID_16: ${{ env.PERMISSION_ID_16 }}
+             PERMISSION_ID_17: ${{ env.PERMISSION_ID_17 }}
+             PERMISSION_ID_18: ${{ env.PERMISSION_ID_18 }}
+             PERMISSION_ID_19: ${{ env.PERMISSION_ID_19 }}
+             PERMISSION_ID_20: ${{ env.PERMISSION_ID_20 }}
          - name: Assert no permission-set union in the database
            working-directory: authentication
            run: |
