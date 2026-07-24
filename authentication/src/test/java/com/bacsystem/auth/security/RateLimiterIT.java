@@ -22,19 +22,27 @@ class RateLimiterIT extends PostgresRedisTestBase {
 
     @Test
     void adminBucketFailsOpenWhenRedisIsUnreachable() {
-        RateLimiter brokenRedisLimiter = new RateLimiter(
-                RedisClient.create("redis://localhost:1"), 10, 100);
+        RedisClient unreachableRedis = RedisClient.create("redis://localhost:1");
+        try {
+            RateLimiter brokenRedisLimiter = new RateLimiter(unreachableRedis, 10, 100);
 
-        // Redis at that port is unreachable — admin path must still allow the call
-        assertThat(brokenRedisLimiter.tryConsumeAdmin("any-key")).isTrue();
+            // Redis at that port is unreachable — admin path must still allow the call
+            assertThat(brokenRedisLimiter.tryConsumeAdmin("any-key")).isTrue();
+        } finally {
+            unreachableRedis.shutdown();
+        }
     }
 
     @Test
     void authBucketFailsClosedWhenRedisIsUnreachable() {
-        RateLimiter brokenRedisLimiter = new RateLimiter(
-                RedisClient.create("redis://localhost:1"), 10, 100);
+        RedisClient unreachableRedis = RedisClient.create("redis://localhost:1");
+        try {
+            RateLimiter brokenRedisLimiter = new RateLimiter(unreachableRedis, 10, 100);
 
-        // Redis at that port is unreachable — auth path must deny the call
-        assertThat(brokenRedisLimiter.tryConsumeAuth("any-key")).isFalse();
+            // Redis at that port is unreachable — auth path must deny the call
+            assertThat(brokenRedisLimiter.tryConsumeAuth("any-key")).isFalse();
+        } finally {
+            unreachableRedis.shutdown();
+        }
     }
 }
