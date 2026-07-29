@@ -37,21 +37,36 @@ class RefreshTokenServiceIT extends PostgresRedisTestBase {
         User user = newUser();
         String raw = refreshTokenService.issue(user, "example-app");
 
-        String rotatedRaw = refreshTokenService.rotate(raw);
+        String rotatedRaw = refreshTokenService.rotate(raw, "example-app").newRawRefreshToken();
 
         assertThat(rotatedRaw).isNotEqualTo(raw);
-        assertThrows(RefreshTokenReuseException.class, () -> refreshTokenService.rotate(raw));
+        assertThrows(RefreshTokenReuseException.class, () -> refreshTokenService.rotate(raw, "example-app"));
     }
 
     @Test
     void reusingAnAlreadyRotatedTokenRevokesTheWholeChain() {
         User user = newUser();
         String raw = refreshTokenService.issue(user, "example-app");
-        String rotatedOnce = refreshTokenService.rotate(raw);
+        String rotatedOnce = refreshTokenService.rotate(raw, "example-app").newRawRefreshToken();
 
-        assertThrows(RefreshTokenReuseException.class, () -> refreshTokenService.rotate(raw));
+        assertThrows(RefreshTokenReuseException.class, () -> refreshTokenService.rotate(raw, "example-app"));
 
         // the chain is fully revoked — even the legitimately-rotated token no longer works
-        assertThrows(RefreshTokenReuseException.class, () -> refreshTokenService.rotate(rotatedOnce));
+        assertThrows(RefreshTokenReuseException.class, () -> refreshTokenService.rotate(rotatedOnce, "example-app"));
+    }
+
+    @Test
+    void rotatingWithAnotherClientsCredentialsIsRejectedAndRevokesTheChain() {
+        // §8.2: "one token per application... never a global token valid everywhere". A
+        // token issued to "example-app" must not be redeemable by a different registered
+        // client, even one presenting otherwise-valid Basic-Auth credentials of its own.
+        User user = newUser();
+        String raw = refreshTokenService.issue(user, "example-app");
+
+        assertThrows(RefreshTokenReuseException.class, () -> refreshTokenService.rotate(raw, "some-other-app"));
+
+        // the mismatch is treated as suspicious reuse — the chain is revoked, so even the
+        // legitimate client can no longer redeem the original token afterwards.
+        assertThrows(RefreshTokenReuseException.class, () -> refreshTokenService.rotate(raw, "example-app"));
     }
 }

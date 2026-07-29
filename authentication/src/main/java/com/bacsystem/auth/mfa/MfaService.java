@@ -131,6 +131,11 @@ public class MfaService {
         return rawCodes;
     }
 
+    /** Whether the user has an active MFA credential — gates the password grant's MFA branch (§8.4). */
+    public boolean isEnrolled(UUID userId) {
+        return mfaCredentialRepository.findByUserIdAndActiveTrue(userId).isPresent();
+    }
+
     /** Issues a single-use challenge ticket after password verification, ahead of the TOTP/backup-code step. */
     public String issueChallenge(UUID userId) {
         String rawTicket = TokenHasher.generateRawToken();
