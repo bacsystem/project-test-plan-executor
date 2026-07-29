@@ -3,6 +3,7 @@ package com.bacsystem.auth.web;
 import com.bacsystem.auth.identity.DuplicateEmailException;
 import com.bacsystem.auth.identity.UserNotFoundException;
 import com.bacsystem.auth.identity.WeakPasswordException;
+import com.bacsystem.auth.identity.PasswordChangeChallengeExpiredException;
 import com.bacsystem.auth.mfa.MfaChallengeExpiredException;
 import com.bacsystem.auth.mfa.MfaVerificationFailedException;
 import com.bacsystem.auth.mfa.SelfMfaResetException;
@@ -85,6 +86,11 @@ public class ProblemDetailAdvice {
 
     @ExceptionHandler(MfaChallengeExpiredException.class)
     public ProblemDetail handleMfaChallengeExpired(MfaChallengeExpiredException e) {
+        return genericAuthenticationFailure();
+    }
+
+    @ExceptionHandler(PasswordChangeChallengeExpiredException.class)
+    public ProblemDetail handlePasswordChangeChallengeExpired(PasswordChangeChallengeExpiredException e) {
         return genericAuthenticationFailure();
     }
 

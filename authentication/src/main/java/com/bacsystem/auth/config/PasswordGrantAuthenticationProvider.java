@@ -1,5 +1,6 @@
 package com.bacsystem.auth.config;
 
+import com.bacsystem.auth.identity.PasswordChangeChallengeService;
 import com.bacsystem.auth.identity.User;
 import com.bacsystem.auth.identity.UserService;
 import com.bacsystem.auth.identity.UserStatus;
@@ -32,11 +33,14 @@ import java.util.Set;
 /**
  * Implements the whole authentication decision tree the spec's login flows
  * require: tenant resolution (§5), lockout check before password verification
- * (§13), password verification, MFA branch (§8.4) returning an
- * {@code mfa_required} OAuth2 error carrying the challenge ticket instead of
- * a token, and — on full success — delegating to {@link TokenIssuer} so
- * token construction stays in one place shared with the refresh grant and
- * with {@code /v1/auth/mfa/verify} (Task 31).
+ * (§13), password verification, must-change-password branch (§7) returning a
+ * {@code password_change_required} OAuth2 error carrying a challenge ticket
+ * instead of a token, MFA branch (§8.4) returning an {@code mfa_required}
+ * OAuth2 error carrying the challenge ticket instead of a token, and — on
+ * full success — delegating to {@link TokenIssuer} so token construction
+ * stays in one place shared with the refresh grant, with
+ * {@code /v1/auth/mfa/verify} (Task 31), and with
+ * {@code /v1/auth/password/change-required}.
  */
 public class PasswordGrantAuthenticationProvider implements AuthenticationProvider {
 
@@ -45,16 +49,18 @@ public class PasswordGrantAuthenticationProvider implements AuthenticationProvid
     private final PasswordEncoder passwordEncoder;
     private final LoginAttemptService loginAttemptService;
     private final MfaService mfaService;
+    private final PasswordChangeChallengeService passwordChangeChallengeService;
     private final TokenIssuer tokenIssuer;
 
     public PasswordGrantAuthenticationProvider(TenantRepository tenantRepository, UserService userService,
             PasswordEncoder passwordEncoder, LoginAttemptService loginAttemptService, MfaService mfaService,
-            TokenIssuer tokenIssuer) {
+            PasswordChangeChallengeService passwordChangeChallengeService, TokenIssuer tokenIssuer) {
         this.tenantRepository = tenantRepository;
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
         this.loginAttemptService = loginAttemptService;
         this.mfaService = mfaService;
+        this.passwordChangeChallengeService = passwordChangeChallengeService;
         this.tokenIssuer = tokenIssuer;
     }
 
@@ -89,6 +95,19 @@ public class PasswordGrantAuthenticationProvider implements AuthenticationProvid
             }
 
             loginAttemptService.recordSuccess(user.get().getId(), grant.getUsername(), clientIp);
+
+            // §7/§5: an admin-created or bootstrap account with a temporary password still
+            // active must not receive a usable token — checked ahead of the MFA branch below
+            // so a temporary password can never be used to complete a full login even if the
+            // account also happens to have MFA enrolled. Same shape as that branch: no token
+            // is issued, a single-use challenge ticket travels in the OAuth2Error's description
+            // instead, to be redeemed at POST /v1/auth/password/change-required once the
+            // password has actually changed.
+            if (user.get().isMustChangePassword()) {
+                String challenge = passwordChangeChallengeService.issueChallenge(user.get().getId(),
+                        registeredClient.getClientId(), grant.getScopes());
+                throw new OAuth2AuthenticationException(new OAuth2Error("password_change_required", challenge, null));
+            }
 
             if (mfaService.isEnrolled(user.get().getId())) {
                 String challenge = mfaService.issueChallenge(user.get().getId(), registeredClient.getClientId(),

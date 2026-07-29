@@ -1,5 +1,6 @@
 package com.bacsystem.auth.config;
 
+import com.bacsystem.auth.identity.PasswordChangeChallengeService;
 import com.bacsystem.auth.identity.User;
 import com.bacsystem.auth.identity.UserService;
 import com.bacsystem.auth.mfa.MfaService;
@@ -85,6 +86,7 @@ public class AuthorizationServerConfig {
     public SecurityFilterChain authorizationServerSecurityFilterChain(
             HttpSecurity http, TenantRepository tenantRepository, UserService userService,
             PasswordEncoder passwordEncoder, LoginAttemptService loginAttemptService, MfaService mfaService,
+            PasswordChangeChallengeService passwordChangeChallengeService,
             RefreshTokenService refreshTokenService, TokenIssuer tokenIssuer,
             ClientIpResolver clientIpResolver, RateLimitFilter rateLimitFilter) throws Exception {
 
@@ -103,7 +105,7 @@ public class AuthorizationServerConfig {
                         .authenticationProviders(providers -> {
                             providers.add(0, new PasswordGrantAuthenticationProvider(
                                     tenantRepository, userService, passwordEncoder,
-                                    loginAttemptService, mfaService, tokenIssuer));
+                                    loginAttemptService, mfaService, passwordChangeChallengeService, tokenIssuer));
                             providers.add(0, new RefreshGrantAuthenticationProvider(
                                     refreshTokenService, tokenIssuer));
                         }))
