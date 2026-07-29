@@ -2,12 +2,18 @@ package com.bacsystem.auth.mfa;
 
 import com.bacsystem.auth.identity.User;
 import com.bacsystem.auth.identity.UserService;
+import com.bacsystem.auth.rbac.Role;
+import com.bacsystem.auth.rbac.RoleService;
+import com.bacsystem.auth.rbac.UserRole;
+import com.bacsystem.auth.rbac.UserRoleRepository;
 import com.bacsystem.auth.support.PostgresRedisTestBase;
 import com.bacsystem.auth.tenancy.Tenant;
 import com.bacsystem.auth.tenancy.TenantRepository;
 import dev.samstevens.totp.code.CodeGenerator;
 import dev.samstevens.totp.code.DefaultCodeGenerator;
 import dev.samstevens.totp.time.SystemTimeProvider;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -23,6 +29,25 @@ class MfaServiceIT extends PostgresRedisTestBase {
     @Autowired private UserService userService;
     @Autowired private MfaService mfaService;
     @Autowired private MfaBackupCodeRepository mfaBackupCodeRepository;
+    @Autowired private RoleService roleService;
+    @Autowired private UserRoleRepository userRoleRepository;
+    @Autowired private MeterRegistry meterRegistry;
+
+    private static final String ADMIN_TARGET_COUNTER = "admin_mfa_reset_admin_target_total";
+
+    private double adminTargetCounterValue() {
+        Counter counter = meterRegistry.find(ADMIN_TARGET_COUNTER).counter();
+        return counter == null ? 0.0 : counter.count();
+    }
+
+    private void grantAdminRole(User user, User grantedBy) {
+        Role adminRole = roleService.createRole(user.getTenant().getId(), "admin", false, grantedBy.getId());
+        UserRole assignment = new UserRole();
+        assignment.setUser(user);
+        assignment.setRole(adminRole);
+        assignment.setAssignedBy(grantedBy);
+        userRoleRepository.save(assignment);
+    }
 
     private static final int TOTP_PERIOD_SECONDS = 30;
 
@@ -101,7 +126,7 @@ class MfaServiceIT extends PostgresRedisTestBase {
     void selfResetIsForbidden() {
         User user = newUser("mfa-self-reset@test.com");
         assertThrows(SelfMfaResetException.class,
-                () -> mfaService.adminReset(user.getTenant().getId(), user.getId(), user.getId(), "video call", false));
+                () -> mfaService.adminReset(user.getTenant().getId(), user.getId(), user.getId(), "video call"));
     }
 
     @Test
@@ -113,7 +138,7 @@ class MfaServiceIT extends PostgresRedisTestBase {
         String code = currentCodeFor(enrollment.rawSecret());
         mfaService.confirmEnrollment(target.getId(), code);
 
-        mfaService.adminReset(tenant.getId(), admin.getId(), target.getId(), "in-person ID check", false);
+        mfaService.adminReset(tenant.getId(), admin.getId(), target.getId(), "in-person ID check");
 
         List<com.bacsystem.auth.mfa.MfaBackupCode> remainingCodes =
                 mfaBackupCodeRepository.findByUserIdAndUsedAtIsNull(target.getId());
@@ -127,6 +152,33 @@ class MfaServiceIT extends PostgresRedisTestBase {
 
         assertThrows(com.bacsystem.auth.identity.UserNotFoundException.class,
                 () -> mfaService.adminReset(admin.getTenant().getId(), admin.getId(), target.getId(),
-                        "video call", false));
+                        "video call"));
+    }
+
+    @Test
+    void adminResetOfGenuineAdminTargetEmitsElevatedSecuritySignal() {
+        Tenant tenant = newTenant();
+        User actor = userService.createUser(tenant.getId(), "mfa-signal-actor@test.com", "OriginalPassw0rd!1", null);
+        User target = userService.createUser(tenant.getId(), "mfa-signal-target@test.com", "OriginalPassw0rd!1", null);
+        grantAdminRole(target, actor);
+
+        double before = adminTargetCounterValue();
+
+        mfaService.adminReset(tenant.getId(), actor.getId(), target.getId(), "video call");
+
+        assertThat(adminTargetCounterValue()).isEqualTo(before + 1.0);
+    }
+
+    @Test
+    void adminResetOfNonAdminTargetDoesNotEmitElevatedSecuritySignal() {
+        Tenant tenant = newTenant();
+        User actor = userService.createUser(tenant.getId(), "mfa-nosignal-actor@test.com", "OriginalPassw0rd!1", null);
+        User target = userService.createUser(tenant.getId(), "mfa-nosignal-target@test.com", "OriginalPassw0rd!1", null);
+
+        double before = adminTargetCounterValue();
+
+        mfaService.adminReset(tenant.getId(), actor.getId(), target.getId(), "video call");
+
+        assertThat(adminTargetCounterValue()).isEqualTo(before);
     }
 }
