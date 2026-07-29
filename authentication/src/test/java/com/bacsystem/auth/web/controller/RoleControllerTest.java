@@ -5,6 +5,7 @@ import com.bacsystem.auth.rbac.RoleService;
 import com.bacsystem.auth.rbac.RoleVersionConflictException;
 import com.bacsystem.auth.security.ClientIpResolver;
 import com.bacsystem.auth.security.RateLimiter;
+import com.bacsystem.auth.tenancy.Tenant;
 import com.bacsystem.auth.web.ProblemDetailAdvice;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,30 +40,76 @@ class RoleControllerTest {
 
     @Test
     void getRoleReturnsVersionAndPermissions() throws Exception {
+        UUID tenantId = UUID.randomUUID();
         UUID roleId = UUID.randomUUID();
-        Role role = new Role();
-        role.setId(roleId);
-        role.setName("editor");
+        Role role = roleOf(roleId, tenantId);
         when(roleService.getRole(roleId)).thenReturn(role);
         when(roleService.getPermissions(roleId)).thenReturn(List.of());
 
-        mockMvc.perform(get("/v1/roles/{id}", roleId).with(jwt()))
+        mockMvc.perform(get("/v1/roles/{id}", roleId).with(jwt().jwt(token -> token.claim("tenant", tenantId.toString()))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.version").exists())
                 .andExpect(jsonPath("$.permissions").isArray());
     }
 
     @Test
-    void replacePermissionsWithStaleVersionReturns409() throws Exception {
+    void getRoleFromAnotherTenantReturns404() throws Exception {
         UUID roleId = UUID.randomUUID();
+        Role role = roleOf(roleId, UUID.randomUUID());
+        when(roleService.getRole(roleId)).thenReturn(role);
+
+        mockMvc.perform(get("/v1/roles/{id}", roleId)
+                        .with(jwt().jwt(token -> token.claim("tenant", UUID.randomUUID().toString()))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void replacePermissionsWithStaleVersionReturns409() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID roleId = UUID.randomUUID();
+        when(roleService.getRole(roleId)).thenReturn(roleOf(roleId, tenantId));
         when(roleService.replacePermissions(eq(roleId), eq(3L), anySet(), any()))
                 .thenThrow(new RoleVersionConflictException());
 
         mockMvc.perform(put("/v1/roles/{id}/permissions", roleId)
-                        .with(jwt().jwt(token -> token.subject(UUID.randomUUID().toString())))
+                        .with(jwt().jwt(token -> token.subject(UUID.randomUUID().toString())
+                                .claim("tenant", tenantId.toString())))
                         .contentType("application/json")
                         .content("{\"version\":3,\"permissionIds\":[]}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("ROLE_VERSION_CONFLICT"));
+    }
+
+    @Test
+    void replacePermissionsOnAnotherTenantsRoleReturns404() throws Exception {
+        UUID roleId = UUID.randomUUID();
+        when(roleService.getRole(roleId)).thenReturn(roleOf(roleId, UUID.randomUUID()));
+
+        mockMvc.perform(put("/v1/roles/{id}/permissions", roleId)
+                        .with(jwt().jwt(token -> token.subject(UUID.randomUUID().toString())
+                                .claim("tenant", UUID.randomUUID().toString())))
+                        .contentType("application/json")
+                        .content("{\"version\":3,\"permissionIds\":[]}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deleteOnAnotherTenantsRoleReturns404() throws Exception {
+        UUID roleId = UUID.randomUUID();
+        when(roleService.getRole(roleId)).thenReturn(roleOf(roleId, UUID.randomUUID()));
+
+        mockMvc.perform(delete("/v1/roles/{id}", roleId)
+                        .with(jwt().jwt(token -> token.claim("tenant", UUID.randomUUID().toString()))))
+                .andExpect(status().isNotFound());
+    }
+
+    private static Role roleOf(UUID roleId, UUID tenantId) {
+        Role role = new Role();
+        role.setId(roleId);
+        role.setName("editor");
+        Tenant tenant = new Tenant();
+        tenant.setId(tenantId);
+        role.setTenant(tenant);
+        return role;
     }
 }

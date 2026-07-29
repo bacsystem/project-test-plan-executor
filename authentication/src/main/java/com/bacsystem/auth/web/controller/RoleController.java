@@ -1,6 +1,7 @@
 package com.bacsystem.auth.web.controller;
 
 import com.bacsystem.auth.rbac.Role;
+import com.bacsystem.auth.rbac.RoleNotFoundException;
 import com.bacsystem.auth.rbac.RoleService;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -33,31 +34,46 @@ public class RoleController {
     @GetMapping
     public List<RoleResponse> list(JwtAuthenticationToken auth) {
         return roleService.listByTenant(tenantIdOf(auth)).stream()
-                .map(r -> toResponse(r, roleService.getPermissions(r.getId()).stream()
-                        .map(rp -> rp.getPermission().getId()).toList()))
+                .map(r -> toResponse(r, permissionIdsOf(r.getId())))
                 .toList();
     }
 
     @GetMapping("/{id}")
-    public RoleResponse get(@PathVariable UUID id) {
-        Role role = roleService.getRole(id);
-        List<UUID> permissionIds = roleService.getPermissions(id).stream()
-                .map(rp -> rp.getPermission().getId()).toList();
-        return toResponse(role, permissionIds);
+    public RoleResponse get(@PathVariable UUID id, JwtAuthenticationToken auth) {
+        Role role = requireOwnedRole(id, auth);
+        return toResponse(role, permissionIdsOf(id));
     }
 
     @PutMapping("/{id}/permissions")
     public RoleResponse replacePermissions(@PathVariable UUID id, @RequestBody ReplacePermissionsRequest request,
                                             JwtAuthenticationToken auth) {
+        requireOwnedRole(id, auth);
         Role role = roleService.replacePermissions(id, request.version(), request.permissionIds(), actorIdOf(auth));
-        List<UUID> permissionIds = roleService.getPermissions(id).stream()
-                .map(rp -> rp.getPermission().getId()).toList();
-        return toResponse(role, permissionIds);
+        return toResponse(role, permissionIdsOf(id));
     }
 
     @DeleteMapping("/{id}")
     public void delete(@PathVariable UUID id, JwtAuthenticationToken auth) {
+        requireOwnedRole(id, auth);
         roleService.deleteRole(id, actorIdOf(auth));
+    }
+
+    /**
+     * Loads the role and enforces the multi-tenancy boundary: a role that
+     * belongs to another tenant must 404, not leak its existence/contents to
+     * a caller who merely guessed or observed its id (cross-tenant IDOR).
+     */
+    private Role requireOwnedRole(UUID id, JwtAuthenticationToken auth) {
+        Role role = roleService.getRole(id);
+        if (!tenantIdOf(auth).equals(role.getTenant().getId())) {
+            throw new RoleNotFoundException(id);
+        }
+        return role;
+    }
+
+    private List<UUID> permissionIdsOf(UUID roleId) {
+        return roleService.getPermissions(roleId).stream()
+                .map(rp -> rp.getPermission().getId()).toList();
     }
 
     private UUID tenantIdOf(JwtAuthenticationToken auth) {
