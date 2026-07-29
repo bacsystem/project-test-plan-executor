@@ -4,6 +4,7 @@ import com.bacsystem.auth.identity.UserRepository;
 import com.bacsystem.auth.mfa.MfaChallengeContext;
 import com.bacsystem.auth.mfa.MfaEnrollmentResult;
 import com.bacsystem.auth.mfa.MfaService;
+import com.bacsystem.auth.mfa.MfaVerificationFailedException;
 import com.bacsystem.auth.rbac.JpaRegisteredClientRepository;
 import com.bacsystem.auth.token.IssuedTokens;
 import com.bacsystem.auth.token.TokenIssuer;
@@ -18,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -67,9 +67,16 @@ public class MfaController {
     @PostMapping("/verify")
     public TokenPairResponse verify(@RequestBody VerifyRequest request) {
         MfaChallengeContext context = mfaService.verifyChallenge(request.challenge(), request.code());
+        // The client/user referenced by an already-verified challenge should always still exist — this
+        // is a defensive check, not the expected path — but if either vanished during the 3-minute
+        // challenge TTL, fail the same generic-authentication-failure way §10.2 requires everywhere else
+        // on this pre-authentication path, instead of leaking a raw 500.
         RegisteredClient client = registeredClientRepository.findByClientId(context.applicationClientId());
-        var user = userRepository.findById(context.userId()).orElseThrow();
-        IssuedTokens issued = tokenIssuer.issue(client, user, Set.of());
+        if (client == null) {
+            throw new MfaVerificationFailedException();
+        }
+        var user = userRepository.findById(context.userId()).orElseThrow(MfaVerificationFailedException::new);
+        IssuedTokens issued = tokenIssuer.issue(client, user, context.scopes());
         return new TokenPairResponse(issued.accessToken(), issued.refreshToken());
     }
 

@@ -91,7 +91,8 @@ public class PasswordGrantAuthenticationProvider implements AuthenticationProvid
             loginAttemptService.recordSuccess(user.get().getId(), grant.getUsername(), clientIp);
 
             if (mfaService.isEnrolled(user.get().getId())) {
-                String challenge = mfaService.issueChallenge(user.get().getId(), registeredClient.getClientId());
+                String challenge = mfaService.issueChallenge(user.get().getId(), registeredClient.getClientId(),
+                        grant.getScopes());
                 throw new OAuth2AuthenticationException(new OAuth2Error("mfa_required", challenge, null));
             }
 

@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.*;
 
+import java.util.Set;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class MfaVerifyIT extends PostgresRedisTestBase {
@@ -48,7 +50,7 @@ class MfaVerifyIT extends PostgresRedisTestBase {
         String firstCode = currentCodeFor(enrollment.rawSecret());
         mfaService.confirmEnrollment(user.getId(), firstCode);
 
-        String challenge = mfaService.issueChallenge(user.getId(), "example-app");
+        String challenge = mfaService.issueChallenge(user.getId(), "example-app", Set.of("permissions:sync"));
         String loginCode = currentCodeFor(enrollment.rawSecret());
 
         HttpHeaders headers = new HttpHeaders();
@@ -59,5 +61,14 @@ class MfaVerifyIT extends PostgresRedisTestBase {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).containsKeys("access_token", "refresh_token");
+
+        // The scope requested on the original password-grant step must survive the MFA round-trip
+        // (Global Constraint: MFA is a second factor, not a scope-stripping step) — decode the access
+        // token and check its `scope` claim rather than trusting the grant, since a hardcoded empty
+        // scope set would still return HTTP 200.
+        String accessToken = (String) response.getBody().get("access_token");
+        String payloadJson = new String(java.util.Base64.getUrlDecoder()
+                .decode(accessToken.split("\\.")[1]));
+        assertThat(payloadJson).contains("permissions:sync");
     }
 }

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -28,11 +29,14 @@ class MfaServiceIT extends PostgresRedisTestBase {
     private final CodeGenerator codeGenerator = new DefaultCodeGenerator();
 
     private User newUser(String email) {
+        return userService.createUser(newTenant().getId(), email, "OriginalPassw0rd!1", null);
+    }
+
+    private Tenant newTenant() {
         Tenant tenant = new Tenant();
         tenant.setSlug("mfa-svc-" + System.nanoTime());
         tenant.setName("MFA Service Test");
-        tenant = tenantRepository.saveAndFlush(tenant);
-        return userService.createUser(tenant.getId(), email, "OriginalPassw0rd!1", null);
+        return tenantRepository.saveAndFlush(tenant);
     }
 
     /**
@@ -56,7 +60,7 @@ class MfaServiceIT extends PostgresRedisTestBase {
         List<String> backupCodes = mfaService.confirmEnrollment(user.getId(), currentCode);
         assertThat(backupCodes).hasSize(10);
 
-        String challenge = mfaService.issueChallenge(user.getId(), "example-app");
+        String challenge = mfaService.issueChallenge(user.getId(), "example-app", Set.of());
         String loginCode = currentCodeFor(enrollment.rawSecret());
         MfaChallengeContext result = mfaService.verifyChallenge(challenge, loginCode);
         assertThat(result.userId()).isEqualTo(user.getId());
@@ -69,7 +73,7 @@ class MfaServiceIT extends PostgresRedisTestBase {
         String code = currentCodeFor(enrollment.rawSecret());
         mfaService.confirmEnrollment(user.getId(), code);
 
-        String challenge = mfaService.issueChallenge(user.getId(), "example-app");
+        String challenge = mfaService.issueChallenge(user.getId(), "example-app", Set.of());
         String loginCode = currentCodeFor(enrollment.rawSecret());
         mfaService.verifyChallenge(challenge, loginCode);
 
@@ -85,10 +89,10 @@ class MfaServiceIT extends PostgresRedisTestBase {
         List<String> backupCodes = mfaService.confirmEnrollment(user.getId(), code);
         String firstBackupCode = backupCodes.get(0);
 
-        String challenge1 = mfaService.issueChallenge(user.getId(), "example-app");
+        String challenge1 = mfaService.issueChallenge(user.getId(), "example-app", Set.of());
         mfaService.verifyChallenge(challenge1, firstBackupCode);
 
-        String challenge2 = mfaService.issueChallenge(user.getId(), "example-app");
+        String challenge2 = mfaService.issueChallenge(user.getId(), "example-app", Set.of());
         assertThrows(MfaVerificationFailedException.class,
                 () -> mfaService.verifyChallenge(challenge2, firstBackupCode));
     }
@@ -97,21 +101,32 @@ class MfaServiceIT extends PostgresRedisTestBase {
     void selfResetIsForbidden() {
         User user = newUser("mfa-self-reset@test.com");
         assertThrows(SelfMfaResetException.class,
-                () -> mfaService.adminReset(user.getId(), user.getId(), "video call", false));
+                () -> mfaService.adminReset(user.getTenant().getId(), user.getId(), user.getId(), "video call", false));
     }
 
     @Test
     void adminResetRevokesAllRefreshTokensAndDeactivatesMfa() throws Exception {
-        User admin = newUser("mfa-admin@test.com");
-        User target = newUser("mfa-target@test.com");
+        Tenant tenant = newTenant();
+        User admin = userService.createUser(tenant.getId(), "mfa-admin@test.com", "OriginalPassw0rd!1", null);
+        User target = userService.createUser(tenant.getId(), "mfa-target@test.com", "OriginalPassw0rd!1", null);
         MfaEnrollmentResult enrollment = mfaService.beginEnrollment(target.getId());
         String code = currentCodeFor(enrollment.rawSecret());
         mfaService.confirmEnrollment(target.getId(), code);
 
-        mfaService.adminReset(admin.getId(), target.getId(), "in-person ID check", false);
+        mfaService.adminReset(tenant.getId(), admin.getId(), target.getId(), "in-person ID check", false);
 
         List<com.bacsystem.auth.mfa.MfaBackupCode> remainingCodes =
                 mfaBackupCodeRepository.findByUserIdAndUsedAtIsNull(target.getId());
         assertThat(remainingCodes).isEmpty();
+    }
+
+    @Test
+    void adminResetRejectsTargetFromAnotherTenant() {
+        User admin = newUser("mfa-admin-cross@test.com");
+        User target = newUser("mfa-target-cross@test.com");
+
+        assertThrows(com.bacsystem.auth.identity.UserNotFoundException.class,
+                () -> mfaService.adminReset(admin.getTenant().getId(), admin.getId(), target.getId(),
+                        "video call", false));
     }
 }
