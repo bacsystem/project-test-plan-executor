@@ -72,7 +72,7 @@ class PasswordGrantIT extends PostgresRedisTestBase {
         userService.changePassword(
                 userService.findByTenantAndEmail(tenant.getId(), "deactivated@test.com").orElseThrow(),
                 "ValidPassw0rd!123Changed");
-        userService.deactivateUser(user.getId(), null);
+        userService.deactivateUser(tenant.getId(), user.getId(), null);
 
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("grant_type", "password");

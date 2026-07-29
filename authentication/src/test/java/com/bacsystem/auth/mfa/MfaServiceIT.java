@@ -56,10 +56,10 @@ class MfaServiceIT extends PostgresRedisTestBase {
         List<String> backupCodes = mfaService.confirmEnrollment(user.getId(), currentCode);
         assertThat(backupCodes).hasSize(10);
 
-        String challenge = mfaService.issueChallenge(user.getId());
+        String challenge = mfaService.issueChallenge(user.getId(), "example-app");
         String loginCode = currentCodeFor(enrollment.rawSecret());
-        java.util.UUID verifiedUserId = mfaService.verifyChallenge(challenge, loginCode);
-        assertThat(verifiedUserId).isEqualTo(user.getId());
+        MfaChallengeContext result = mfaService.verifyChallenge(challenge, loginCode);
+        assertThat(result.userId()).isEqualTo(user.getId());
     }
 
     @Test
@@ -69,7 +69,7 @@ class MfaServiceIT extends PostgresRedisTestBase {
         String code = currentCodeFor(enrollment.rawSecret());
         mfaService.confirmEnrollment(user.getId(), code);
 
-        String challenge = mfaService.issueChallenge(user.getId());
+        String challenge = mfaService.issueChallenge(user.getId(), "example-app");
         String loginCode = currentCodeFor(enrollment.rawSecret());
         mfaService.verifyChallenge(challenge, loginCode);
 
@@ -85,10 +85,10 @@ class MfaServiceIT extends PostgresRedisTestBase {
         List<String> backupCodes = mfaService.confirmEnrollment(user.getId(), code);
         String firstBackupCode = backupCodes.get(0);
 
-        String challenge1 = mfaService.issueChallenge(user.getId());
+        String challenge1 = mfaService.issueChallenge(user.getId(), "example-app");
         mfaService.verifyChallenge(challenge1, firstBackupCode);
 
-        String challenge2 = mfaService.issueChallenge(user.getId());
+        String challenge2 = mfaService.issueChallenge(user.getId(), "example-app");
         assertThrows(MfaVerificationFailedException.class,
                 () -> mfaService.verifyChallenge(challenge2, firstBackupCode));
     }
