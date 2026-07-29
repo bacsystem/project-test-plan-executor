@@ -26,6 +26,13 @@ public class PermissionCatalogService {
      */
     @Transactional
     public PermissionSyncResult sync(String applicationName, Set<String> permissionNames) {
+        // Read the "already active" set BEFORE the upsert loop below changes it —
+        // whatever isn't in it is genuinely newly-added by this call (§9.2's
+        // "added" is the newly-added count, not the submitted count).
+        int alreadyActiveCount = permissionNames.isEmpty() ? 0
+                : permissionRepository.findActiveNames(applicationName, permissionNames).size();
+        int added = permissionNames.size() - alreadyActiveCount;
+
         for (String name : permissionNames) {
             permissionRepository.upsertActive(applicationName, name);
         }
@@ -35,7 +42,7 @@ public class PermissionCatalogService {
         int deprecated = permissionRepository.deprecateMissing(applicationName, namesOrPlaceholder);
 
         auditLogService.record(null, AuditAction.PERMISSION_CATALOG_SYNCED, "Application", applicationName,
-                "{\"added\":" + permissionNames.size() + ",\"deprecated\":" + deprecated + "}");
-        return new PermissionSyncResult(permissionNames.size(), deprecated);
+                "{\"added\":" + added + ",\"deprecated\":" + deprecated + "}");
+        return new PermissionSyncResult(added, deprecated);
     }
 }

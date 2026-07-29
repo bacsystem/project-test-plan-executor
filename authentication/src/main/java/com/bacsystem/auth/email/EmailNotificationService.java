@@ -38,6 +38,18 @@ public class EmailNotificationService {
         emailOutboxRepository.save(outbox);
     }
 
+    /**
+     * Read-only, non-mutating DB round-trip against this table, used only by
+     * {@code OneTimeTokenService.requestPasswordReset}'s "no such account"
+     * branch to keep that method's DB round-trip count in step with its
+     * "account exists" branch (timing/DB-load side-channel mitigation, best
+     * effort — §10.2/§12; see that method's javadoc for the full rationale).
+     * Deliberately queries a random id so nothing is ever read back or persisted.
+     */
+    public void probeForTimingParity() {
+        emailOutboxRepository.existsById(java.util.UUID.randomUUID());
+    }
+
     @Scheduled(fixedDelayString = "${auth.email.send-poll-ms:5000}")
     @Transactional
     public void sendPending() {

@@ -39,11 +39,27 @@ public class OneTimeTokenService {
      * plan's own tests to exercise the full cycle without reading email;
      * the real HTTP layer (Task 32) discards the return value and always
      * responds 202.
+     * <p>
+     * Best-effort timing/DB-load side-channel mitigation: a miss used to do a
+     * single SELECT and return, while a hit did that SELECT plus two INSERTs
+     * (token + email-outbox row) — a measurably different DB round-trip
+     * count/shape for an external observer, undermining the "never reveals
+     * whether the email exists" guarantee at that level even though the HTTP
+     * status code is uniform. The miss branch below now performs the same
+     * number of round-trips against the same two collaborators via a cheap,
+     * non-mutating, always-false {@code existsById} lookup on a random id —
+     * nothing is ever persisted or made redeemable. This is deliberately not
+     * a perfect mitigation: network jitter dwarfs microsecond-scale DB timing
+     * differences in most real deployments, and a same-process resource-cost
+     * observer isn't the threat model here — only the round-trip *count* was
+     * cheap to close, so that's what this does.
      */
     @Transactional
     public String requestPasswordReset(UUID tenantId, String email) {
         Optional<User> user = userService.findByTenantAndEmail(tenantId, email);
         if (user.isEmpty()) {
+            oneTimeTokenRepository.existsById(UUID.randomUUID());
+            emailNotificationService.probeForTimingParity();
             return null;
         }
 

@@ -65,8 +65,10 @@ public class PasswordController {
 
     @PostMapping("/change")
     public void change(@RequestBody ChangeRequest request, JwtAuthenticationToken auth) {
-        UUID userId = UUID.fromString(((Jwt) auth.getPrincipal()).getSubject());
-        userService.changePassword(userService.getById(userId), request.newPassword());
+        Jwt jwt = (Jwt) auth.getPrincipal();
+        UUID tenantId = UUID.fromString(jwt.getClaimAsString("tenant"));
+        UUID userId = UUID.fromString(jwt.getSubject());
+        userService.changePassword(userService.getById(tenantId, userId), request.newPassword());
     }
 
     /**
