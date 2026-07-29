@@ -61,6 +61,25 @@ class RefreshTokenRepositoryTest extends PostgresRedisTestBase {
 
         List<RefreshToken> chain = refreshTokenRepository.findByUserId(user.getId());
         assertThat(chain).hasSize(2);
+
+        Optional<RefreshToken> found = refreshTokenRepository.findByTokenHash("original-hash");
+        assertThat(found).isPresent();
+        assertThat(found.get().getReplacedBy()).isNotNull();
+        assertThat(found.get().getReplacedBy().getId()).isEqualTo(rotated.getId());
+    }
+
+    @Test
+    void findByTokenHashReturnsEmptyForUnknownHash() {
+        Optional<RefreshToken> found = refreshTokenRepository.findByTokenHash("does-not-exist");
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    void findByUserIdReturnsEmptyListForUserWithNoTokens() {
+        User user = newUser();
+
+        List<RefreshToken> chain = refreshTokenRepository.findByUserId(user.getId());
+        assertThat(chain).isEmpty();
     }
 
     private User newUser() {

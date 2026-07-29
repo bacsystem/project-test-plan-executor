@@ -20,6 +20,7 @@
         <java.version>21</java.version>
         <totp.version>1.7.1</totp.version>
         <bucket4j.version>8.10.1</bucket4j.version>
+        <bouncycastle.version>1.78.1</bouncycastle.version>
     </properties>
 
     <dependencies>
@@ -105,6 +106,15 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
+        </dependency>
+        <!-- Spring Security's Argon2PasswordEncoder delegates hashing to Bouncy Castle
+             but does not declare it as a Maven dependency; without it, PasswordEncoderConfig's
+             argon2 encoder throws NoClassDefFoundError at runtime. -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>${bouncycastle.version}</version>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
