@@ -65,7 +65,12 @@ public class RoleController {
      */
     private Role requireOwnedRole(UUID id, JwtAuthenticationToken auth) {
         Role role = roleService.getRole(id);
-        if (!tenantIdOf(auth).equals(role.getTenant().getId())) {
+        // A null tenant marks a shared/template role (roles.tenant_id is nullable
+        // by design, see V5__create_rbac_tables.sql). This per-tenant endpoint has
+        // no notion of template access yet, so such a role is intentionally treated
+        // as inaccessible here rather than granted to (or crashing for) any caller,
+        // until a dedicated template-role access path exists.
+        if (role.getTenant() == null || !tenantIdOf(auth).equals(role.getTenant().getId())) {
             throw new RoleNotFoundException(id);
         }
         return role;

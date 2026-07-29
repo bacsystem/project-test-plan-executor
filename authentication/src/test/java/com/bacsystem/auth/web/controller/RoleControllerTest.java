@@ -103,6 +103,39 @@ class RoleControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    void getSharedTemplateRoleWithNullTenantReturns404() throws Exception {
+        UUID roleId = UUID.randomUUID();
+        when(roleService.getRole(roleId)).thenReturn(templateRoleOf(roleId));
+
+        mockMvc.perform(get("/v1/roles/{id}", roleId)
+                        .with(jwt().jwt(token -> token.claim("tenant", UUID.randomUUID().toString()))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void replacePermissionsOnSharedTemplateRoleWithNullTenantReturns404() throws Exception {
+        UUID roleId = UUID.randomUUID();
+        when(roleService.getRole(roleId)).thenReturn(templateRoleOf(roleId));
+
+        mockMvc.perform(put("/v1/roles/{id}/permissions", roleId)
+                        .with(jwt().jwt(token -> token.subject(UUID.randomUUID().toString())
+                                .claim("tenant", UUID.randomUUID().toString())))
+                        .contentType("application/json")
+                        .content("{\"version\":3,\"permissionIds\":[]}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deleteSharedTemplateRoleWithNullTenantReturns404() throws Exception {
+        UUID roleId = UUID.randomUUID();
+        when(roleService.getRole(roleId)).thenReturn(templateRoleOf(roleId));
+
+        mockMvc.perform(delete("/v1/roles/{id}", roleId)
+                        .with(jwt().jwt(token -> token.claim("tenant", UUID.randomUUID().toString()))))
+                .andExpect(status().isNotFound());
+    }
+
     private static Role roleOf(UUID roleId, UUID tenantId) {
         Role role = new Role();
         role.setId(roleId);
@@ -110,6 +143,15 @@ class RoleControllerTest {
         Tenant tenant = new Tenant();
         tenant.setId(tenantId);
         role.setTenant(tenant);
+        return role;
+    }
+
+    private static Role templateRoleOf(UUID roleId) {
+        Role role = new Role();
+        role.setId(roleId);
+        role.setName("template-editor");
+        role.setTemplate(true);
+        role.setTenant(null);
         return role;
     }
 }
