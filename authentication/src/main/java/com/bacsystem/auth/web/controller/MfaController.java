@@ -8,6 +8,7 @@ import com.bacsystem.auth.rbac.JpaRegisteredClientRepository;
 import com.bacsystem.auth.token.IssuedTokens;
 import com.bacsystem.auth.token.TokenIssuer;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import dev.samstevens.totp.exceptions.QrGenerationException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -53,7 +54,7 @@ public class MfaController {
     }
 
     @PostMapping("/enroll")
-    public EnrollResponse enroll(JwtAuthenticationToken auth) throws Exception {
+    public EnrollResponse enroll(JwtAuthenticationToken auth) throws QrGenerationException {
         MfaEnrollmentResult result = mfaService.beginEnrollment(subjectOf(auth));
         return new EnrollResponse(result.rawSecret(), result.qrDataUri());
     }
