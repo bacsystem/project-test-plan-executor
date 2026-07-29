@@ -1,0 +1,144 @@
+name: authentication-ci
+
+on:
+  pull_request:
+    paths: ["authentication/**"]
+  push:
+    branches: [develop, master]
+    paths: ["authentication/**"]
+  schedule:
+    - cron: "0 3 * * *"
+
+jobs:
+  unit-and-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21' }
+      - name: Run unit and integration tests
+        working-directory: authentication
+        run: mvn -q test
+
+  k6-correctness-gate:
+    needs: unit-and-integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build jar
+        working-directory: authentication
+        run: mvn -q -DskipTests package
+      - name: Start stack
+        working-directory: authentication
+        run: docker compose -f docker-compose.k6.yml up -d --build
+      - name: Wait for app
+        run: |
+          for i in $(seq 1 30); do curl -sf http://localhost:8080/actuator/health && break; sleep 2; done
+      - name: Seed load data
+        working-directory: authentication
+        run: docker compose -f docker-compose.k6.yml exec -T postgres \
+             psql -U authentication -d authentication -f /dev/stdin < k6/seed.sql
+      - name: Prepare role/permissions via the API (populates the k6 env vars)
+        working-directory: authentication
+        # Same literal value as docker-compose.k6.yml's `auth` service — the
+        # container has it, but this step's own shell (on the runner, not in
+        # the container) needs it too, to log in as the bootstrap admin.
+        env:
+          AUTH_BOOTSTRAP_ADMIN_PASSWORD: "K6LoadTestAdmin!123"
+        run: |
+          set -euo pipefail
+          ACCESS_TOKEN=$(curl -sf -u example-app:example-secret \
+            -d grant_type=password -d tenant=default -d username=admin@default.local \
+            -d "password=${AUTH_BOOTSTRAP_ADMIN_PASSWORD}" -d scope=permissions:sync \
+            http://localhost:8080/oauth2/token | jq -r .access_token)
+
+          ROLE_ID=$(curl -sf -X POST http://localhost:8080/v1/roles \
+            -H "Authorization: Bearer ${ACCESS_TOKEN}" -H "Content-Type: application/json" \
+            -d '{"name":"k6-concurrency-role","isTemplate":false}' | jq -r .id)
+
+          STARTING_VERSION=$(curl -sf http://localhost:8080/v1/roles/${ROLE_ID} \
+            -H "Authorization: Bearer ${ACCESS_TOKEN}" | jq -r .version)
+
+          PERMISSION_NAMES=$(for i in $(seq 1 20); do printf '"k6-perm-%s",' "$i"; done | sed 's/,$//')
+          curl -sf -X PUT http://localhost:8080/v1/applications/example-app/permissions \
+            -H "Authorization: Bearer ${ACCESS_TOKEN}" -H "Content-Type: application/json" \
+            -d "{\"permissionNames\":[${PERMISSION_NAMES}]}" > /dev/null
+
+          # No endpoint lists the permission catalog (RoleController only returns
+          # a role's OWN assigned permissions, and PermissionCatalogController's
+          # sync endpoint returns counts, not rows) — the ids the sync step just
+          # wrote are read straight from Postgres instead.
+          {
+            echo "ACCESS_TOKEN=${ACCESS_TOKEN}"
+            echo "ROLE_ID=${ROLE_ID}"
+            echo "STARTING_VERSION=${STARTING_VERSION}"
+            docker compose -f docker-compose.k6.yml exec -T postgres \
+              psql -U authentication -d authentication -tAc \
+              "SELECT name || '=' || id FROM permissions WHERE application_name = 'example-app' AND name LIKE 'k6-perm-%'" \
+              | while IFS='=' read -r name id; do
+                  echo "PERMISSION_ID_${name#k6-perm-}=${id}"
+                done
+          } >> "$GITHUB_ENV"
+      - name: Run k6 correctness scenario
+        uses: grafana/k6-action@v0.3.1
+        with:
+          filename: authentication/k6/correctness.js
+        # Listed explicitly rather than relying on GITHUB_ENV propagating into
+        # whatever container/process this action wraps k6 in — k6 only sees an
+        # __ENV entry for a variable actually forwarded here.
+        env:
+          BASE_URL: http://localhost:8080
+          ROLE_ID: ${{ env.ROLE_ID }}
+          STARTING_VERSION: ${{ env.STARTING_VERSION }}
+          ACCESS_TOKEN: ${{ env.ACCESS_TOKEN }}
+          PERMISSION_ID_1: ${{ env.PERMISSION_ID_1 }}
+          PERMISSION_ID_2: ${{ env.PERMISSION_ID_2 }}
+          PERMISSION_ID_3: ${{ env.PERMISSION_ID_3 }}
+          PERMISSION_ID_4: ${{ env.PERMISSION_ID_4 }}
+          PERMISSION_ID_5: ${{ env.PERMISSION_ID_5 }}
+          PERMISSION_ID_6: ${{ env.PERMISSION_ID_6 }}
+          PERMISSION_ID_7: ${{ env.PERMISSION_ID_7 }}
+          PERMISSION_ID_8: ${{ env.PERMISSION_ID_8 }}
+          PERMISSION_ID_9: ${{ env.PERMISSION_ID_9 }}
+          PERMISSION_ID_10: ${{ env.PERMISSION_ID_10 }}
+          PERMISSION_ID_11: ${{ env.PERMISSION_ID_11 }}
+          PERMISSION_ID_12: ${{ env.PERMISSION_ID_12 }}
+          PERMISSION_ID_13: ${{ env.PERMISSION_ID_13 }}
+          PERMISSION_ID_14: ${{ env.PERMISSION_ID_14 }}
+          PERMISSION_ID_15: ${{ env.PERMISSION_ID_15 }}
+          PERMISSION_ID_16: ${{ env.PERMISSION_ID_16 }}
+          PERMISSION_ID_17: ${{ env.PERMISSION_ID_17 }}
+          PERMISSION_ID_18: ${{ env.PERMISSION_ID_18 }}
+          PERMISSION_ID_19: ${{ env.PERMISSION_ID_19 }}
+          PERMISSION_ID_20: ${{ env.PERMISSION_ID_20 }}
+      - name: Assert no permission-set union in the database
+        working-directory: authentication
+        run: |
+          COUNT=$(docker compose -f docker-compose.k6.yml exec -T postgres \
+            psql -U authentication -d authentication -tAc \
+            "SELECT count(*) FROM role_permissions WHERE role_id = '${ROLE_ID}'")
+          test "$COUNT" = "1"
+      - name: Tear down
+        if: always()
+        working-directory: authentication
+        run: docker compose -f docker-compose.k6.yml down -v
+
+  k6-latency-trend:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start stack
+        working-directory: authentication
+        run: |
+          mvn -q -DskipTests package
+          docker compose -f docker-compose.k6.yml up -d --build
+      - name: Run k6 latency trend (non-blocking)
+        uses: grafana/k6-action@v0.3.1
+        continue-on-error: true
+        with:
+          filename: authentication/k6/latency-trend.js
+      - name: Tear down
+        if: always()
+        working-directory: authentication
+        run: docker compose -f docker-compose.k6.yml down -v
