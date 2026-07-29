@@ -29,9 +29,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Resource-server security for the business API (§10). Password-reset and MFA
- * verification are reachable pre-authentication by design (the caller doesn't
- * hold a token yet); everything else requires a valid access token.
+ * Resource-server security for the business API (§10). Password-reset, MFA
+ * verification, and the must-change-password ticket exchange (§7) are all
+ * reachable pre-authentication by design (the caller doesn't hold a token
+ * yet); everything else requires a valid access token.
  */
 @Configuration
 @EnableMethodSecurity
@@ -40,6 +41,7 @@ public class SecurityConfig {
     private static final String[] PUBLIC_PATHS = {
             "/v1/auth/password/reset-request",
             "/v1/auth/password/reset-confirm",
+            "/v1/auth/password/change-required",
             "/v1/auth/mfa/verify",
             "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
             "/actuator/health", "/actuator/prometheus",

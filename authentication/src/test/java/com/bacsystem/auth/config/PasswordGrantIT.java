@@ -310,6 +310,12 @@ class PasswordGrantIT extends PostgresRedisTestBase {
         tenant = tenantRepository.saveAndFlush(tenant);
         userService.createUser(tenant.getId(), "attacked@test.com", "ValidPassw0rd!123", null);
         userService.createUser(tenant.getId(), "bystander@test.com", "ValidPassw0rd!123", null);
+        // §7: createUser leaves mustChangePassword=true — the bystander must complete the
+        // mandatory change before a login for them can succeed with a normal token pair below,
+        // same as every other "expect 200 with a token" fixture in this file already does.
+        userService.changePassword(
+                userService.findByTenantAndEmail(tenant.getId(), "bystander@test.com").orElseThrow(),
+                "ValidPassw0rd!123Changed");
 
         HttpHeaders attackerHeaders = new HttpHeaders();
         attackerHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -350,7 +356,7 @@ class PasswordGrantIT extends PostgresRedisTestBase {
         bystanderForm.add("grant_type", "password");
         bystanderForm.add("tenant", tenant.getSlug());
         bystanderForm.add("username", "bystander@test.com");
-        bystanderForm.add("password", "ValidPassw0rd!123");
+        bystanderForm.add("password", "ValidPassw0rd!123Changed");
 
         ResponseEntity<java.util.Map> bystanderResponse = restTemplate.postForEntity(
                 "/oauth2/token", new HttpEntity<>(bystanderForm, bystanderHeaders), java.util.Map.class);
