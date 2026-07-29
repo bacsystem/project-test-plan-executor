@@ -11,7 +11,14 @@ import java.util.UUID;
 
 public interface RoleRepository extends JpaRepository<Role, UUID> {
     Optional<Role> findByTenantIdAndName(UUID tenantId, String name);
-    List<Role> findByTenantId(UUID tenantId);
+
+    // A null-tenant, is_template=true role is a shared template (§6, §9.3):
+    // readable by every tenant, not owned by any single one. listByTenant
+    // (RoleService) needs both a tenant's own roles AND every such template,
+    // so this replaces a plain findByTenantId that would make template roles
+    // permanently invisible to the tenants they exist to serve.
+    @Query("SELECT r FROM Role r WHERE r.tenant.id = :tenantId OR (r.tenant IS NULL AND r.template = true)")
+    List<Role> findByTenantIdOrTemplate(@Param("tenantId") UUID tenantId);
 
     /**
      * Atomically bumps the version only if it still matches what the caller
