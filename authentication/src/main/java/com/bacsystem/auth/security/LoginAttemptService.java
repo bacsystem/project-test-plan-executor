@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -16,6 +17,9 @@ public class LoginAttemptService {
     private static final long LOOKBACK_SECONDS = 3600;
 
     private final LoginAttemptRepository loginAttemptRepository;
+    // Not yet called: wiring into PasswordGrantAuthenticationProvider's audit
+    // trail happens in a later task, per the plan. Kept here because the
+    // brief mandates this constructor shape ahead of that wiring.
     private final AuditLogService auditLogService;
 
     public LoginAttemptService(LoginAttemptRepository loginAttemptRepository, AuditLogService auditLogService) {
@@ -25,15 +29,32 @@ public class LoginAttemptService {
 
     /** Throws {@link AccountLockedException} if either the account or the IP is over threshold (§13). */
     public void assertNotLocked(String email, String ipAddress) {
-        Instant since = Instant.now().minusSeconds(LOOKBACK_SECONDS);
+        Instant lookbackSince = Instant.now().minusSeconds(LOOKBACK_SECONDS);
+
+        // Reset on success (§13): a failure window never reaches further back
+        // than the most recent successful login, so failures from before it
+        // don't count toward a fresh lockout.
+        Instant accountSince = latestOf(lookbackSince, lastSuccessAt(
+                loginAttemptRepository.findTopByEmailAttemptedAndSuccessTrueOrderByAttemptedAtDesc(email)));
+        Instant ipSince = latestOf(lookbackSince, lastSuccessAt(
+                loginAttemptRepository.findTopByIpAddressAndSuccessTrueOrderByAttemptedAtDesc(ipAddress)));
+
         List<LoginAttempt> byAccount = loginAttemptRepository
-                .findByEmailAttemptedAndSuccessFalseAndAttemptedAtAfter(email, since);
+                .findByEmailAttemptedAndSuccessFalseAndAttemptedAtAfter(email, accountSince);
         List<LoginAttempt> byIp = loginAttemptRepository
-                .findByIpAddressAndSuccessFalseAndAttemptedAtAfter(ipAddress, since);
+                .findByIpAddressAndSuccessFalseAndAttemptedAtAfter(ipAddress, ipSince);
 
         if (isLocked(byAccount) || isLocked(byIp)) {
             throw new AccountLockedException();
         }
+    }
+
+    private static Instant lastSuccessAt(Optional<LoginAttempt> lastSuccess) {
+        return lastSuccess.map(LoginAttempt::getAttemptedAt).orElse(Instant.EPOCH);
+    }
+
+    private static Instant latestOf(Instant a, Instant b) {
+        return a.isAfter(b) ? a : b;
     }
 
     public void recordFailure(String email, String ipAddress) {

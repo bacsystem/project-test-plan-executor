@@ -6,7 +6,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -85,5 +87,45 @@ class LoginAttemptServiceTest {
 
         assertThrows(AccountLockedException.class,
                 () -> service.assertNotLocked("victim@test.com", "9.9.9.9"));
+    }
+
+    @Test
+    void successResetsFailureCountSoOneNewFailureAfterwardsDoesNotRelock() {
+        Instant now = Instant.now();
+        // 5 failures well inside the 1-hour lookback window, but before the
+        // success below -- these must stop counting once the login succeeds.
+        List<LoginAttempt> staleFailuresBeforeSuccess = failuresEndingAt(now.minusSeconds(3200), 5);
+
+        LoginAttempt success = new LoginAttempt();
+        success.setSuccess(true);
+        success.setAttemptedAt(now.minusSeconds(30));
+
+        LoginAttempt newFailureAfterSuccess = new LoginAttempt();
+        newFailureAfterSuccess.setSuccess(false);
+        newFailureAfterSuccess.setAttemptedAt(now);
+
+        List<LoginAttempt> allAttemptsForAccount = new ArrayList<>();
+        allAttemptsForAccount.addAll(staleFailuresBeforeSuccess);
+        allAttemptsForAccount.add(newFailureAfterSuccess);
+
+        when(loginAttemptRepository.findTopByEmailAttemptedAndSuccessTrueOrderByAttemptedAtDesc(any()))
+                .thenReturn(Optional.of(success));
+        // Mimics the real repository: only failures strictly after the
+        // "since" argument the service passes are returned.
+        when(loginAttemptRepository.findByEmailAttemptedAndSuccessFalseAndAttemptedAtAfter(any(), any()))
+                .thenAnswer(invocation -> {
+                    Instant since = invocation.getArgument(1);
+                    return allAttemptsForAccount.stream()
+                            .filter(a -> a.getAttemptedAt().isAfter(since))
+                            .collect(Collectors.toList());
+                });
+        when(loginAttemptRepository.findByIpAddressAndSuccessFalseAndAttemptedAtAfter(any(), any()))
+                .thenReturn(List.of());
+
+        LoginAttemptService service = newService();
+
+        service.assertNotLocked("user@test.com", "1.2.3.4");
+        // no exception == the 5 stale pre-success failures no longer count;
+        // only the single new failure remains, which is below THRESHOLD.
     }
 }
