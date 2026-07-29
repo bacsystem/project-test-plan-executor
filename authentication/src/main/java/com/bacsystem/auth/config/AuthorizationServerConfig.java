@@ -215,8 +215,7 @@ public class AuthorizationServerConfig {
                     && PasswordGrantAuthenticationToken.PASSWORD.equals(context.getAuthorizationGrantType())) {
                 UUID userId = UUID.fromString(context.getPrincipal().getName());
                 User user = userService.getById(userId);
-                List<String> roleNames = userRoleRepository.findByUserId(userId).stream()
-                        .map(ur -> ur.getRole().getName()).toList();
+                List<String> roleNames = userRoleRepository.findRoleNamesByUserId(userId);
                 context.getClaims().claim("tenant", user.getTenant().getId().toString());
                 context.getClaims().claim("roles", roleNames);
             }

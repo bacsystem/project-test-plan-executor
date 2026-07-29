@@ -3,6 +3,9 @@ package com.bacsystem.auth.config;
 import com.bacsystem.auth.identity.UserService;
 import com.bacsystem.auth.rbac.ApplicationClient;
 import com.bacsystem.auth.rbac.ApplicationClientRepository;
+import com.bacsystem.auth.rbac.RoleService;
+import com.bacsystem.auth.rbac.UserRole;
+import com.bacsystem.auth.rbac.UserRoleRepository;
 import com.bacsystem.auth.support.PostgresRedisTestBase;
 import com.bacsystem.auth.tenancy.Tenant;
 import com.bacsystem.auth.tenancy.TenantRepository;
@@ -31,6 +34,48 @@ class PasswordGrantIT extends PostgresRedisTestBase {
     @Autowired private UserService userService;
     @Autowired private TestRestTemplate restTemplate;
     @Autowired private ApplicationClientRepository applicationClientRepository;
+    @Autowired private RoleService roleService;
+    @Autowired private UserRoleRepository userRoleRepository;
+
+    @Test
+    void passwordGrantForAUserWithAnAssignedRoleIncludesItInTheAccessToken() {
+        // Regression: jwtCustomizer used to dereference UserRole.getRole().getName()
+        // outside of any Hibernate session (it runs during OAuth2 token generation,
+        // not inside a @Transactional boundary), throwing LazyInitializationException
+        // and turning every login for a user with any assigned role into a raw 500 —
+        // invisible to the other PasswordGrantIT tests because none of their users
+        // have a role assigned, so the lazy `role` proxy was never touched.
+        Tenant tenant = new Tenant();
+        tenant.setSlug("pwgrant-role-" + System.nanoTime());
+        tenant.setName("Password Grant Role Test");
+        tenant = tenantRepository.saveAndFlush(tenant);
+        var user = userService.createUser(tenant.getId(), "roled@test.com", "ValidPassw0rd!123", null);
+        userService.changePassword(
+                userService.findByTenantAndEmail(tenant.getId(), "roled@test.com").orElseThrow(),
+                "ValidPassw0rd!123Changed");
+        var role = roleService.createRole(tenant.getId(), "member", false, user.getId());
+        UserRole assignment = new UserRole();
+        assignment.setUser(user);
+        assignment.setRole(role);
+        assignment.setAssignedBy(user);
+        userRoleRepository.save(assignment);
+
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("grant_type", "password");
+        form.add("tenant", tenant.getSlug());
+        form.add("username", "roled@test.com");
+        form.add("password", "ValidPassw0rd!123Changed");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        headers.setBasicAuth("example-app", "example-secret");
+
+        ResponseEntity<java.util.Map> response = restTemplate.postForEntity(
+                "/oauth2/token", new HttpEntity<>(form, headers), java.util.Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).containsKey("access_token");
+    }
 
     @Test
     void passwordGrantIssuesAccessAndRefreshTokenForValidCredentials() {
