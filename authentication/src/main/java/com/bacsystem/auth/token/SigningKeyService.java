@@ -65,11 +65,16 @@ public class SigningKeyService {
     public void emergencyRotate(String compromisedKid) {
         SigningKey compromised = signingKeyRepository.findByKid(compromisedKid)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown kid: " + compromisedKid));
+        boolean wasActive = compromised.getStatus() == SigningKeyStatus.ACTIVE;
         compromised.setStatus(SigningKeyStatus.RETIRED);
         compromised.setRetiredAt(Instant.now());
         signingKeyRepository.save(compromised);
 
-        generateAndSaveActiveKey();
+        // Only replace the ACTIVE key if the compromised key was itself ACTIVE — retiring a
+        // RETIRING key must not create a second ACTIVE row and break the single-ACTIVE invariant.
+        if (wasActive) {
+            generateAndSaveActiveKey();
+        }
 
         auditLogService.record(null, AuditAction.KEY_ROTATION_EMERGENCY, "SigningKey", compromisedKid, "{}");
     }
