@@ -23,5 +23,6 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/authentication
       SPRING_DATA_REDIS_HOST: redis
       AUTH_BOOTSTRAP_ADMIN_PASSWORD: "K6LoadTestAdmin!123"
+      AUTH_MFA_SECRET_ENCRYPTION_KEY_BASE64: "qLaOLzRa4w+lC8x2RrfM+V4gyJ4qqJIDJXJ5InXV3XI="
     command: ["java", "-jar", "app.jar", "--bootstrap"]
     ports: ["8080:8080"]

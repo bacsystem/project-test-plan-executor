@@ -2,7 +2,7 @@ auth:
   bootstrap:
     admin-password: "${AUTH_BOOTSTRAP_ADMIN_PASSWORD:ChangeMeOnFirstLogin!123}"
   mfa:
-    secret-encryption-key-base64: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
+    secret-encryption-key-base64: "${AUTH_MFA_SECRET_ENCRYPTION_KEY_BASE64:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}"
   jwks:
     overlap-seconds: 7200
 
@@ -14,8 +14,8 @@ spring:
       enabled: true
   datasource:
     url: jdbc:postgresql://localhost:5432/authentication
-    username: authentication
-    password: authentication
+    username: "${AUTH_DB_USERNAME:authentication}"
+    password: "${AUTH_DB_PASSWORD:authentication}"
   jpa:
     hibernate:
       ddl-auto: validate
@@ -24,11 +24,11 @@ spring:
     locations: classpath:db/migration
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: "${AUTH_REDIS_HOST:localhost}"
+      port: "${AUTH_REDIS_PORT:6379}"
   mail:
-    host: localhost
-    port: 1025
+    host: "${AUTH_MAIL_HOST:localhost}"
+    port: "${AUTH_MAIL_PORT:1025}"
 
 management:
   endpoints:
