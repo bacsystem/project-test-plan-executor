@@ -1,6 +1,7 @@
 package com.bacsystem.auth.security;
 
 import com.bacsystem.auth.audit.AuditLogService;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -21,10 +22,13 @@ public class LoginAttemptService {
     // trail happens in a later task, per the plan. Kept here because the
     // brief mandates this constructor shape ahead of that wiring.
     private final AuditLogService auditLogService;
+    private final MeterRegistry meterRegistry;
 
-    public LoginAttemptService(LoginAttemptRepository loginAttemptRepository, AuditLogService auditLogService) {
+    public LoginAttemptService(LoginAttemptRepository loginAttemptRepository, AuditLogService auditLogService,
+                                MeterRegistry meterRegistry) {
         this.loginAttemptRepository = loginAttemptRepository;
         this.auditLogService = auditLogService;
+        this.meterRegistry = meterRegistry;
     }
 
     /** Throws {@link AccountLockedException} if either the account or the IP is over threshold (§13). */
@@ -44,7 +48,18 @@ public class LoginAttemptService {
         List<LoginAttempt> byIp = loginAttemptRepository
                 .findByIpAddressAndSuccessFalseAndAttemptedAtAfter(ipAddress, ipSince);
 
-        if (isLocked(byAccount) || isLocked(byIp)) {
+        boolean accountLocked = isLocked(byAccount);
+        boolean ipLocked = isLocked(byIp);
+        // §16: login-failure burst / lockout rate is a security alert distinct from generic ops
+        // metrics — tagged only with a bounded, non-PII "scope" (never the raw email or IP; see
+        // ObservabilityConfig's forbidden-tag guard) so an external dashboard/alert can watch it.
+        if (accountLocked) {
+            meterRegistry.counter("login_attempt_locked", "scope", "account").increment();
+        }
+        if (ipLocked) {
+            meterRegistry.counter("login_attempt_locked", "scope", "ip").increment();
+        }
+        if (accountLocked || ipLocked) {
             throw new AccountLockedException();
         }
     }

@@ -1,5 +1,7 @@
 package com.bacsystem.auth.security;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -23,8 +25,16 @@ class LoginAttemptServiceTest {
     @Mock private LoginAttemptRepository loginAttemptRepository;
     @Mock private com.bacsystem.auth.audit.AuditLogService auditLogService;
 
+    private MeterRegistry meterRegistry;
+
     private LoginAttemptService newService() {
-        return new LoginAttemptService(loginAttemptRepository, auditLogService);
+        meterRegistry = new SimpleMeterRegistry();
+        return new LoginAttemptService(loginAttemptRepository, auditLogService, meterRegistry);
+    }
+
+    private double lockedCounterCount(String scope) {
+        var counter = meterRegistry.find("login_attempt_locked").tag("scope", scope).counter();
+        return counter == null ? 0.0 : counter.count();
     }
 
     private List<LoginAttempt> failuresEndingAt(Instant lastFailure, int count) {
@@ -49,6 +59,8 @@ class LoginAttemptServiceTest {
 
         service.assertNotLocked("user@test.com", "1.2.3.4");
         // no exception == not locked
+        assertThat(lockedCounterCount("account")).isEqualTo(0.0);
+        assertThat(lockedCounterCount("ip")).isEqualTo(0.0);
     }
 
     @Test
@@ -63,6 +75,11 @@ class LoginAttemptServiceTest {
 
         assertThrows(AccountLockedException.class,
                 () -> service.assertNotLocked("user@test.com", "1.2.3.4"));
+
+        // §16: security alert distinct from generic ops metrics — an account-burst lockout must
+        // be observable without scraping the login_attempts table.
+        assertThat(lockedCounterCount("account")).isEqualTo(1.0);
+        assertThat(lockedCounterCount("ip")).isEqualTo(0.0);
     }
 
     @Test
@@ -87,6 +104,9 @@ class LoginAttemptServiceTest {
 
         assertThrows(AccountLockedException.class,
                 () -> service.assertNotLocked("victim@test.com", "9.9.9.9"));
+
+        assertThat(lockedCounterCount("ip")).isEqualTo(1.0);
+        assertThat(lockedCounterCount("account")).isEqualTo(0.0);
     }
 
     @Test

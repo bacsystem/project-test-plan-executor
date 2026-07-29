@@ -3,6 +3,7 @@ package com.bacsystem.auth.token;
 import com.bacsystem.auth.audit.AuditAction;
 import com.bacsystem.auth.audit.AuditLogService;
 import com.bacsystem.auth.identity.User;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,10 +19,13 @@ public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final AuditLogService auditLogService;
+    private final MeterRegistry meterRegistry;
 
-    public RefreshTokenService(RefreshTokenRepository refreshTokenRepository, AuditLogService auditLogService) {
+    public RefreshTokenService(RefreshTokenRepository refreshTokenRepository, AuditLogService auditLogService,
+                                MeterRegistry meterRegistry) {
         this.refreshTokenRepository = refreshTokenRepository;
         this.auditLogService = auditLogService;
+        this.meterRegistry = meterRegistry;
     }
 
     @Transactional
@@ -69,8 +73,14 @@ public class RefreshTokenService {
         if (alreadyUsed || clientMismatch) {
             revokeAllForUser(current.getUser().getId());
             String event = clientMismatch ? "client_mismatch" : "reuse_detected";
-            auditLogService.record(current.getUser().getId(), AuditAction.USER_PASSWORD_CHANGED,
+            AuditAction action = clientMismatch
+                    ? AuditAction.REFRESH_TOKEN_CLIENT_MISMATCH
+                    : AuditAction.REFRESH_TOKEN_REUSE_DETECTED;
+            auditLogService.record(current.getUser().getId(), action,
                     "RefreshToken", current.getId().toString(), "{\"event\":\"" + event + "\"}");
+            // §16: security alert distinct from generic ops metrics — lets an external
+            // dashboard/alert fire on reuse-detected / client-mismatch without parsing audit logs.
+            meterRegistry.counter("refresh_token_security_event", "event", event).increment();
             throw new RefreshTokenReuseException();
         }
 
