@@ -154,6 +154,95 @@ class PasswordGrantIT extends PostgresRedisTestBase {
     }
 
     @Test
+    void missingPasswordParameterReturnsCleanBadRequestNotServerError() {
+        // Regression guard: `password` reaching Argon2PasswordEncoder.matches(null, ...) as a raw
+        // null used to throw an uncontrolled NPE (raw 500 with a stack trace) on this public,
+        // unauthenticated endpoint. A username that resolves to a real ACTIVE user is required to
+        // reproduce it — an unknown username short-circuits before the password comparison.
+        Tenant tenant = new Tenant();
+        tenant.setSlug("pwgrant-nopass-" + System.nanoTime());
+        tenant.setName("Missing Password Test");
+        tenant = tenantRepository.saveAndFlush(tenant);
+        userService.createUser(tenant.getId(), "nopass@test.com", "ValidPassw0rd!123", null);
+
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("grant_type", "password");
+        form.add("tenant", tenant.getSlug());
+        form.add("username", "nopass@test.com");
+        // "password" intentionally omitted
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        headers.setBasicAuth("example-app", "example-secret");
+
+        ResponseEntity<java.util.Map> response = restTemplate.postForEntity(
+                "/oauth2/token", new HttpEntity<>(form, headers), java.util.Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().get("error")).isEqualTo("invalid_request");
+    }
+
+    @Test
+    void missingUsernameParameterReturnsCleanBadRequestNotServerError() {
+        // Regression guard: a missing `username` reaches loginAttemptService.recordFailure(null,
+        // ...) -> LoginAttempt.emailAttempted, a NOT NULL column (V9 migration) -> an uncaught
+        // DataIntegrityViolationException (raw 500) instead of a clean OAuth2 error.
+        Tenant tenant = new Tenant();
+        tenant.setSlug("pwgrant-nouser-" + System.nanoTime());
+        tenant.setName("Missing Username Test");
+        tenant = tenantRepository.saveAndFlush(tenant);
+
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("grant_type", "password");
+        form.add("tenant", tenant.getSlug());
+        form.add("password", "SomePassword!123");
+        // "username" intentionally omitted
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        headers.setBasicAuth("example-app", "example-secret");
+
+        ResponseEntity<java.util.Map> response = restTemplate.postForEntity(
+                "/oauth2/token", new HttpEntity<>(form, headers), java.util.Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().get("error")).isEqualTo("invalid_request");
+    }
+
+    @Test
+    void tokenEndpointIsRateLimitedAfterExceedingTheAuthBucketCapacity() {
+        // Regression guard: authorizationServerSecurityFilterChain (@Order HIGHEST_PRECEDENCE)
+        // exclusively claims /oauth2/token, so it — not apiSecurityFilterChain, where
+        // RateLimitFilter is wired — is what actually serves this request. Without the filter
+        // wired into this chain too, /oauth2/token entirely bypasses rate limiting (§13).
+        // A unique X-Forwarded-For gives this test its own Redis bucket, isolated from every
+        // other request this class fires at /oauth2/token and /oauth2/jwks from 127.0.0.1.
+        String burstIp = "203.0.113.211";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        headers.setBasicAuth("example-app", "example-secret");
+        headers.set("X-Forwarded-For", burstIp);
+
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("grant_type", "password");
+        form.add("tenant", "nonexistent-tenant");
+        form.add("username", "nobody@test.com");
+        form.add("password", "Irrelevant!123");
+
+        // Default auth-capacity-per-minute is 10 (RateLimiter's @Value default) — consume exactly
+        // that many first, none of them should be rate-limited yet.
+        for (int i = 0; i < 10; i++) {
+            ResponseEntity<String> response = restTemplate.postForEntity(
+                    "/oauth2/token", new HttpEntity<>(form, headers), String.class);
+            assertThat(response.getStatusCode().value()).isNotEqualTo(429);
+        }
+
+        ResponseEntity<String> eleventh = restTemplate.postForEntity(
+                "/oauth2/token", new HttpEntity<>(form, headers), String.class);
+        assertThat(eleventh.getStatusCode().value()).isEqualTo(429);
+    }
+
+    @Test
     void jwksResponseCarriesTheOverlapWindowCacheControl() {
         // §8.3: the rotation overlap (min 2h) is DERIVED from this header's max-age
         // (1h starting value) — it must be explicit, not whatever SAS defaults to.

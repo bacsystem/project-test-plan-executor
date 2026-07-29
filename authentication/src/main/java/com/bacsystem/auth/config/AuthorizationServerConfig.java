@@ -6,6 +6,7 @@ import com.bacsystem.auth.mfa.MfaService;
 import com.bacsystem.auth.rbac.UserRoleRepository;
 import com.bacsystem.auth.security.ClientIpResolver;
 import com.bacsystem.auth.security.LoginAttemptService;
+import com.bacsystem.auth.security.RateLimitFilter;
 import com.bacsystem.auth.tenancy.TenantRepository;
 import com.bacsystem.auth.token.RefreshTokenService;
 import com.bacsystem.auth.token.SigningKey;
@@ -85,7 +86,7 @@ public class AuthorizationServerConfig {
             HttpSecurity http, TenantRepository tenantRepository, UserService userService,
             PasswordEncoder passwordEncoder, LoginAttemptService loginAttemptService, MfaService mfaService,
             RefreshTokenService refreshTokenService, TokenIssuer tokenIssuer,
-            ClientIpResolver clientIpResolver) throws Exception {
+            ClientIpResolver clientIpResolver, RateLimitFilter rateLimitFilter) throws Exception {
 
         // Spring Boot 3.3.4 pulls in Spring Security 6.3.x, which predates HttpSecurity#with(...);
         // the applicable pattern here is the older http.apply(configurer) — apply() both
@@ -133,7 +134,15 @@ public class AuthorizationServerConfig {
                 // point Spring Security would reject it as "does not have a registered order".
                 // LogoutFilter is a core, always-registered filter that SAS's own filters (as
                 // observed at runtime) are themselves anchored after, so this still runs earlier.
-                .addFilterBefore(new JwksCacheControlFilter(), LogoutFilter.class);
+                .addFilterBefore(new JwksCacheControlFilter(), LogoutFilter.class)
+                // This chain's securityMatcher exclusively claims /oauth2/token and /oauth2/jwks
+                // (§8.1/§8.3), so apiSecurityFilterChain's own RateLimitFilter registration (in
+                // SecurityConfig, addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class))
+                // never runs for this chain's requests — every request to /oauth2/token was
+                // bypassing rate limiting (§13) entirely. Same LogoutFilter anchor as
+                // JwksCacheControlFilter above, for the same reason: it must run before SAS's own
+                // token-issuing filter, which only gets a registered order later at build() time.
+                .addFilterBefore(rateLimitFilter, LogoutFilter.class);
 
         return http.build();
     }

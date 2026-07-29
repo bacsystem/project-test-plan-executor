@@ -4,6 +4,9 @@ import com.bacsystem.auth.security.ClientIpResolver;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.security.web.authentication.AuthenticationConverter;
 
 import java.util.LinkedHashSet;
@@ -37,6 +40,15 @@ public class PasswordGrantAuthenticationConverter implements AuthenticationConve
         String tenant = request.getParameter("tenant");
         String username = request.getParameter("username");
         String password = request.getParameter("password");
+        // A missing/blank tenant, username, or password would otherwise propagate a null value all
+        // the way into the provider: a null username reaches LoginAttemptService.recordFailure(...)
+        // -> LoginAttempt.emailAttempted, a NOT NULL column, and a null password reaches
+        // Argon2PasswordEncoder.matches(null, ...) — both an uncontrolled exception (raw 500)
+        // instead of a clean OAuth2 error. tenant is validated too since, like the other two, no
+        // request can ever succeed without it.
+        requireParameter(tenant, "tenant");
+        requireParameter(username, "username");
+        requireParameter(password, "password");
         String scopeParam = request.getParameter("scope");
         String clientIp = clientIpResolver.resolve(request);
 
@@ -47,5 +59,12 @@ public class PasswordGrantAuthenticationConverter implements AuthenticationConve
             }
         }
         return new PasswordGrantAuthenticationToken(clientPrincipal, tenant, username, password, scopes, clientIp);
+    }
+
+    private static void requireParameter(String value, String paramName) {
+        if (value == null || value.isBlank()) {
+            throw new OAuth2AuthenticationException(new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST,
+                    paramName + " parameter is required", null));
+        }
     }
 }
