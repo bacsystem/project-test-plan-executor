@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -136,26 +137,33 @@ public class MfaService {
         return mfaCredentialRepository.findByUserIdAndActiveTrue(userId).isPresent();
     }
 
-    /** Issues a single-use challenge ticket after password verification, ahead of the TOTP/backup-code step. */
-    public String issueChallenge(UUID userId) {
+    /**
+     * Issues a single-use challenge ticket after password verification, ahead of the TOTP/backup-code
+     * step. Carries the application client id alongside the user id so {@code /v1/auth/mfa/verify}
+     * (Task 31) — reached before the caller has any bearer token — knows which {@code RegisteredClient}
+     * to issue the eventual token pair for, and carries the scopes requested on the password-grant step
+     * so the post-MFA token pair is issued with the same scopes the caller originally asked for, rather
+     * than none.
+     */
+    public String issueChallenge(UUID userId, String applicationClientId, Set<String> scopes) {
         String rawTicket = TokenHasher.generateRawToken();
         redisTemplate.opsForValue().set(REDIS_KEY_PREFIX + TokenHasher.sha256Hex(rawTicket),
-                userId.toString(), CHALLENGE_TTL);
+                new MfaChallengeContext(userId, applicationClientId, scopes).toRedisValue(), CHALLENGE_TTL);
         return rawTicket;
     }
 
     /** Single-use: the Redis key is deleted only on a successful verification (§8.4). */
-    public UUID verifyChallenge(String rawTicket, String code) {
+    public MfaChallengeContext verifyChallenge(String rawTicket, String code) {
         String redisKey = REDIS_KEY_PREFIX + TokenHasher.sha256Hex(rawTicket);
-        String userIdString = redisTemplate.opsForValue().get(redisKey);
-        if (userIdString == null) {
+        String value = redisTemplate.opsForValue().get(redisKey);
+        if (value == null) {
             throw new MfaChallengeExpiredException();
         }
-        UUID userId = UUID.fromString(userIdString);
+        MfaChallengeContext context = MfaChallengeContext.fromRedisValue(value);
 
-        if (isValidTotp(userId, code) || consumeBackupCodeIfValid(userId, code)) {
+        if (isValidTotp(context.userId(), code) || consumeBackupCodeIfValid(context.userId(), code)) {
             redisTemplate.delete(redisKey);
-            return userId;
+            return context;
         }
         throw new MfaVerificationFailedException();
     }
@@ -164,17 +172,24 @@ public class MfaService {
      * Administrator-initiated reset for a user who lost their device and backup codes (§8.4). Revokes the
      * target's entire refresh-token chain — a reset MFA credential without invalidating existing sessions
      * would leave an attacker who social-engineered the reset still holding a valid session.
+     *
+     * <p>{@code tenantId} is the caller's tenant (from the access token, per Global Constraints) and is
+     * used to look up the target via the tenant-scoped {@link UserService#getById(UUID, UUID)} overload,
+     * so an admin in one tenant can never reset — or even confirm the existence of — a user in another
+     * tenant (cross-tenant IDOR).
      */
     @Transactional
-    public void adminReset(UUID actorUserId, UUID targetUserId, String verificationMethod, boolean targetIsAdmin) {
+    public void adminReset(UUID tenantId, UUID actorUserId, UUID targetUserId, String verificationMethod,
+                            boolean targetIsAdmin) {
         if (actorUserId.equals(targetUserId)) {
             throw new SelfMfaResetException();
         }
 
+        User target = userService.getById(tenantId, targetUserId);
+
         deactivateMfa(targetUserId);
         refreshTokenService.revokeAllForUser(targetUserId);
 
-        User target = userService.getById(targetUserId);
         emailNotificationService.queue(target.getEmail(), "mfa-admin-reset",
                 "Your MFA was reset by an administrator. If this wasn't you, contact support immediately.");
 
