@@ -37,7 +37,7 @@ class RefreshTokenServiceIT extends PostgresRedisTestBase {
         User user = newUser();
         String raw = refreshTokenService.issue(user, "example-app");
 
-        String rotatedRaw = refreshTokenService.rotate(raw);
+        String rotatedRaw = refreshTokenService.rotate(raw).newRawRefreshToken();
 
         assertThat(rotatedRaw).isNotEqualTo(raw);
         assertThrows(RefreshTokenReuseException.class, () -> refreshTokenService.rotate(raw));
@@ -47,7 +47,7 @@ class RefreshTokenServiceIT extends PostgresRedisTestBase {
     void reusingAnAlreadyRotatedTokenRevokesTheWholeChain() {
         User user = newUser();
         String raw = refreshTokenService.issue(user, "example-app");
-        String rotatedOnce = refreshTokenService.rotate(raw);
+        String rotatedOnce = refreshTokenService.rotate(raw).newRawRefreshToken();
 
         assertThrows(RefreshTokenReuseException.class, () -> refreshTokenService.rotate(raw));
 

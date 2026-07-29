@@ -50,7 +50,7 @@ public class RefreshTokenService {
      * perform.
      */
     @Transactional(noRollbackFor = RefreshTokenReuseException.class)
-    public String rotate(String presentedRaw) {
+    public RefreshTokenRotationResult rotate(String presentedRaw) {
         RefreshToken current = refreshTokenRepository.findByTokenHash(TokenHasher.sha256Hex(presentedRaw))
                 .orElseThrow(RefreshTokenReuseException::new);
 
@@ -67,7 +67,7 @@ public class RefreshTokenService {
                 .findByTokenHash(TokenHasher.sha256Hex(newRaw)).orElseThrow();
         current.setReplacedBy(newest);
         refreshTokenRepository.save(current);
-        return newRaw;
+        return new RefreshTokenRotationResult(current.getUser(), newRaw);
     }
 
     /** Revokes every token in the user's chain — used on reuse detection (above) and on MFA reset (Task 23). */
