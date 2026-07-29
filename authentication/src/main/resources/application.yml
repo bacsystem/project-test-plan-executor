@@ -1,6 +1,10 @@
 auth:
   bootstrap:
     admin-password: "${AUTH_BOOTSTRAP_ADMIN_PASSWORD:ChangeMeOnFirstLogin!123}"
+  mfa:
+    secret-encryption-key-base64: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
+  jwks:
+    overlap-seconds: 7200
 
 spring:
   application:
@@ -25,12 +29,6 @@ spring:
   mail:
     host: localhost
     port: 1025
-
-auth:
-  mfa:
-    secret-encryption-key-base64: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
-  jwks:
-    overlap-seconds: 7200
 
 management:
   endpoints:

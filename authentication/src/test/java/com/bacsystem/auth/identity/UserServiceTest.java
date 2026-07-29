@@ -2,6 +2,7 @@ package com.bacsystem.auth.identity;
 
 import com.bacsystem.auth.audit.AuditLogService;
 import com.bacsystem.auth.security.BreachedPasswordChecker;
+import com.bacsystem.auth.web.InvalidPageSizeException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -96,5 +97,53 @@ class UserServiceTest {
 
         assertThat(user.isMustChangePassword()).isFalse();
         assertThat(user.getPasswordHash()).startsWith("{argon2}");
+    }
+
+    @Test
+    void getByIdWithTenantLooksUpScopedToThatTenant() {
+        UUID tenantId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        User user = new User();
+        user.setId(userId);
+        when(userRepository.findByIdAndTenantId(userId, tenantId)).thenReturn(Optional.of(user));
+
+        UserService service = newService();
+
+        assertThat(service.getById(tenantId, userId)).isSameAs(user);
+    }
+
+    @Test
+    void getByIdWithTenantThrowsWhenUserBelongsToAnotherTenant() {
+        UUID tenantId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        // Cross-tenant lookup: the row exists but not under this tenant, so the
+        // scoped query returns empty rather than leaking another tenant's user.
+        when(userRepository.findByIdAndTenantId(userId, tenantId)).thenReturn(Optional.empty());
+
+        UserService service = newService();
+
+        assertThrows(UserNotFoundException.class, () -> service.getById(tenantId, userId));
+    }
+
+    @Test
+    void deactivateUserThrowsWhenUserBelongsToAnotherTenant() {
+        UUID tenantId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        when(userRepository.findByIdAndTenantId(userId, tenantId)).thenReturn(Optional.empty());
+
+        UserService service = newService();
+
+        assertThrows(UserNotFoundException.class,
+                () -> service.deactivateUser(tenantId, userId, UUID.randomUUID()));
+    }
+
+    @Test
+    void listByTenantCursorRejectsNonPositiveSize() {
+        UserService service = newService();
+
+        assertThrows(InvalidPageSizeException.class,
+                () -> service.listByTenantCursor(UUID.randomUUID(), null, 0));
+        assertThrows(InvalidPageSizeException.class,
+                () -> service.listByTenantCursor(UUID.randomUUID(), null, -1));
     }
 }
