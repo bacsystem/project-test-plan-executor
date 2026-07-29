@@ -2,6 +2,7 @@ package com.bacsystem.auth.token;
 
 import com.bacsystem.auth.audit.AuditAction;
 import com.bacsystem.auth.audit.AuditLogService;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -26,12 +27,15 @@ public class SigningKeyService {
     private final SigningKeyRepository signingKeyRepository;
     private final AuditLogService auditLogService;
     private final long overlapSeconds;
+    private final MeterRegistry meterRegistry;
 
     public SigningKeyService(SigningKeyRepository signingKeyRepository, AuditLogService auditLogService,
-                              @Value("${auth.jwks.overlap-seconds:7200}") long overlapSeconds) {
+                              @Value("${auth.jwks.overlap-seconds:7200}") long overlapSeconds,
+                              MeterRegistry meterRegistry) {
         this.signingKeyRepository = signingKeyRepository;
         this.auditLogService = auditLogService;
         this.overlapSeconds = overlapSeconds;
+        this.meterRegistry = meterRegistry;
     }
 
     @Transactional
@@ -48,21 +52,30 @@ public class SigningKeyService {
     @Scheduled(cron = "${auth.jwks.rotation-cron:0 0 3 1 * *}")
     @Transactional
     public void rotate() {
-        SigningKey previousActive = signingKeyRepository.findByStatus(SigningKeyStatus.ACTIVE).orElse(null);
+        try {
+            SigningKey previousActive = signingKeyRepository.findByStatus(SigningKeyStatus.ACTIVE).orElse(null);
 
-        // Flush the previous key's RETIRING status before inserting the new ACTIVE row: the
-        // partial unique index on status = 'ACTIVE' (signing_keys_one_active_idx) is checked
-        // against this transaction's own writes, so the old row must already be RETIRING on the
-        // wire or the insert below would (correctly) see two ACTIVE rows and no-op.
-        if (previousActive != null) {
-            previousActive.setStatus(SigningKeyStatus.RETIRING);
-            previousActive.setRetireAt(Instant.now().plusSeconds(overlapSeconds));
-            signingKeyRepository.saveAndFlush(previousActive);
+            // Flush the previous key's RETIRING status before inserting the new ACTIVE row: the
+            // partial unique index on status = 'ACTIVE' (signing_keys_one_active_idx) is checked
+            // against this transaction's own writes, so the old row must already be RETIRING on the
+            // wire or the insert below would (correctly) see two ACTIVE rows and no-op.
+            if (previousActive != null) {
+                previousActive.setStatus(SigningKeyStatus.RETIRING);
+                previousActive.setRetireAt(Instant.now().plusSeconds(overlapSeconds));
+                signingKeyRepository.saveAndFlush(previousActive);
+            }
+
+            SigningKey newActive = generateAndSaveActiveKey();
+
+            auditLogService.record(null, AuditAction.KEY_ROTATION, "SigningKey", newActive.getKid(), "{}");
+            // §16: a watchdog-style signal, distinct from generic ops metrics — an external
+            // dashboard/alert notices the *absence* of rotation via rate() == 0 on this counter,
+            // rather than us having to page on a missing event directly.
+            meterRegistry.counter("signing_key_rotation_success").increment();
+        } catch (RuntimeException e) {
+            meterRegistry.counter("signing_key_rotation_failure").increment();
+            throw e;
         }
-
-        SigningKey newActive = generateAndSaveActiveKey();
-
-        auditLogService.record(null, AuditAction.KEY_ROTATION, "SigningKey", newActive.getKid(), "{}");
     }
 
     /** Emergency rotation (§8.3): immediate retirement, no overlap — deliberately invalidates its tokens. */

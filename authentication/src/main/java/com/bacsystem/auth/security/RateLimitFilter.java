@@ -1,5 +1,6 @@
 package com.bacsystem.auth.security;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,10 +20,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private final RateLimiter rateLimiter;
     private final ClientIpResolver clientIpResolver;
+    private final MeterRegistry meterRegistry;
 
-    public RateLimitFilter(RateLimiter rateLimiter, ClientIpResolver clientIpResolver) {
+    public RateLimitFilter(RateLimiter rateLimiter, ClientIpResolver clientIpResolver, MeterRegistry meterRegistry) {
         this.rateLimiter = rateLimiter;
         this.clientIpResolver = clientIpResolver;
+        this.meterRegistry = meterRegistry;
     }
 
     @Override
@@ -34,6 +37,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         boolean allowed = isAuthPath ? rateLimiter.tryConsumeAuth(key) : rateLimiter.tryConsumeAdmin(key);
         if (!allowed) {
+            // §16: 429 rejection rate is a security-relevant alert distinct from generic ops
+            // metrics — tagged only with the bounded, non-PII path split, never the client key.
+            meterRegistry.counter("rate_limit_rejected", "path_type", isAuthPath ? "auth" : "admin").increment();
             response.setStatus(429);
             response.setContentType("application/problem+json");
             response.getWriter().write(
