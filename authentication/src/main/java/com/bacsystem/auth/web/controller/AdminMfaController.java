@@ -28,7 +28,7 @@ import java.util.UUID;
 @RequestMapping("/v1/admin/users")
 public class AdminMfaController {
 
-    public record AdminResetRequest(String verificationMethod, boolean targetIsAdmin) {}
+    public record AdminResetRequest(String verificationMethod) {}
 
     private final MfaService mfaService;
 
@@ -44,6 +44,6 @@ public class AdminMfaController {
         Jwt jwt = (Jwt) auth.getPrincipal();
         UUID tenantId = UUID.fromString(jwt.getClaimAsString("tenant"));
         UUID actorId = UUID.fromString(jwt.getSubject());
-        mfaService.adminReset(tenantId, actorId, userId, request.verificationMethod(), request.targetIsAdmin());
+        mfaService.adminReset(tenantId, actorId, userId, request.verificationMethod());
     }
 }
