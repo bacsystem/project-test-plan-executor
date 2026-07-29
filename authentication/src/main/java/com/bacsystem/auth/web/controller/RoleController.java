@@ -8,6 +8,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -33,14 +34,20 @@ public class RoleController {
 
     @GetMapping
     public List<RoleResponse> list(JwtAuthenticationToken auth) {
-        return roleService.listByTenant(tenantIdOf(auth)).stream()
-                .map(r -> toResponse(r, permissionIdsOf(r.getId())))
+        List<Role> roles = roleService.listByTenant(tenantIdOf(auth));
+        // Batch-fetch every role's permissions in one query instead of calling
+        // permissionIdsOf(r.getId()) — i.e. roleService.getPermissions — once per
+        // role (N+1: previously one query per role in this stream).
+        Map<UUID, List<UUID>> permissionsByRole =
+                roleService.getPermissionsByRoleIds(roles.stream().map(Role::getId).toList());
+        return roles.stream()
+                .map(r -> toResponse(r, permissionsByRole.getOrDefault(r.getId(), List.of())))
                 .toList();
     }
 
     @GetMapping("/{id}")
     public RoleResponse get(@PathVariable UUID id, JwtAuthenticationToken auth) {
-        Role role = requireOwnedRole(id, auth);
+        Role role = requireReadableRole(id, auth);
         return toResponse(role, permissionIdsOf(id));
     }
 
@@ -59,18 +66,40 @@ public class RoleController {
     }
 
     /**
-     * Loads the role and enforces the multi-tenancy boundary: a role that
-     * belongs to another tenant must 404, not leak its existence/contents to
-     * a caller who merely guessed or observed its id (cross-tenant IDOR).
+     * Loads the role and enforces the multi-tenancy boundary for MUTATIONS
+     * (replacePermissions, delete): a role that belongs to another tenant must
+     * 404, not leak its existence/contents to a caller who merely guessed or
+     * observed its id (cross-tenant IDOR). A null-tenant shared template role
+     * (roles.tenant_id is nullable by design, see V5__create_rbac_tables.sql)
+     * is deliberately 404'd here too — templates are read-only from every
+     * tenant's perspective (see requireReadableRole below for the read path;
+     * §6/§9.3 minimal scope decision), never owned/mutable by any one tenant.
      */
     private Role requireOwnedRole(UUID id, JwtAuthenticationToken auth) {
         Role role = roleService.getRole(id);
-        // A null tenant marks a shared/template role (roles.tenant_id is nullable
-        // by design, see V5__create_rbac_tables.sql). This per-tenant endpoint has
-        // no notion of template access yet, so such a role is intentionally treated
-        // as inaccessible here rather than granted to (or crashing for) any caller,
-        // until a dedicated template-role access path exists.
         if (role.getTenant() == null || !tenantIdOf(auth).equals(role.getTenant().getId())) {
+            throw new RoleNotFoundException(id);
+        }
+        return role;
+    }
+
+    /**
+     * Same boundary as {@link #requireOwnedRole}, but for the single-role READ
+     * path (GET /v1/roles/{id}) only: a null-tenant, is_template=true role is a
+     * shared template meant to be readable by every tenant (§6, §9.3 — see
+     * RoleService.listByTenant's companion change for the list-endpoint side of
+     * this), so it is NOT 404'd here the way it is for mutations. A role that is
+     * genuinely owned by a different tenant still 404s, same as always.
+     */
+    private Role requireReadableRole(UUID id, JwtAuthenticationToken auth) {
+        Role role = roleService.getRole(id);
+        if (role.getTenant() == null) {
+            if (role.isTemplate()) {
+                return role;
+            }
+            throw new RoleNotFoundException(id);
+        }
+        if (!tenantIdOf(auth).equals(role.getTenant().getId())) {
             throw new RoleNotFoundException(id);
         }
         return role;

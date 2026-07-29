@@ -4,6 +4,9 @@ import com.bacsystem.auth.identity.User;
 import com.bacsystem.auth.identity.UserNotFoundException;
 import com.bacsystem.auth.identity.UserService;
 import com.bacsystem.auth.identity.UserStatus;
+import com.bacsystem.auth.rbac.RoleNotFoundException;
+import com.bacsystem.auth.rbac.RoleService;
+import com.bacsystem.auth.rbac.RoleSummary;
 import com.bacsystem.auth.security.ClientIpResolver;
 import com.bacsystem.auth.security.RateLimiter;
 import com.bacsystem.auth.web.CursorPage;
@@ -36,6 +39,7 @@ class UserControllerTest {
 
     @Autowired private MockMvc mockMvc;
     @MockBean private UserService userService;
+    @MockBean private RoleService roleService;
     @Autowired private ObjectMapper objectMapper;
 
     // SecurityConfig (loaded by @WebMvcTest alongside the controller) wires
@@ -159,5 +163,84 @@ class UserControllerTest {
         mockMvc.perform(delete("/v1/users/{id}", UUID.randomUUID())
                         .with(jwt().jwt(jwtWithTenant(UUID.randomUUID(), UUID.randomUUID()))))
                 .andExpect(status().isNotFound());
+    }
+
+    // ---- Item 1: role assignment endpoints ----
+
+    @Test
+    void assignRoleReturns204AndDelegatesToRoleService() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID actorId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID roleId = UUID.randomUUID();
+
+        mockMvc.perform(post("/v1/users/{userId}/roles", userId)
+                        .with(jwt().jwt(jwtWithTenant(tenantId, actorId)).authorities(() -> "SCOPE_roles:assign"))
+                        .contentType("application/json")
+                        .content("{\"roleId\":\"" + roleId + "\"}"))
+                .andExpect(status().isNoContent());
+
+        verify(roleService).assignRole(tenantId, userId, roleId, actorId);
+    }
+
+    // NOTE: no test asserts a 403 for a missing SCOPE_roles:assign authority here.
+    // @WebMvcTest(UserController.class) does not load SecurityConfig's
+    // @EnableMethodSecurity interceptor (confirmed empirically: omitting the
+    // authority still returned 204), and no existing test in this module — not
+    // even PermissionCatalogControllerTest for SCOPE_permissions:sync — asserts
+    // @PreAuthorize enforcement at the WebMvcTest-slice level either. Verifying
+    // real 403 enforcement would need a full @SpringBootTest-based IT (in the
+    // style of SecurityConfigIT), which is out of scope for this task.
+
+    @Test
+    void assignRoleOnUnknownUserReturns404() throws Exception {
+        doThrow(new UserNotFoundException(UUID.randomUUID()))
+                .when(roleService).assignRole(any(), any(), any(), any());
+
+        mockMvc.perform(post("/v1/users/{userId}/roles", UUID.randomUUID())
+                        .with(jwt().jwt(jwtWithTenant(UUID.randomUUID(), UUID.randomUUID())).authorities(() -> "SCOPE_roles:assign"))
+                        .contentType("application/json")
+                        .content("{\"roleId\":\"" + UUID.randomUUID() + "\"}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void assignRoleOnUnknownRoleReturns404() throws Exception {
+        doThrow(new RoleNotFoundException(UUID.randomUUID()))
+                .when(roleService).assignRole(any(), any(), any(), any());
+
+        mockMvc.perform(post("/v1/users/{userId}/roles", UUID.randomUUID())
+                        .with(jwt().jwt(jwtWithTenant(UUID.randomUUID(), UUID.randomUUID())).authorities(() -> "SCOPE_roles:assign"))
+                        .contentType("application/json")
+                        .content("{\"roleId\":\"" + UUID.randomUUID() + "\"}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void listRolesReturnsRoleSummariesForCallersTenant() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID roleId = UUID.randomUUID();
+        when(roleService.listRolesForUser(tenantId, userId)).thenReturn(List.of(new RoleSummary(roleId, "editor")));
+
+        mockMvc.perform(get("/v1/users/{userId}/roles", userId)
+                        .with(jwt().jwt(jwtWithTenant(tenantId, UUID.randomUUID())).authorities(() -> "SCOPE_roles:assign")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(roleId.toString()))
+                .andExpect(jsonPath("$[0].name").value("editor"));
+    }
+
+    @Test
+    void revokeRoleReturns204AndDelegatesToRoleService() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID actorId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID roleId = UUID.randomUUID();
+
+        mockMvc.perform(delete("/v1/users/{userId}/roles/{roleId}", userId, roleId)
+                        .with(jwt().jwt(jwtWithTenant(tenantId, actorId)).authorities(() -> "SCOPE_roles:assign")))
+                .andExpect(status().isNoContent());
+
+        verify(roleService).revokeRole(tenantId, userId, roleId, actorId);
     }
 }

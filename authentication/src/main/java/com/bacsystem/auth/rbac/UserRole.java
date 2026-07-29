@@ -2,32 +2,27 @@ package com.bacsystem.auth.rbac;
 
 import com.bacsystem.auth.identity.User;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.data.domain.Persistable;
 
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
-// NOTE: this entity has the same @IdClass-from-two-non-generated-@ManyToOne
-// shape that made RolePermission's composite key non-null as soon as
-// user/role are set, which routes JpaRepository.save() through
-// entityManager.merge() (silent UPSERT) instead of persist() (INSERT) and
-// so would NOT trip the user_roles(user_id, role_id) primary-key constraint
-// on a duplicate assignment — see RolePermission's Persistable<Key>
-// implementation for the fix pattern. Left unimplemented here deliberately:
-// no test in the Task 6 brief exercises duplicate (user_id, role_id)
-// assignment, so adding Persistable here would be speculative scope. Apply
-// the same Persistable<Key> fix (with @Setter(AccessLevel.NONE) on the
-// isNew flag) before relying on duplicate-assignment rejection for
-// user_roles in any future task.
+// Implements Persistable for the same reason RolePermission does: the composite
+// key (user + role, both non-generated associations) is always non-null once
+// user/role are set — Spring Data's default isNew() check would otherwise see a
+// "dup" instance as pre-existing and silently merge/UPDATE it instead of
+// attempting an INSERT, masking the user_roles PK constraint.
 @Entity
 @Table(name = "user_roles")
 @IdClass(UserRole.Key.class)
 @Getter
 @Setter
-public class UserRole {
+public class UserRole implements Persistable<UserRole.Key> {
 
     @Id
     @ManyToOne(fetch = FetchType.LAZY)
@@ -46,11 +41,42 @@ public class UserRole {
     @Column(name = "assigned_at", nullable = false)
     private Instant assignedAt = Instant.now();
 
+    // Setter intentionally suppressed: this flag is the sole guard that keeps
+    // save() routing through persist() (real INSERT, trips the PK constraint)
+    // instead of merge() (silent UPSERT). It must only flip via the
+    // @PostLoad/@PostPersist hook below, never via an externally callable
+    // setIsNew(), or callers could silently defeat the duplicate-assignment
+    // protection this entity exists to provide.
+    @Transient
+    @Setter(AccessLevel.NONE)
+    private boolean isNew = true;
+
+    @Override
+    public Key getId() {
+        return new Key(user == null ? null : user.getId(), role == null ? null : role.getId());
+    }
+
+    @Override
+    public boolean isNew() {
+        return isNew;
+    }
+
+    @PostLoad
+    @PostPersist
+    void markNotNew() {
+        this.isNew = false;
+    }
+
     public static class Key implements Serializable {
         private UUID user;
         private UUID role;
 
         public Key() {}
+
+        public Key(UUID user, UUID role) {
+            this.user = user;
+            this.role = role;
+        }
 
         @Override
         public boolean equals(Object o) {
