@@ -4,13 +4,17 @@ import com.bacsystem.auth.audit.AuditAction;
 import com.bacsystem.auth.audit.AuditLogService;
 import com.bacsystem.auth.security.BreachedPasswordChecker;
 import com.bacsystem.auth.tenancy.Tenant;
+import com.bacsystem.auth.web.CursorCodec;
+import com.bacsystem.auth.web.CursorPage;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -83,6 +87,21 @@ public class UserService {
 
     public Page<User> listByTenant(UUID tenantId, Pageable pageable) {
         return userRepository.findByTenantId(tenantId, pageable);
+    }
+
+    // Keyset pagination per spec §10.1 — the offset-based listByTenant above
+    // predates that requirement and stays only because nothing else calls it;
+    // this is the method UserController actually uses.
+    public CursorPage<User> listByTenantCursor(UUID tenantId, String cursor, int size) {
+        CursorCodec.Decoded decoded = CursorCodec.decode(cursor);
+        Instant after = decoded == null ? Instant.EPOCH : decoded.createdAt();
+
+        List<User> page = userRepository.findByTenantIdAndCreatedAtGreaterThanOrderByCreatedAtAsc(
+                tenantId, after, PageRequest.of(0, size));
+
+        String nextCursor = page.isEmpty() ? null
+                : CursorCodec.encode(page.get(page.size() - 1).getCreatedAt(), page.get(page.size() - 1).getId());
+        return new CursorPage<>(page, nextCursor);
     }
 
     private void validatePasswordStrength(String password) {
