@@ -1,6 +1,7 @@
 package com.bacsystem.auth.rbac;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.domain.Persistable;
@@ -31,7 +32,14 @@ public class RolePermission implements Persistable<RolePermission.Key> {
     @JoinColumn(name = "permission_id")
     private Permission permission;
 
+    // Setter intentionally suppressed: this flag is the sole guard that keeps
+    // save() routing through persist() (real INSERT, trips the PK constraint)
+    // instead of merge() (silent UPSERT). It must only flip via the
+    // @PostLoad/@PostPersist hook below, never via an externally callable
+    // setIsNew(), or callers could silently defeat the duplicate-assignment
+    // protection this entity exists to provide.
     @Transient
+    @Setter(AccessLevel.NONE)
     private boolean isNew = true;
 
     @Override
