@@ -1,3 +1,7 @@
+auth:
+  bootstrap:
+    admin-password: "${AUTH_BOOTSTRAP_ADMIN_PASSWORD:ChangeMeOnFirstLogin!123}"
+
 spring:
   application:
     name: authentication
