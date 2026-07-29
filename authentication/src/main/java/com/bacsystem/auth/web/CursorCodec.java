@@ -25,8 +25,19 @@ public final class CursorCodec {
         if (cursor == null || cursor.isBlank()) {
             return null;
         }
-        String raw = new String(Base64.getUrlDecoder().decode(cursor), StandardCharsets.UTF_8);
-        String[] parts = raw.split("\\|", 2);
-        return new Decoded(Instant.parse(parts[0]), UUID.fromString(parts[1]));
+        try {
+            String raw = new String(Base64.getUrlDecoder().decode(cursor), StandardCharsets.UTF_8);
+            String[] parts = raw.split("\\|", 2);
+            if (parts.length != 2) {
+                throw new InvalidCursorException(cursor, null);
+            }
+            return new Decoded(Instant.parse(parts[0]), UUID.fromString(parts[1]));
+        } catch (InvalidCursorException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            // IllegalArgumentException (bad base64/UUID), DateTimeParseException — all
+            // mean "client sent garbage", never a 500. Mapped by ProblemDetailAdvice.
+            throw new InvalidCursorException(cursor, e);
+        }
     }
 }

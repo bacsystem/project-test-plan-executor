@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CursorCodecTest {
 
@@ -22,8 +23,32 @@ class CursorCodecTest {
     }
 
     @Test
-    void nullCursorDecodesToEmpty() {
+    void nullOrBlankCursorDecodesToNull() {
         assertThat(CursorCodec.decode(null)).isNull();
         assertThat(CursorCodec.decode("")).isNull();
+    }
+
+    @Test
+    void malformedBase64ThrowsInvalidCursorException() {
+        assertThatThrownBy(() -> CursorCodec.decode("not-valid-base64!!"))
+                .isInstanceOf(InvalidCursorException.class);
+    }
+
+    @Test
+    void decodedValueWithoutDelimiterThrowsInvalidCursorException() {
+        String cursor = java.util.Base64.getUrlEncoder().withoutPadding()
+                .encodeToString("no-delimiter-here".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        assertThatThrownBy(() -> CursorCodec.decode(cursor))
+                .isInstanceOf(InvalidCursorException.class);
+    }
+
+    @Test
+    void decodedValueWithUnparsableTimestampThrowsInvalidCursorException() {
+        String cursor = java.util.Base64.getUrlEncoder().withoutPadding()
+                .encodeToString("not-a-timestamp|not-a-uuid".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        assertThatThrownBy(() -> CursorCodec.decode(cursor))
+                .isInstanceOf(InvalidCursorException.class);
     }
 }

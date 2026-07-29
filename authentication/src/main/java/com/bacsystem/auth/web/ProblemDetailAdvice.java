@@ -69,6 +69,16 @@ public class ProblemDetailAdvice {
         return problem(HttpStatus.FORBIDDEN, "SELF_MFA_RESET_FORBIDDEN", e.getMessage());
     }
 
+    @ExceptionHandler(InvalidCursorException.class)
+    public ProblemDetail handleInvalidCursor(InvalidCursorException e) {
+        return problem(HttpStatus.BAD_REQUEST, "INVALID_CURSOR", e.getMessage());
+    }
+
+    @ExceptionHandler(InvalidPageSizeException.class)
+    public ProblemDetail handleInvalidPageSize(InvalidPageSizeException e) {
+        return problem(HttpStatus.BAD_REQUEST, "INVALID_PAGE_SIZE", e.getMessage());
+    }
+
     // Everything below is an authentication failure — §10.2 requires ONE
     // generic code/detail regardless of which of these actually happened,
     // so the real exception message/type never reaches the response body.

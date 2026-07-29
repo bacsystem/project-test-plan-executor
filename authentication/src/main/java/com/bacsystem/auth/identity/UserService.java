@@ -6,6 +6,7 @@ import com.bacsystem.auth.security.BreachedPasswordChecker;
 import com.bacsystem.auth.tenancy.Tenant;
 import com.bacsystem.auth.web.CursorCodec;
 import com.bacsystem.auth.web.CursorPage;
+import com.bacsystem.auth.web.InvalidPageSizeException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -58,9 +59,12 @@ public class UserService {
         return saved;
     }
 
+    // Tenant-scoped per Global Constraints (multi-tenancy): the caller's tenant,
+    // read from the JWT by UserController, is passed explicitly here and used
+    // to filter the lookup so one tenant can never deactivate another tenant's user.
     @Transactional
-    public void deactivateUser(UUID userId, UUID actorUserId) {
-        User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
+    public void deactivateUser(UUID tenantId, UUID userId, UUID actorUserId) {
+        User user = userRepository.findByIdAndTenantId(userId, tenantId).orElseThrow(() -> new UserNotFoundException(userId));
         user.setStatus(UserStatus.DEACTIVATED);
         userRepository.save(user);
         auditLogService.record(actorUserId, AuditAction.USER_DEACTIVATED, "User", userId.toString(), "{}");
@@ -81,8 +85,17 @@ public class UserService {
         return userRepository.findByTenantIdAndEmail(tenantId, email);
     }
 
+    // Not tenant-scoped: used only internally by MfaService.adminReset, which
+    // has no HTTP-reachable caller today. Any future controller-reachable use
+    // must go through the tenant-scoped overload below instead.
     public User getById(UUID userId) {
         return userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
+    }
+
+    // Tenant-scoped per Global Constraints (multi-tenancy) — the variant
+    // UserController uses, so one tenant can never read another tenant's user.
+    public User getById(UUID tenantId, UUID userId) {
+        return userRepository.findByIdAndTenantId(userId, tenantId).orElseThrow(() -> new UserNotFoundException(userId));
     }
 
     public Page<User> listByTenant(UUID tenantId, Pageable pageable) {
@@ -93,6 +106,9 @@ public class UserService {
     // predates that requirement and stays only because nothing else calls it;
     // this is the method UserController actually uses.
     public CursorPage<User> listByTenantCursor(UUID tenantId, String cursor, int size) {
+        if (size <= 0) {
+            throw new InvalidPageSizeException(size);
+        }
         CursorCodec.Decoded decoded = CursorCodec.decode(cursor);
         Instant after = decoded == null ? Instant.EPOCH : decoded.createdAt();
 

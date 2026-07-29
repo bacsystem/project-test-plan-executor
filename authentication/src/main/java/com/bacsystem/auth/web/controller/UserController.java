@@ -47,8 +47,8 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public UserResponse get(@PathVariable UUID id) {
-        return toResponse(userService.getById(id));
+    public UserResponse get(@PathVariable UUID id, JwtAuthenticationToken auth) {
+        return toResponse(userService.getById(tenantIdOf(auth), id));
     }
 
     @GetMapping
@@ -63,7 +63,7 @@ public class UserController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deactivate(@PathVariable UUID id, JwtAuthenticationToken auth) {
-        userService.deactivateUser(id, actorIdOf(auth));
+        userService.deactivateUser(tenantIdOf(auth), id, actorIdOf(auth));
     }
 
     private UUID tenantIdOf(JwtAuthenticationToken auth) {

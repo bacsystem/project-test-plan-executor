@@ -11,6 +11,7 @@ import java.util.UUID;
 
 public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByTenantIdAndEmail(UUID tenantId, String email);
+    Optional<User> findByIdAndTenantId(UUID id, UUID tenantId);
     Page<User> findByTenantId(UUID tenantId, Pageable pageable);
 
     List<User> findByTenantIdAndCreatedAtGreaterThanOrderByCreatedAtAsc(

@@ -80,6 +80,20 @@ class ProblemDetailAdviceTest {
     }
 
     @Test
+    void invalidCursorMapsTo400WithSpecificCode() {
+        ProblemDetail pd = advice.handleInvalidCursor(new InvalidCursorException("garbage", null));
+        assertThat(pd.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+        assertThat(pd.getProperties().get("code")).isEqualTo("INVALID_CURSOR");
+    }
+
+    @Test
+    void invalidPageSizeMapsTo400WithSpecificCode() {
+        ProblemDetail pd = advice.handleInvalidPageSize(new InvalidPageSizeException(0));
+        assertThat(pd.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+        assertThat(pd.getProperties().get("code")).isEqualTo("INVALID_PAGE_SIZE");
+    }
+
+    @Test
     void mfaVerificationFailureMapsToGenericAuthenticationFailed() {
         ProblemDetail pd = advice.handleMfaVerificationFailed(new MfaVerificationFailedException());
         assertThat(pd.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
