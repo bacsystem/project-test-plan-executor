@@ -7,4 +7,5 @@ import java.util.UUID;
 
 public interface MfaCredentialRepository extends JpaRepository<MfaCredential, UUID> {
     Optional<MfaCredential> findByUserIdAndActiveTrue(UUID userId);
+    Optional<MfaCredential> findFirstByUserIdAndActiveFalseOrderByCreatedAtDesc(UUID userId);
 }
