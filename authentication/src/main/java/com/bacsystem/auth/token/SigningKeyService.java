@@ -49,13 +49,18 @@ public class SigningKeyService {
     @Transactional
     public void rotate() {
         SigningKey previousActive = signingKeyRepository.findByStatus(SigningKeyStatus.ACTIVE).orElse(null);
-        SigningKey newActive = generateAndSaveActiveKey();
 
+        // Flush the previous key's RETIRING status before inserting the new ACTIVE row: the
+        // partial unique index on status = 'ACTIVE' (signing_keys_one_active_idx) is checked
+        // against this transaction's own writes, so the old row must already be RETIRING on the
+        // wire or the insert below would (correctly) see two ACTIVE rows and no-op.
         if (previousActive != null) {
             previousActive.setStatus(SigningKeyStatus.RETIRING);
             previousActive.setRetireAt(Instant.now().plusSeconds(overlapSeconds));
-            signingKeyRepository.save(previousActive);
+            signingKeyRepository.saveAndFlush(previousActive);
         }
+
+        SigningKey newActive = generateAndSaveActiveKey();
 
         auditLogService.record(null, AuditAction.KEY_ROTATION, "SigningKey", newActive.getKid(), "{}");
     }
@@ -68,7 +73,9 @@ public class SigningKeyService {
         boolean wasActive = compromised.getStatus() == SigningKeyStatus.ACTIVE;
         compromised.setStatus(SigningKeyStatus.RETIRED);
         compromised.setRetiredAt(Instant.now());
-        signingKeyRepository.save(compromised);
+        // Flush before generating a replacement so the RETIRED status is visible to the partial
+        // unique index check the insert below relies on (see rotate() for the same reasoning).
+        signingKeyRepository.saveAndFlush(compromised);
 
         // Only replace the ACTIVE key if the compromised key was itself ACTIVE — retiring a
         // RETIRING key must not create a second ACTIVE row and break the single-ACTIVE invariant.
@@ -93,21 +100,45 @@ public class SigningKeyService {
         }
     }
 
+    /**
+     * Generates a new ES256 key pair and inserts it as ACTIVE, unless a concurrent caller has
+     * already done so first. The insert relies on {@link SigningKeyRepository#insertActiveKeyIfAbsent}
+     * (backed by the partial unique index {@code signing_keys_one_active_idx}) rather than a plain
+     * SELECT-then-INSERT, which would otherwise let two racing callers both observe no ACTIVE key
+     * and both insert one (TOCTOU) — the DB constraint is the actual backstop, this is just how we
+     * fail closed against it instead of surfacing a constraint-violation exception to the caller.
+     */
     private SigningKey generateAndSaveActiveKey() {
+        GeneratedKeyMaterial material = generateKeyMaterial();
+        int inserted = signingKeyRepository.insertActiveKeyIfAbsent(
+                material.kid(), material.algorithm(), material.privateKeyPem(), material.publicKeyPem());
+        if (inserted == 0) {
+            return signingKeyRepository.findByStatus(SigningKeyStatus.ACTIVE)
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Expected an ACTIVE signing key after insert conflict on kid " + material.kid()
+                                    + " but found none"));
+        }
+        return signingKeyRepository.findByKid(material.kid())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Signing key " + material.kid() + " vanished immediately after insert"));
+    }
+
+    private GeneratedKeyMaterial generateKeyMaterial() {
         try {
             KeyPairGenerator generator = KeyPairGenerator.getInstance("EC");
             generator.initialize(new ECGenParameterSpec("secp256r1"));
             KeyPair keyPair = generator.generateKeyPair();
 
-            SigningKey key = new SigningKey();
-            key.setKid(UUID.randomUUID().toString());
-            key.setAlgorithm("ES256");
-            key.setPrivateKeyPem(Base64.getEncoder().encodeToString(keyPair.getPrivate().getEncoded()));
-            key.setPublicKeyPem(Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded()));
-            key.setStatus(SigningKeyStatus.ACTIVE);
-            return signingKeyRepository.save(key);
+            return new GeneratedKeyMaterial(
+                    UUID.randomUUID().toString(),
+                    "ES256",
+                    Base64.getEncoder().encodeToString(keyPair.getPrivate().getEncoded()),
+                    Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded()));
         } catch (Exception e) {
             throw new IllegalStateException("Failed to generate EC signing key", e);
         }
+    }
+
+    private record GeneratedKeyMaterial(String kid, String algorithm, String privateKeyPem, String publicKeyPem) {
     }
 }
