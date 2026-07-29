@@ -10,6 +10,18 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
+// NOTE: this entity has the same @IdClass-from-two-non-generated-@ManyToOne
+// shape that made RolePermission's composite key non-null as soon as
+// user/role are set, which routes JpaRepository.save() through
+// entityManager.merge() (silent UPSERT) instead of persist() (INSERT) and
+// so would NOT trip the user_roles(user_id, role_id) primary-key constraint
+// on a duplicate assignment — see RolePermission's Persistable<Key>
+// implementation for the fix pattern. Left unimplemented here deliberately:
+// no test in the Task 6 brief exercises duplicate (user_id, role_id)
+// assignment, so adding Persistable here would be speculative scope. Apply
+// the same Persistable<Key> fix (with @Setter(AccessLevel.NONE) on the
+// isNew flag) before relying on duplicate-assignment rejection for
+// user_roles in any future task.
 @Entity
 @Table(name = "user_roles")
 @IdClass(UserRole.Key.class)
