@@ -26,4 +26,12 @@ public interface PermissionRepository extends JpaRepository<Permission, UUID> {
     @Query("UPDATE Permission p SET p.deprecatedAt = CURRENT_TIMESTAMP " +
            "WHERE p.applicationName = :applicationName AND p.name NOT IN :names AND p.deprecatedAt IS NULL")
     int deprecateMissing(@Param("applicationName") String applicationName, @Param("names") Set<String> names);
+
+    // Used by PermissionCatalogService.sync to compute the real "added" count
+    // (§9.2) BEFORE the upsert loop runs: whichever of `names` isn't already
+    // active here is genuinely new (or a reactivated deprecation) as a result
+    // of this sync call.
+    @Query("SELECT p.name FROM Permission p WHERE p.applicationName = :applicationName " +
+           "AND p.name IN :names AND p.deprecatedAt IS NULL")
+    Set<String> findActiveNames(@Param("applicationName") String applicationName, @Param("names") Set<String> names);
 }
