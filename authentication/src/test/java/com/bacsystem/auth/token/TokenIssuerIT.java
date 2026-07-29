@@ -45,7 +45,7 @@ class TokenIssuerIT extends PostgresRedisTestBase {
         assertThat(issued.refreshToken()).isNotBlank();
         // the refresh token this returns is a real row `RefreshTokenService` can rotate —
         // proves the two components share one representation, not two incompatible ones.
-        String rotated = refreshTokenService.rotate(issued.refreshToken()).newRawRefreshToken();
+        String rotated = refreshTokenService.rotate(issued.refreshToken(), "example-app").newRawRefreshToken();
         assertThat(rotated).isNotBlank();
     }
 }

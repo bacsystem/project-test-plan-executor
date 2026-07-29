@@ -3,6 +3,9 @@ package com.bacsystem.auth.config;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.security.web.authentication.AuthenticationConverter;
 
 /**
@@ -22,6 +25,12 @@ public class RefreshGrantAuthenticationConverter implements AuthenticationConver
         }
         Authentication clientPrincipal = SecurityContextHolder.getContext().getAuthentication();
         String refreshToken = request.getParameter("refresh_token");
+        // A missing/blank refresh_token would otherwise propagate a null token value all the
+        // way to TokenHasher.sha256Hex(null), an uncontrolled NPE instead of a clean OAuth2 error.
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new OAuth2AuthenticationException(new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST,
+                    "refresh_token parameter is required", null));
+        }
         return new RefreshGrantAuthenticationToken(clientPrincipal, refreshToken);
     }
 }

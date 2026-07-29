@@ -2,6 +2,7 @@ package com.bacsystem.auth.config;
 
 import com.bacsystem.auth.identity.User;
 import com.bacsystem.auth.identity.UserService;
+import com.bacsystem.auth.identity.UserStatus;
 import com.bacsystem.auth.mfa.MfaService;
 import com.bacsystem.auth.security.AccountLockedException;
 import com.bacsystem.auth.security.LoginAttemptService;
@@ -17,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.security.oauth2.core.OAuth2RefreshToken;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AccessTokenAuthenticationToken;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientAuthenticationToken;
@@ -62,6 +64,13 @@ public class PasswordGrantAuthenticationProvider implements AuthenticationProvid
         RegisteredClient registeredClient = ((OAuth2ClientAuthenticationToken) grant.getClientPrincipal())
                 .getRegisteredClient();
 
+        // §6/Task 3: a client's `authorization_grant_types` scopes which grants it may use —
+        // SAS's own built-in providers enforce this; our custom ones must too.
+        if (!registeredClient.getAuthorizationGrantTypes().contains(PasswordGrantAuthenticationToken.PASSWORD)) {
+            throw new OAuth2AuthenticationException(new OAuth2Error(OAuth2ErrorCodes.UNAUTHORIZED_CLIENT,
+                    "Client is not authorized to use the password grant type", null));
+        }
+
         String clientIp = grant.getClientIp(); // resolved in the converter (§13) — never a placeholder
         try {
             loginAttemptService.assertNotLocked(grant.getUsername(), clientIp);
@@ -69,7 +78,12 @@ public class PasswordGrantAuthenticationProvider implements AuthenticationProvid
             Tenant tenant = tenantRepository.findBySlug(grant.getTenant())
                     .orElseThrow(this::genericAuthFailure);
             Optional<User> user = userService.findByTenantAndEmail(tenant.getId(), grant.getUsername());
-            if (user.isEmpty() || !passwordEncoder.matches(grant.getPassword(), user.get().getPasswordHash())) {
+            // §5: deactivated accounts (soft-deleted, not hard-deleted) must stop authenticating —
+            // checked before the password comparison, but folded into the same generic failure/
+            // lockout-recording path so a deactivated account can't be distinguished from a wrong
+            // password by an attacker.
+            if (user.isEmpty() || user.get().getStatus() != UserStatus.ACTIVE
+                    || !passwordEncoder.matches(grant.getPassword(), user.get().getPasswordHash())) {
                 loginAttemptService.recordFailure(grant.getUsername(), clientIp);
                 throw genericAuthFailure();
             }

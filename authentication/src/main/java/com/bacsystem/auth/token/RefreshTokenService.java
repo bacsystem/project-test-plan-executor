@@ -42,6 +42,15 @@ public class RefreshTokenService {
      * that is reuse by definition (§8.3), and the entire chain for that
      * user+application is revoked, not just this token.
      *
+     * <p>{@code requestingClientId} must match the {@code applicationClientId}
+     * the token was originally issued under (§8.2: "one token per
+     * application... never a global token valid everywhere"). Without this
+     * check, any registered client that gets hold of another application's
+     * raw opaque refresh token — however it leaked — could mint itself a
+     * valid access token for that user. A mismatch is treated the same as
+     * reuse: the whole chain is revoked, since presentation by the wrong
+     * client is itself evidence the token isn't where it should be.
+     *
      * <p>{@code noRollbackFor} is required here: without it, Spring rolls
      * back the whole transaction — including the chain revocation this
      * same method just wrote — because {@link RefreshTokenReuseException}
@@ -50,15 +59,18 @@ public class RefreshTokenService {
      * perform.
      */
     @Transactional(noRollbackFor = RefreshTokenReuseException.class)
-    public RefreshTokenRotationResult rotate(String presentedRaw) {
+    public RefreshTokenRotationResult rotate(String presentedRaw, String requestingClientId) {
         RefreshToken current = refreshTokenRepository.findByTokenHash(TokenHasher.sha256Hex(presentedRaw))
                 .orElseThrow(RefreshTokenReuseException::new);
 
-        if (current.getReplacedBy() != null || current.getRevokedAt() != null
-                || current.getExpiresAt().isBefore(Instant.now())) {
+        boolean alreadyUsed = current.getReplacedBy() != null || current.getRevokedAt() != null
+                || current.getExpiresAt().isBefore(Instant.now());
+        boolean clientMismatch = !current.getApplicationClientId().equals(requestingClientId);
+        if (alreadyUsed || clientMismatch) {
             revokeAllForUser(current.getUser().getId());
+            String event = clientMismatch ? "client_mismatch" : "reuse_detected";
             auditLogService.record(current.getUser().getId(), AuditAction.USER_PASSWORD_CHANGED,
-                    "RefreshToken", current.getId().toString(), "{\"event\":\"reuse_detected\"}");
+                    "RefreshToken", current.getId().toString(), "{\"event\":\"" + event + "\"}");
             throw new RefreshTokenReuseException();
         }
 

@@ -1,6 +1,8 @@
 package com.bacsystem.auth.config;
 
 import com.bacsystem.auth.identity.UserService;
+import com.bacsystem.auth.rbac.ApplicationClient;
+import com.bacsystem.auth.rbac.ApplicationClientRepository;
 import com.bacsystem.auth.support.PostgresRedisTestBase;
 import com.bacsystem.auth.tenancy.Tenant;
 import com.bacsystem.auth.tenancy.TenantRepository;
@@ -28,6 +30,7 @@ class PasswordGrantIT extends PostgresRedisTestBase {
     @Autowired private TenantRepository tenantRepository;
     @Autowired private UserService userService;
     @Autowired private TestRestTemplate restTemplate;
+    @Autowired private ApplicationClientRepository applicationClientRepository;
 
     @Test
     void passwordGrantIssuesAccessAndRefreshTokenForValidCredentials() {
@@ -58,6 +61,37 @@ class PasswordGrantIT extends PostgresRedisTestBase {
     }
 
     @Test
+    void deactivatedUserCannotObtainTokensEvenWithTheCorrectPassword() {
+        // §5: deactivated accounts are soft-deleted, not hard-deleted — the password stays
+        // valid, but the account must stop being able to authenticate.
+        Tenant tenant = new Tenant();
+        tenant.setSlug("pwgrant-deactivated-" + System.nanoTime());
+        tenant.setName("Deactivated User Test");
+        tenant = tenantRepository.saveAndFlush(tenant);
+        var user = userService.createUser(tenant.getId(), "deactivated@test.com", "ValidPassw0rd!123", null);
+        userService.changePassword(
+                userService.findByTenantAndEmail(tenant.getId(), "deactivated@test.com").orElseThrow(),
+                "ValidPassw0rd!123Changed");
+        userService.deactivateUser(user.getId(), null);
+
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("grant_type", "password");
+        form.add("tenant", tenant.getSlug());
+        form.add("username", "deactivated@test.com");
+        form.add("password", "ValidPassw0rd!123Changed");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        headers.setBasicAuth("example-app", "example-secret");
+
+        ResponseEntity<java.util.Map> response = restTemplate.postForEntity(
+                "/oauth2/token", new HttpEntity<>(form, headers), java.util.Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().get("error")).isEqualTo("authentication_failed");
+    }
+
+    @Test
     void wrongPasswordReturnsGenericAuthenticationFailedNotAHint() {
         Tenant tenant = new Tenant();
         tenant.setSlug("pwgrant-bad-" + System.nanoTime());
@@ -80,6 +114,43 @@ class PasswordGrantIT extends PostgresRedisTestBase {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody().get("error")).isEqualTo("authentication_failed");
+    }
+
+    @Test
+    void clientNotAuthorizedForThePasswordGrantIsRejected() {
+        // §6/Task 3: a client's `authorization_grant_types` scopes which grants it may use —
+        // a client only provisioned for client_credentials must not be able to use `password`
+        // just because it can authenticate with valid Basic-Auth credentials.
+        ApplicationClient restrictedClient = new ApplicationClient();
+        restrictedClient.setClientId("no-password-app-" + System.nanoTime());
+        restrictedClient.setClientSecretHash("{bcrypt}$2a$12$xzIPjB40faGFLYG0nryQ6OaDg/AVJGnKwEQGvrv16.t6HK0K3MKqW");
+        restrictedClient.setClientName("Restricted App");
+        restrictedClient.setScopes("permissions:sync");
+        restrictedClient.setAuthorizationGrantTypes("client_credentials");
+        restrictedClient.setClientAuthenticationMethods("client_secret_basic");
+        restrictedClient = applicationClientRepository.saveAndFlush(restrictedClient);
+
+        Tenant tenant = new Tenant();
+        tenant.setSlug("pwgrant-restricted-" + System.nanoTime());
+        tenant.setName("Restricted Client Test");
+        tenant = tenantRepository.saveAndFlush(tenant);
+        userService.createUser(tenant.getId(), "restricted@test.com", "ValidPassw0rd!123", null);
+
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("grant_type", "password");
+        form.add("tenant", tenant.getSlug());
+        form.add("username", "restricted@test.com");
+        form.add("password", "ValidPassw0rd!123");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        headers.setBasicAuth(restrictedClient.getClientId(), "example-secret");
+
+        ResponseEntity<java.util.Map> response = restTemplate.postForEntity(
+                "/oauth2/token", new HttpEntity<>(form, headers), java.util.Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().get("error")).isEqualTo("unauthorized_client");
     }
 
     @Test
