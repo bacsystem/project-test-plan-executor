@@ -40,11 +40,15 @@ class PermissionCatalogServiceIT extends PostgresRedisTestBase {
         permissionCatalogService.sync("catalog-app-3", Set.of("x:read", "x:write"));
         permissionCatalogService.sync("catalog-app-3", Set.of("x:read"));
 
-        permissionCatalogService.sync("catalog-app-3", Set.of("x:read", "x:write"));
+        PermissionSyncResult result = permissionCatalogService.sync("catalog-app-3", Set.of("x:read", "x:write"));
 
         Permission writePermission = permissionRepository.findByApplicationName("catalog-app-3").stream()
                 .filter(p -> p.getName().equals("x:write")).findFirst().orElseThrow();
         assertThat(writePermission.getDeprecatedAt()).isNull();
+        // Reactivating a previously-deprecated permission must be reported as
+        // "added" (§9.2 contract), same as a genuinely brand-new name — even
+        // though at the row level it's an UPDATE (ON CONFLICT), not an INSERT.
+        assertThat(result.added()).isEqualTo(1);
     }
 
     @Test
