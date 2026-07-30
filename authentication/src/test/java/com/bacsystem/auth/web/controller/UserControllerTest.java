@@ -241,6 +241,9 @@ class UserControllerTest {
     // is the scenario a genuine assignRole race hits when the DB's PK constraint, not
     // the existsById pre-check, is what actually catches the duplicate (see
     // RoleServiceConcurrencyIT for the real-race version of this against a live DB).
+    // The handler is scoped to user_roles_pkey specifically (see ProblemDetailAdvice),
+    // so this now maps to the same ROLE_ALREADY_ASSIGNED code the pre-check path uses,
+    // not a generic CONFLICT.
     @Test
     void assignRoleRaceThatSurfacesAsDataIntegrityViolationMapsTo409NotRaw500() throws Exception {
         doThrow(new DataIntegrityViolationException(
@@ -252,7 +255,7 @@ class UserControllerTest {
                         .contentType("application/json")
                         .content("{\"roleId\":\"" + UUID.randomUUID() + "\"}"))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("CONFLICT"));
+                .andExpect(jsonPath("$.code").value("ROLE_ALREADY_ASSIGNED"));
     }
 
     @Test
