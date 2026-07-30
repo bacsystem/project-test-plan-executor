@@ -66,15 +66,17 @@ class RoleAssignmentIT extends PostgresRedisTestBase {
         List<RoleSummary> afterAssign = roleService.listRolesForUser(tenant.getId(), target.getId());
         assertThat(afterAssign).containsExactly(new RoleSummary(role.getId(), role.getName()));
 
-        // idempotent re-assignment: no duplicate row, no exception
-        roleService.assignRole(tenant.getId(), target.getId(), role.getId(), actor.getId());
+        // re-assignment now matches spec §11 (409 already-assigned), not silent idempotency
+        assertThrows(RoleAlreadyAssignedException.class,
+                () -> roleService.assignRole(tenant.getId(), target.getId(), role.getId(), actor.getId()));
         assertThat(userRoleRepository.findByUserId(target.getId())).hasSize(1);
 
         roleService.revokeRole(tenant.getId(), target.getId(), role.getId(), actor.getId());
         assertThat(roleService.listRolesForUser(tenant.getId(), target.getId())).isEmpty();
 
-        // idempotent revoke: no exception on a second, redundant revoke
-        roleService.revokeRole(tenant.getId(), target.getId(), role.getId(), actor.getId());
+        // revoking a non-existent assignment now matches spec §11 (404), not silent idempotency
+        assertThrows(RoleAssignmentNotFoundException.class,
+                () -> roleService.revokeRole(tenant.getId(), target.getId(), role.getId(), actor.getId()));
     }
 
     @Test
