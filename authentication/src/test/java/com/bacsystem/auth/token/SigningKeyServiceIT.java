@@ -1,6 +1,7 @@
 package com.bacsystem.auth.token;
 
 import com.bacsystem.auth.support.PostgresRedisTestBase;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -20,6 +21,24 @@ class SigningKeyServiceIT extends PostgresRedisTestBase {
 
     @Autowired private SigningKeyService signingKeyService;
     @Autowired private SigningKeyRepository signingKeyRepository;
+
+    /**
+     * The signing_keys table is shared across the whole test JVM (singleton container
+     * pattern - see PostgresRedisTestBase). Several tests below deliberately exercise
+     * rotate()/emergencyRotate(), which - by design - can leave a real ACTIVE key and a
+     * real RETIRING key persisted simultaneously (the JWKS overlap window that lets
+     * consumers keep validating tokens signed by a just-rotated-out key). That's correct
+     * production behavior, but it means any other test class that issues a brand new JWT
+     * afterward (e.g. TokenIssuerIT) can find more than one ES256 signing key published
+     * and fail with "Found multiple JWK signing keys for algorithm 'ES256'" - a test
+     * isolation gap, not a production bug. Clearing the table after each test here restores
+     * a clean slate for whatever runs next; any test that needs an active key again will
+     * simply have one lazily re-bootstrapped by SigningKeyService.currentActiveKey().
+     */
+    @AfterEach
+    void cleanUpSigningKeys() {
+        signingKeyRepository.deleteAll();
+    }
 
     @Test
     void bootstrapsAnActiveKeyWhenNoneExists() {
@@ -106,6 +125,7 @@ class SigningKeyServiceIT extends PostgresRedisTestBase {
 
         SigningKey notYetRetired = signingKeyRepository.findById(stillWithinOverlap.getId()).orElseThrow();
         assertThat(notYetRetired.getStatus()).isEqualTo(SigningKeyStatus.RETIRING);
+        // (cleanUpSigningKeys() below removes these rows after this test - see its Javadoc)
     }
 
     @Test
