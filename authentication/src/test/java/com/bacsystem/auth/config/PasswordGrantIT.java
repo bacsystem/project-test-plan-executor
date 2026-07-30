@@ -4,8 +4,6 @@ import com.bacsystem.auth.identity.UserService;
 import com.bacsystem.auth.rbac.ApplicationClient;
 import com.bacsystem.auth.rbac.ApplicationClientRepository;
 import com.bacsystem.auth.rbac.RoleService;
-import com.bacsystem.auth.rbac.UserRole;
-import com.bacsystem.auth.rbac.UserRoleRepository;
 import com.bacsystem.auth.support.PostgresRedisTestBase;
 import com.bacsystem.auth.tenancy.Tenant;
 import com.bacsystem.auth.tenancy.TenantRepository;
@@ -35,7 +33,6 @@ class PasswordGrantIT extends PostgresRedisTestBase {
     @Autowired private TestRestTemplate restTemplate;
     @Autowired private ApplicationClientRepository applicationClientRepository;
     @Autowired private RoleService roleService;
-    @Autowired private UserRoleRepository userRoleRepository;
 
     @Test
     void passwordGrantForAUserWithAnAssignedRoleIncludesItInTheAccessToken() {
@@ -54,11 +51,10 @@ class PasswordGrantIT extends PostgresRedisTestBase {
                 userService.findByTenantAndEmail(tenant.getId(), "roled@test.com").orElseThrow(),
                 "ValidPassw0rd!123Changed");
         var role = roleService.createRole(tenant.getId(), "member", false, user.getId());
-        UserRole assignment = new UserRole();
-        assignment.setUser(user);
-        assignment.setRole(role);
-        assignment.setAssignedBy(user);
-        userRoleRepository.save(assignment);
+        // roleService.assignRole (not a hand-built UserRole + repository.save) — it re-fetches
+        // user/role within its own transaction, avoiding a "detached entity passed to persist"
+        // error from reusing the already-committed, now-detached `role` instance directly.
+        roleService.assignRole(tenant.getId(), user.getId(), role.getId(), user.getId());
 
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("grant_type", "password");

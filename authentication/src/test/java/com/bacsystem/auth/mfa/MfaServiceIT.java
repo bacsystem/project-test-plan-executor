@@ -4,8 +4,6 @@ import com.bacsystem.auth.identity.User;
 import com.bacsystem.auth.identity.UserService;
 import com.bacsystem.auth.rbac.Role;
 import com.bacsystem.auth.rbac.RoleService;
-import com.bacsystem.auth.rbac.UserRole;
-import com.bacsystem.auth.rbac.UserRoleRepository;
 import com.bacsystem.auth.support.PostgresRedisTestBase;
 import com.bacsystem.auth.tenancy.Tenant;
 import com.bacsystem.auth.tenancy.TenantRepository;
@@ -30,7 +28,6 @@ class MfaServiceIT extends PostgresRedisTestBase {
     @Autowired private MfaService mfaService;
     @Autowired private MfaBackupCodeRepository mfaBackupCodeRepository;
     @Autowired private RoleService roleService;
-    @Autowired private UserRoleRepository userRoleRepository;
     @Autowired private MeterRegistry meterRegistry;
 
     private static final String ADMIN_TARGET_COUNTER = "admin_mfa_reset_admin_target_total";
@@ -42,11 +39,10 @@ class MfaServiceIT extends PostgresRedisTestBase {
 
     private void grantAdminRole(User user, User grantedBy) {
         Role adminRole = roleService.createRole(user.getTenant().getId(), "admin", false, grantedBy.getId());
-        UserRole assignment = new UserRole();
-        assignment.setUser(user);
-        assignment.setRole(adminRole);
-        assignment.setAssignedBy(grantedBy);
-        userRoleRepository.save(assignment);
+        // roleService.assignRole (not a hand-built UserRole + repository.save) — it re-fetches
+        // user/role within its own transaction, avoiding a "detached entity passed to persist"
+        // error from reusing the already-committed, now-detached `adminRole` instance directly.
+        roleService.assignRole(user.getTenant().getId(), user.getId(), adminRole.getId(), grantedBy.getId());
     }
 
     private static final int TOTP_PERIOD_SECONDS = 30;

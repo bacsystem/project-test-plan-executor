@@ -4,6 +4,7 @@ import com.bacsystem.auth.rbac.PermissionCatalogService;
 import com.bacsystem.auth.rbac.PermissionSyncResult;
 import com.bacsystem.auth.security.ClientIpResolver;
 import com.bacsystem.auth.security.RateLimiter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,7 @@ class PermissionCatalogControllerTest {
     // as a Filter bean; its own dependencies must be mocked so the slice context loads.
     @MockBean private RateLimiter rateLimiter;
     @MockBean private ClientIpResolver clientIpResolver;
+    @MockBean private MeterRegistry meterRegistry;
 
     @BeforeEach
     void allowAllRequestsThroughRateLimiter() {

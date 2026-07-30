@@ -7,6 +7,7 @@ import com.bacsystem.auth.security.ClientIpResolver;
 import com.bacsystem.auth.security.RateLimiter;
 import com.bacsystem.auth.tenancy.Tenant;
 import com.bacsystem.auth.web.ProblemDetailAdvice;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,7 @@ class RoleControllerTest {
     // as a Filter bean; its own dependencies must be mocked so the slice context loads.
     @MockBean private RateLimiter rateLimiter;
     @MockBean private ClientIpResolver clientIpResolver;
+    @MockBean private MeterRegistry meterRegistry;
 
     @BeforeEach
     void allowAllRequestsThroughRateLimiter() {

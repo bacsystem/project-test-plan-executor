@@ -12,6 +12,7 @@ import com.bacsystem.auth.security.RateLimiter;
 import com.bacsystem.auth.web.CursorPage;
 import com.bacsystem.auth.web.InvalidCursorException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +51,7 @@ class UserControllerTest {
     @MockBean private RateLimiter rateLimiter;
     @MockBean private ClientIpResolver clientIpResolver;
     @MockBean private JwtDecoder jwtDecoder;
+    @MockBean private MeterRegistry meterRegistry;
 
     @BeforeEach
     void allowAllRequestsThroughTheRateLimiter() {

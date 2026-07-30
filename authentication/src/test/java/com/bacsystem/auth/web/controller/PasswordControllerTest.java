@@ -1,14 +1,19 @@
 package com.bacsystem.auth.web.controller;
 
+import com.bacsystem.auth.identity.PasswordChangeChallengeService;
 import com.bacsystem.auth.identity.User;
 import com.bacsystem.auth.identity.UserNotFoundException;
+import com.bacsystem.auth.identity.UserRepository;
 import com.bacsystem.auth.identity.UserService;
 import com.bacsystem.auth.identity.UserStatus;
 import com.bacsystem.auth.onetime.OneTimeTokenService;
+import com.bacsystem.auth.rbac.JpaRegisteredClientRepository;
 import com.bacsystem.auth.security.ClientIpResolver;
 import com.bacsystem.auth.security.RateLimiter;
 import com.bacsystem.auth.tenancy.TenantRepository;
+import com.bacsystem.auth.token.TokenIssuer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,11 +49,16 @@ class PasswordControllerTest {
     @MockBean private UserService userService;
     @MockBean private OneTimeTokenService oneTimeTokenService;
     @MockBean private TenantRepository tenantRepository;
+    @MockBean private PasswordChangeChallengeService passwordChangeChallengeService;
+    @MockBean private JpaRegisteredClientRepository registeredClientRepository;
+    @MockBean private UserRepository userRepository;
+    @MockBean private TokenIssuer tokenIssuer;
 
     // SecurityConfig's bean graph, same rationale as UserControllerTest.
     @MockBean private RateLimiter rateLimiter;
     @MockBean private ClientIpResolver clientIpResolver;
     @MockBean private JwtDecoder jwtDecoder;
+    @MockBean private MeterRegistry meterRegistry;
 
     @BeforeEach
     void allowAllRequestsThroughTheRateLimiter() {
