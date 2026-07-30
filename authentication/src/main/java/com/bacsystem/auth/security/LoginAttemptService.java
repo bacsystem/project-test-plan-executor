@@ -79,6 +79,12 @@ public class LoginAttemptService {
         attempt.setSuccess(false);
         attempt.setAttemptedAt(Instant.now());
         loginAttemptRepository.save(attempt);
+        // §16: login-failure-burst-by-IP is a distinct alert from the lockout counter above —
+        // it must fire on every raw failed attempt (not just the ones that trip a lockout) so a
+        // slow-and-low credential-stuffing burst that never crosses the threshold is still
+        // visible to an external dashboard/alert computing rate() over this counter. No tags:
+        // per ObservabilityConfig's forbidden-tag guard, raw email/IP must never be used as tags.
+        meterRegistry.counter("login_attempt_failed").increment();
     }
 
     public void recordSuccess(UUID userId, String email, String ipAddress) {
