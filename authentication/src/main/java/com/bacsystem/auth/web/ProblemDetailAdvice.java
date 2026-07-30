@@ -15,6 +15,7 @@ import com.bacsystem.auth.rbac.RoleInUseException;
 import com.bacsystem.auth.rbac.RoleNotFoundException;
 import com.bacsystem.auth.rbac.RoleVersionConflictException;
 import com.bacsystem.auth.token.RefreshTokenReuseException;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -63,6 +64,11 @@ public class ProblemDetailAdvice {
         return problem(HttpStatus.NOT_FOUND, "ROLE_ASSIGNMENT_NOT_FOUND", e.getMessage());
     }
 
+    // Postgres auto-names an unnamed composite PRIMARY KEY "<table>_pkey"; user_roles'
+    // PK is declared without an explicit name in V5__create_rbac_tables.sql, so this
+    // is the real constraint name, not an assumption.
+    private static final String USER_ROLES_PK_CONSTRAINT = "user_roles_pkey";
+
     /**
      * Backstop for the race Item 1 documents on {@code RoleService.assignRole}: two
      * concurrent first-time assigns of the same (user, role) pair can both pass the
@@ -71,17 +77,38 @@ public class ProblemDetailAdvice {
      * Persistable} implementation) instead of the pre-check's own {@link
      * RoleAlreadyAssignedException}. This handler exists so that race is ALWAYS a
      * structured 409, regardless of which of the two paths actually fires — without
-     * it the DB exception fell through to the default handler as a raw 500. The body
-     * is deliberately generic ("conflict", not "already assigned"): a bare
-     * DataIntegrityViolationException does not cheaply tell us which constraint
-     * fired, so we do not guess at a more specific code than the situation actually
-     * supports. This is a backstop for constraint violations in general, not
-     * exclusively role assignment.
+     * it the DB exception fell through to the default handler as a raw 500.
+     *
+     * <p>This is deliberately narrow: {@code @RestControllerAdvice} is app-wide, so a
+     * blanket handler here would also swallow every OTHER
+     * DataIntegrityViolationException in the app — e.g. {@code UserService.createUser}
+     * has an identical existsById-then-save race against {@code users(tenant_id,
+     * email)}'s unique constraint (which has its own, more specific, {@code
+     * DuplicateEmailException}/{@code DUPLICATE_EMAIL} handling on the fast path), and
+     * NOT-NULL/FK/check-constraint violations usually indicate a genuine application
+     * bug that should alert as a raw 500, not get silently reclassified as a
+     * client-facing 409. So only a violation of {@code user_roles_pkey} specifically
+     * is translated here (by delegating to {@link #handleRoleAlreadyAssigned}, reusing
+     * its response shape rather than duplicating it); every other constraint, or one
+     * we can't identify, is rethrown so Spring's default (unmapped, 500) handling
+     * takes over.
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ProblemDetail handleDataIntegrityViolation(DataIntegrityViolationException e) {
-        return problem(HttpStatus.CONFLICT, "CONFLICT",
-                "The request could not be completed because it conflicts with existing data");
+        if (violatesUserRolesPrimaryKey(e)) {
+            return handleRoleAlreadyAssigned(new RoleAlreadyAssignedException());
+        }
+        throw e;
+    }
+
+    private boolean violatesUserRolesPrimaryKey(DataIntegrityViolationException e) {
+        for (Throwable cause = e.getCause(); cause != null; cause = cause.getCause()) {
+            if (cause instanceof ConstraintViolationException cve) {
+                return USER_ROLES_PK_CONSTRAINT.equals(cve.getConstraintName());
+            }
+        }
+        String message = e.getMostSpecificCause().getMessage();
+        return message != null && message.contains(USER_ROLES_PK_CONSTRAINT);
     }
 
     @ExceptionHandler(DuplicateEmailException.class)
