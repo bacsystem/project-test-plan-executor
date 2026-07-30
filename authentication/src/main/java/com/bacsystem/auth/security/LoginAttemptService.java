@@ -82,9 +82,13 @@ public class LoginAttemptService {
         // §16: login-failure-burst-by-IP is a distinct alert from the lockout counter above —
         // it must fire on every raw failed attempt (not just the ones that trip a lockout) so a
         // slow-and-low credential-stuffing burst that never crosses the threshold is still
-        // visible to an external dashboard/alert computing rate() over this counter. No tags:
-        // per ObservabilityConfig's forbidden-tag guard, raw email/IP must never be used as tags.
-        meterRegistry.counter("login_attempt_failed").increment();
+        // visible to an external dashboard/alert computing rate() over this counter. Tagged with
+        // the same bounded, non-PII "scope" dimension as login_attempt_locked above (never the
+        // raw email or IP; see ObservabilityConfig's forbidden-tag guard): every failed attempt
+        // is one data point for both the per-account and the per-IP failure streams, so both
+        // scopes are incremented on every call.
+        meterRegistry.counter("login_attempt_failed", "scope", "account").increment();
+        meterRegistry.counter("login_attempt_failed", "scope", "ip").increment();
     }
 
     public void recordSuccess(UUID userId, String email, String ipAddress) {
