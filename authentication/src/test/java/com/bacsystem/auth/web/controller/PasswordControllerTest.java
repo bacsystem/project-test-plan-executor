@@ -6,6 +6,7 @@ import com.bacsystem.auth.identity.UserNotFoundException;
 import com.bacsystem.auth.identity.UserRepository;
 import com.bacsystem.auth.identity.UserService;
 import com.bacsystem.auth.identity.UserStatus;
+import com.bacsystem.auth.mfa.MfaService;
 import com.bacsystem.auth.onetime.OneTimeTokenService;
 import com.bacsystem.auth.rbac.JpaRegisteredClientRepository;
 import com.bacsystem.auth.security.ClientIpResolver;
@@ -53,6 +54,7 @@ class PasswordControllerTest {
     @MockBean private JpaRegisteredClientRepository registeredClientRepository;
     @MockBean private UserRepository userRepository;
     @MockBean private TokenIssuer tokenIssuer;
+    @MockBean private MfaService mfaService;
 
     // SecurityConfig's bean graph, same rationale as UserControllerTest.
     @MockBean private RateLimiter rateLimiter;
