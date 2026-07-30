@@ -9,10 +9,13 @@ import com.bacsystem.auth.mfa.MfaVerificationFailedException;
 import com.bacsystem.auth.mfa.SelfMfaResetException;
 import com.bacsystem.auth.onetime.OneTimeTokenInvalidException;
 import com.bacsystem.auth.rbac.DuplicateRoleNameException;
+import com.bacsystem.auth.rbac.RoleAlreadyAssignedException;
+import com.bacsystem.auth.rbac.RoleAssignmentNotFoundException;
 import com.bacsystem.auth.rbac.RoleInUseException;
 import com.bacsystem.auth.rbac.RoleNotFoundException;
 import com.bacsystem.auth.rbac.RoleVersionConflictException;
 import com.bacsystem.auth.token.RefreshTokenReuseException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -48,6 +51,37 @@ public class ProblemDetailAdvice {
     @ExceptionHandler(RoleInUseException.class)
     public ProblemDetail handleRoleInUse(RoleInUseException e) {
         return problem(HttpStatus.CONFLICT, "ROLE_IN_USE", e.getMessage());
+    }
+
+    @ExceptionHandler(RoleAlreadyAssignedException.class)
+    public ProblemDetail handleRoleAlreadyAssigned(RoleAlreadyAssignedException e) {
+        return problem(HttpStatus.CONFLICT, "ROLE_ALREADY_ASSIGNED", e.getMessage());
+    }
+
+    @ExceptionHandler(RoleAssignmentNotFoundException.class)
+    public ProblemDetail handleRoleAssignmentNotFound(RoleAssignmentNotFoundException e) {
+        return problem(HttpStatus.NOT_FOUND, "ROLE_ASSIGNMENT_NOT_FOUND", e.getMessage());
+    }
+
+    /**
+     * Backstop for the race Item 1 documents on {@code RoleService.assignRole}: two
+     * concurrent first-time assigns of the same (user, role) pair can both pass the
+     * application-level {@code existsById} pre-check, in which case the loser hits
+     * {@code user_roles}' PK constraint (enforced via {@code UserRole}'s {@code
+     * Persistable} implementation) instead of the pre-check's own {@link
+     * RoleAlreadyAssignedException}. This handler exists so that race is ALWAYS a
+     * structured 409, regardless of which of the two paths actually fires — without
+     * it the DB exception fell through to the default handler as a raw 500. The body
+     * is deliberately generic ("conflict", not "already assigned"): a bare
+     * DataIntegrityViolationException does not cheaply tell us which constraint
+     * fired, so we do not guess at a more specific code than the situation actually
+     * supports. This is a backstop for constraint violations in general, not
+     * exclusively role assignment.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ProblemDetail handleDataIntegrityViolation(DataIntegrityViolationException e) {
+        return problem(HttpStatus.CONFLICT, "CONFLICT",
+                "The request could not be completed because it conflicts with existing data");
     }
 
     @ExceptionHandler(DuplicateEmailException.class)

@@ -8,12 +8,15 @@ import com.bacsystem.auth.mfa.MfaVerificationFailedException;
 import com.bacsystem.auth.mfa.SelfMfaResetException;
 import com.bacsystem.auth.onetime.OneTimeTokenInvalidException;
 import com.bacsystem.auth.rbac.DuplicateRoleNameException;
+import com.bacsystem.auth.rbac.RoleAlreadyAssignedException;
+import com.bacsystem.auth.rbac.RoleAssignmentNotFoundException;
 import com.bacsystem.auth.rbac.RoleInUseException;
 import com.bacsystem.auth.rbac.RoleNotFoundException;
 import com.bacsystem.auth.rbac.RoleVersionConflictException;
 import com.bacsystem.auth.token.RefreshTokenReuseException;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 
@@ -49,6 +52,34 @@ class ProblemDetailAdviceTest {
         ProblemDetail pd = advice.handleRoleInUse(new RoleInUseException(UUID.randomUUID()));
         assertThat(pd.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
         assertThat(pd.getProperties().get("code")).isEqualTo("ROLE_IN_USE");
+    }
+
+    @Test
+    void roleAlreadyAssignedMapsTo409WithSpecificCode() {
+        ProblemDetail pd = advice.handleRoleAlreadyAssigned(
+                new RoleAlreadyAssignedException(UUID.randomUUID(), UUID.randomUUID()));
+        assertThat(pd.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
+        assertThat(pd.getProperties().get("code")).isEqualTo("ROLE_ALREADY_ASSIGNED");
+    }
+
+    @Test
+    void roleAssignmentNotFoundMapsTo404WithSpecificCode() {
+        ProblemDetail pd = advice.handleRoleAssignmentNotFound(
+                new RoleAssignmentNotFoundException(UUID.randomUUID(), UUID.randomUUID()));
+        assertThat(pd.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
+        assertThat(pd.getProperties().get("code")).isEqualTo("ROLE_ASSIGNMENT_NOT_FOUND");
+    }
+
+    @Test
+    void dataIntegrityViolationMapsTo409WithGenericConflictCode() {
+        // Backstop for the assignRole race (Item 1): a bare DataIntegrityViolationException
+        // can't cheaply tell us which constraint fired, so the code/body stay generic rather
+        // than claiming a specific cause the handler can't actually verify.
+        ProblemDetail pd = advice.handleDataIntegrityViolation(
+                new DataIntegrityViolationException("duplicate key value violates unique constraint"));
+        assertThat(pd.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
+        assertThat(pd.getProperties().get("code")).isEqualTo("CONFLICT");
+        assertThat(pd.getDetail()).doesNotContainIgnoringCase("constraint");
     }
 
     @Test

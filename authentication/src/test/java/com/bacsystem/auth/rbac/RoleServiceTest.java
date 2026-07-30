@@ -166,7 +166,7 @@ class RoleServiceTest {
     }
 
     @Test
-    void assignRoleIsIdempotentWhenAlreadyAssigned() {
+    void assignRoleThrowsRoleAlreadyAssignedWhenAlreadyAssigned() {
         UUID tenantId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         UUID roleId = UUID.randomUUID();
@@ -175,7 +175,9 @@ class RoleServiceTest {
         when(userRoleRepository.existsById(new UserRole.Key(userId, roleId))).thenReturn(true);
 
         RoleService service = newService();
-        service.assignRole(tenantId, userId, roleId, UUID.randomUUID());
+
+        assertThrows(RoleAlreadyAssignedException.class,
+                () -> service.assignRole(tenantId, userId, roleId, UUID.randomUUID()));
 
         verify(userRoleRepository, never()).save(any());
         verify(auditLogService, never()).record(any(), eq(AuditAction.ROLE_ASSIGNED), any(), any(), any());
@@ -230,7 +232,7 @@ class RoleServiceTest {
     }
 
     @Test
-    void revokeRoleIsIdempotentWhenNotAssigned() {
+    void revokeRoleThrowsRoleAssignmentNotFoundWhenNotAssigned() {
         UUID tenantId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         UUID roleId = UUID.randomUUID();
@@ -239,7 +241,9 @@ class RoleServiceTest {
         when(userRoleRepository.existsById(new UserRole.Key(userId, roleId))).thenReturn(false);
 
         RoleService service = newService();
-        service.revokeRole(tenantId, userId, roleId, UUID.randomUUID());
+
+        assertThrows(RoleAssignmentNotFoundException.class,
+                () -> service.revokeRole(tenantId, userId, roleId, UUID.randomUUID()));
 
         verify(userRoleRepository, never()).deleteById(any());
         verify(auditLogService, never()).record(any(), eq(AuditAction.ROLE_REVOKED), any(), any(), any());

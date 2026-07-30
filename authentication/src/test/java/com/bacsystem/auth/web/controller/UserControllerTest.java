@@ -4,6 +4,8 @@ import com.bacsystem.auth.identity.User;
 import com.bacsystem.auth.identity.UserNotFoundException;
 import com.bacsystem.auth.identity.UserService;
 import com.bacsystem.auth.identity.UserStatus;
+import com.bacsystem.auth.rbac.RoleAlreadyAssignedException;
+import com.bacsystem.auth.rbac.RoleAssignmentNotFoundException;
 import com.bacsystem.auth.rbac.RoleNotFoundException;
 import com.bacsystem.auth.rbac.RoleService;
 import com.bacsystem.auth.rbac.RoleSummary;
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.web.servlet.MockMvc;
@@ -190,9 +193,11 @@ class UserControllerTest {
     // @EnableMethodSecurity interceptor (confirmed empirically: omitting the
     // authority still returned 204), and no existing test in this module — not
     // even PermissionCatalogControllerTest for SCOPE_permissions:sync — asserts
-    // @PreAuthorize enforcement at the WebMvcTest-slice level either. Verifying
-    // real 403 enforcement would need a full @SpringBootTest-based IT (in the
-    // style of SecurityConfigIT), which is out of scope for this task.
+    // @PreAuthorize enforcement at the WebMvcTest-slice level either. Real 403
+    // enforcement through the actual filter chain is now covered by
+    // SecurityConfigIT.roleAssignmentEndpointRejectsCallerWithoutRequiredScope
+    // (Item 2), a full @SpringBootTest-based IT — the only level where
+    // @EnableMethodSecurity is actually wired.
 
     @Test
     void assignRoleOnUnknownUserReturns404() throws Exception {
@@ -219,6 +224,38 @@ class UserControllerTest {
     }
 
     @Test
+    void assignRoleAlreadyAssignedReturns409WithSpecificCode() throws Exception {
+        doThrow(new RoleAlreadyAssignedException(UUID.randomUUID(), UUID.randomUUID()))
+                .when(roleService).assignRole(any(), any(), any(), any());
+
+        mockMvc.perform(post("/v1/users/{userId}/roles", UUID.randomUUID())
+                        .with(jwt().jwt(jwtWithTenant(UUID.randomUUID(), UUID.randomUUID())).authorities(() -> "SCOPE_roles:assign"))
+                        .contentType("application/json")
+                        .content("{\"roleId\":\"" + UUID.randomUUID() + "\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ROLE_ALREADY_ASSIGNED"));
+    }
+
+    // Item 1(c): the DataIntegrityViolationException backstop, exercised through the
+    // real controller + ProblemDetailAdvice (not just the advice in isolation) — this
+    // is the scenario a genuine assignRole race hits when the DB's PK constraint, not
+    // the existsById pre-check, is what actually catches the duplicate (see
+    // RoleServiceConcurrencyIT for the real-race version of this against a live DB).
+    @Test
+    void assignRoleRaceThatSurfacesAsDataIntegrityViolationMapsTo409NotRaw500() throws Exception {
+        doThrow(new DataIntegrityViolationException(
+                "duplicate key value violates unique constraint \"user_roles_pkey\""))
+                .when(roleService).assignRole(any(), any(), any(), any());
+
+        mockMvc.perform(post("/v1/users/{userId}/roles", UUID.randomUUID())
+                        .with(jwt().jwt(jwtWithTenant(UUID.randomUUID(), UUID.randomUUID())).authorities(() -> "SCOPE_roles:assign"))
+                        .contentType("application/json")
+                        .content("{\"roleId\":\"" + UUID.randomUUID() + "\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CONFLICT"));
+    }
+
+    @Test
     void listRolesReturnsRoleSummariesForCallersTenant() throws Exception {
         UUID tenantId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
@@ -226,7 +263,7 @@ class UserControllerTest {
         when(roleService.listRolesForUser(tenantId, userId)).thenReturn(List.of(new RoleSummary(roleId, "editor")));
 
         mockMvc.perform(get("/v1/users/{userId}/roles", userId)
-                        .with(jwt().jwt(jwtWithTenant(tenantId, UUID.randomUUID())).authorities(() -> "SCOPE_roles:assign")))
+                        .with(jwt().jwt(jwtWithTenant(tenantId, UUID.randomUUID())).authorities(() -> "SCOPE_roles:read")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(roleId.toString()))
                 .andExpect(jsonPath("$[0].name").value("editor"));
@@ -244,5 +281,16 @@ class UserControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(roleService).revokeRole(tenantId, userId, roleId, actorId);
+    }
+
+    @Test
+    void revokeRoleNotAssignedReturns404WithSpecificCode() throws Exception {
+        doThrow(new RoleAssignmentNotFoundException(UUID.randomUUID(), UUID.randomUUID()))
+                .when(roleService).revokeRole(any(), any(), any(), any());
+
+        mockMvc.perform(delete("/v1/users/{userId}/roles/{roleId}", UUID.randomUUID(), UUID.randomUUID())
+                        .with(jwt().jwt(jwtWithTenant(UUID.randomUUID(), UUID.randomUUID())).authorities(() -> "SCOPE_roles:assign")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("ROLE_ASSIGNMENT_NOT_FOUND"));
     }
 }
