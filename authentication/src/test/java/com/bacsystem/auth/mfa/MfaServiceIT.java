@@ -38,7 +38,7 @@ class MfaServiceIT extends PostgresRedisTestBase {
     }
 
     private void grantAdminRole(User user, User grantedBy) {
-        Role adminRole = roleService.createRole(user.getTenant().getId(), "admin", false, grantedBy.getId());
+        Role adminRole = roleService.createRole(user.getTenant().getId(), Role.ADMIN_ROLE_NAME, false, grantedBy.getId());
         // roleService.assignRole (not a hand-built UserRole + repository.save) — it re-fetches
         // user/role within its own transaction, avoiding a "detached entity passed to persist"
         // error from reusing the already-committed, now-detached `adminRole` instance directly.

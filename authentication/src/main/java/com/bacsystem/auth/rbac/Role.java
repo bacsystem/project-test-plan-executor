@@ -14,6 +14,9 @@ import java.util.UUID;
 @Setter
 public class Role {
 
+    /** Name of the bootstrap administrator role (§7), used to derive the {@code targetIsAdmin} security signal. */
+    public static final String ADMIN_ROLE_NAME = "admin";
+
     @Id
     @GeneratedValue
     private UUID id;

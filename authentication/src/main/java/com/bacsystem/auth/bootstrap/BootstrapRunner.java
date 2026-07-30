@@ -3,6 +3,7 @@ package com.bacsystem.auth.bootstrap;
 import com.bacsystem.auth.audit.AuditAction;
 import com.bacsystem.auth.audit.AuditLogService;
 import com.bacsystem.auth.identity.UserService;
+import com.bacsystem.auth.rbac.Role;
 import com.bacsystem.auth.rbac.RoleService;
 import com.bacsystem.auth.rbac.UserRole;
 import com.bacsystem.auth.rbac.UserRoleRepository;
@@ -60,7 +61,7 @@ public class BootstrapRunner implements ApplicationRunner {
 
         var admin = userService.createUser(tenant.getId(), ADMIN_EMAIL, adminPassword, null);
 
-        var adminRole = roleService.createRole(tenant.getId(), "admin", false, admin.getId());
+        var adminRole = roleService.createRole(tenant.getId(), Role.ADMIN_ROLE_NAME, false, admin.getId());
         UserRole assignment = new UserRole();
         assignment.setUser(admin);
         assignment.setRole(adminRole);

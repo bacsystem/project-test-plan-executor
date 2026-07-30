@@ -5,6 +5,7 @@ import com.bacsystem.auth.audit.AuditLogService;
 import com.bacsystem.auth.email.EmailNotificationService;
 import com.bacsystem.auth.identity.User;
 import com.bacsystem.auth.identity.UserService;
+import com.bacsystem.auth.rbac.Role;
 import com.bacsystem.auth.rbac.UserRoleRepository;
 import com.bacsystem.auth.token.RefreshTokenService;
 import com.bacsystem.auth.token.TokenHasher;
@@ -63,8 +64,6 @@ public class MfaService {
     private static final Duration CHALLENGE_TTL = Duration.ofMinutes(3);
     private static final String REDIS_KEY_PREFIX = "mfa:challenge:";
 
-    // Must match the exact role-name literal BootstrapRunner uses when creating the bootstrap admin (§7).
-    private static final String ADMIN_ROLE_NAME = "admin";
     private static final String ADMIN_TARGET_RESET_COUNTER = "admin_mfa_reset_admin_target_total";
 
     private final MfaCredentialRepository mfaCredentialRepository;
@@ -195,8 +194,8 @@ public class MfaService {
      *
      * <p>Whether the target is an admin is <em>derived here</em>, not caller-supplied (§8.4): a client
      * asserting this would let a caller suppress the dedicated security signal below simply by lying. It
-     * is computed from the target's actual role assignments, matching {@code BootstrapRunner}'s
-     * {@value #ADMIN_ROLE_NAME} role-name convention. When the target genuinely holds that role, this
+     * is computed from the target's actual role assignments, matching {@code BootstrapRunner}'s use of
+     * the shared {@value Role#ADMIN_ROLE_NAME} role name. When the target genuinely holds that role, this
      * emits an elevated-severity log line and increments a dedicated counter in addition to the routine
      * audit log entry below — resetting another admin's MFA is a materially more sensitive event than a
      * routine reset and must be distinguishable from one.
@@ -208,7 +207,7 @@ public class MfaService {
         }
 
         User target = userService.getById(tenantId, targetUserId);
-        boolean targetIsAdmin = userRoleRepository.findRoleNamesByUserId(targetUserId).contains(ADMIN_ROLE_NAME);
+        boolean targetIsAdmin = userRoleRepository.findRoleNamesByUserId(targetUserId).contains(Role.ADMIN_ROLE_NAME);
 
         deactivateMfa(targetUserId);
         refreshTokenService.revokeAllForUser(targetUserId);
