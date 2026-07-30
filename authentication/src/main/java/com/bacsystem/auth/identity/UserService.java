@@ -86,10 +86,11 @@ public class UserService {
     }
 
     // Not tenant-scoped: used only internally by non-HTTP-reachable paths
-    // (e.g. AuthorizationServerConfig, PasswordController's own-account flow).
-    // MfaService.adminReset now uses the tenant-scoped overload below because
-    // it IS controller-reachable and takes a caller-supplied target id — any
-    // future controller-reachable, id-driven use must do the same.
+    // (e.g. AuthorizationServerConfig's jwtCustomizer, resolving the already-
+    // authenticated principal's own id). PasswordController.change() and
+    // MfaService.adminReset both use the tenant-scoped overload below because
+    // both are controller-reachable — any future controller-reachable,
+    // id-driven use must do the same.
     public User getById(UUID userId) {
         return userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
     }
