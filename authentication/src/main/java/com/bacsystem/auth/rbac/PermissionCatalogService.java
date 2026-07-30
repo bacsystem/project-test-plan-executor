@@ -22,19 +22,21 @@ public class PermissionCatalogService {
      * Idempotent, atomic sync of one application's full permission list
      * (§9.2). Safe against concurrent replicas of the same app calling this
      * simultaneously: each upsert is its own `ON CONFLICT` statement, not a
-     * read-then-write.
+     * read-then-write, and the "added" count comes straight out of that same
+     * atomic statement (via Postgres's `xmax = 0` RETURNING idiom — see
+     * PermissionRepository.upsertActive) rather than a separate pre-read of
+     * "already active" names. A separate read-then-count would leave a window
+     * where two concurrent syncs of the same app both read a brand-new name as
+     * "not yet active" and both claim it as their own "added", double-counting
+     * it in the audit log even though the actual row is upserted exactly once.
      */
     @Transactional
     public PermissionSyncResult sync(String applicationName, Set<String> permissionNames) {
-        // Read the "already active" set BEFORE the upsert loop below changes it —
-        // whatever isn't in it is genuinely newly-added by this call (§9.2's
-        // "added" is the newly-added count, not the submitted count).
-        int alreadyActiveCount = permissionNames.isEmpty() ? 0
-                : permissionRepository.findActiveNames(applicationName, permissionNames).size();
-        int added = permissionNames.size() - alreadyActiveCount;
-
+        int added = 0;
         for (String name : permissionNames) {
-            permissionRepository.upsertActive(applicationName, name);
+            if (permissionRepository.upsertActive(applicationName, name)) {
+                added++;
+            }
         }
         // JPQL "NOT IN :names" is undefined for an empty collection, so an empty
         // sync (deprecate everything) needs a placeholder no real name can match.
