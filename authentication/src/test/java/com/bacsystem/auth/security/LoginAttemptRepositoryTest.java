@@ -30,11 +30,18 @@ class LoginAttemptRepositoryTest extends PostgresRedisTestBase {
 
     @Test
     void countsRecentFailuresByIpAcrossDifferentAccounts() {
+        // login_attempts is shared across the whole test JVM (singleton container pattern in
+        // PostgresRedisTestBase), so a hardcoded literal IP could collide with rows from other
+        // tests/classes and make hasSize(3) flaky. ip_address is a plain, unvalidated
+        // VARCHAR(45) (see LoginAttempt entity - no parsing anywhere in the codebase), so a
+        // nanoTime-suffixed value is safe to use and keeps this test's rows exclusively its own,
+        // which is what makes the hasSize(3) assertion below correct.
         Instant now = Instant.now();
+        String ip = "198.51.100.5-" + System.nanoTime();
         for (int i = 0; i < 3; i++) {
             LoginAttempt attempt = new LoginAttempt();
             attempt.setEmailAttempted("victim" + i + "@spray.test");
-            attempt.setIpAddress("198.51.100.5");
+            attempt.setIpAddress(ip);
             attempt.setSuccess(false);
             attempt.setAttemptedAt(now);
             loginAttemptRepository.saveAndFlush(attempt);
@@ -42,7 +49,7 @@ class LoginAttemptRepositoryTest extends PostgresRedisTestBase {
 
         List<LoginAttempt> byIp = loginAttemptRepository
                 .findByIpAddressAndSuccessFalseAndAttemptedAtAfter(
-                        "198.51.100.5", now.minusSeconds(60));
+                        ip, now.minusSeconds(60));
         assertThat(byIp).hasSize(3);
     }
 
@@ -77,23 +84,24 @@ class LoginAttemptRepositoryTest extends PostgresRedisTestBase {
     void findsMostRecentSuccessfulAttemptByIp() {
         Instant older = Instant.now().minusSeconds(120);
         Instant newer = Instant.now();
+        String ip = "203.0.113.30-" + System.nanoTime();
 
         LoginAttempt earlierSuccess = new LoginAttempt();
         earlierSuccess.setEmailAttempted("first@example.test");
-        earlierSuccess.setIpAddress("203.0.113.30");
+        earlierSuccess.setIpAddress(ip);
         earlierSuccess.setSuccess(true);
         earlierSuccess.setAttemptedAt(older);
         loginAttemptRepository.saveAndFlush(earlierSuccess);
 
         LoginAttempt latestSuccess = new LoginAttempt();
         latestSuccess.setEmailAttempted("second@example.test");
-        latestSuccess.setIpAddress("203.0.113.30");
+        latestSuccess.setIpAddress(ip);
         latestSuccess.setSuccess(true);
         latestSuccess.setAttemptedAt(newer);
         loginAttemptRepository.saveAndFlush(latestSuccess);
 
         Optional<LoginAttempt> found = loginAttemptRepository
-                .findTopByIpAddressAndSuccessTrueOrderByAttemptedAtDesc("203.0.113.30");
+                .findTopByIpAddressAndSuccessTrueOrderByAttemptedAtDesc(ip);
 
         assertThat(found).isPresent();
         assertThat(found.get().getAttemptedAt()).isEqualTo(newer);

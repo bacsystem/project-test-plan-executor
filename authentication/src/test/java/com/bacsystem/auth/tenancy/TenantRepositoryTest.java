@@ -15,27 +15,33 @@ class TenantRepositoryTest extends PostgresRedisTestBase {
 
     @Test
     void savesAndFindsBySlug() {
+        // The tenants table is shared across the whole test JVM (singleton container pattern in
+        // PostgresRedisTestBase), and slug has a UNIQUE constraint, so a hardcoded literal here
+        // would collide with any other test/class using the same slug. Use a nanoTime-suffixed
+        // value, matching the convention used elsewhere (e.g. PasswordGrantIT, UserRepositoryTest).
+        String slug = "acme-" + System.nanoTime();
         Tenant tenant = new Tenant();
-        tenant.setSlug("acme");
+        tenant.setSlug(slug);
         tenant.setName("Acme Corp");
         Tenant saved = tenantRepository.save(tenant);
 
         assertThat(saved.getId()).isNotNull();
 
-        Optional<Tenant> found = tenantRepository.findBySlug("acme");
+        Optional<Tenant> found = tenantRepository.findBySlug(slug);
         assertThat(found).isPresent();
         assertThat(found.get().getName()).isEqualTo("Acme Corp");
     }
 
     @Test
     void slugIsUnique() {
+        String slug = "dup-" + System.nanoTime();
         Tenant first = new Tenant();
-        first.setSlug("dup");
+        first.setSlug(slug);
         first.setName("First");
         tenantRepository.saveAndFlush(first);
 
         Tenant second = new Tenant();
-        second.setSlug("dup");
+        second.setSlug(slug);
         second.setName("Second");
 
         org.junit.jupiter.api.Assertions.assertThrows(
