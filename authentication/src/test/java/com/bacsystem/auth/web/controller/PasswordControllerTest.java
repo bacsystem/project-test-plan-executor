@@ -23,10 +23,13 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
@@ -112,5 +115,44 @@ class PasswordControllerTest {
                         .content(objectMapper.writeValueAsString(
                                 new PasswordController.ChangeRequest("NewValidPassw0rd!123"))))
                 .andExpect(status().isNotFound());
+    }
+
+    /**
+     * Covers the narrower side channel fixed alongside
+     * {@code OneTimeTokenServiceTest}'s miss-branch coverage: an unknown
+     * tenant slug used to short-circuit {@code resetRequest} to a single DB
+     * lookup with no further round-trips — cheaper than either a real-tenant
+     * hit or a real-tenant miss. It must now call
+     * {@link OneTimeTokenService#probeForTimingParity()} directly (the same
+     * probe {@code requestPasswordReset}'s own miss branch uses) instead of
+     * silently doing nothing, and must never call
+     * {@code requestPasswordReset} itself since there's no resolved tenant id
+     * to pass it.
+     * <p>
+     * {@code reset-request} is actually a pre-authentication, no-token-required
+     * endpoint in production ({@code SecurityConfig}'s {@code PUBLIC_PATHS}),
+     * but — same caveat {@code UserControllerTest} documents for
+     * {@code @EnableMethodSecurity} — this {@code @WebMvcTest} slice doesn't
+     * load {@code SecurityConfig}'s real {@code permitAll} filter chain, so an
+     * anonymous request here 403s regardless of path. {@code .with(jwt())} is
+     * used purely to satisfy this slice's default auth gate, exactly like the
+     * {@code change}/{@code changeRequired} tests above; it has no bearing on
+     * {@code resetRequest}, which never reads the principal. The real
+     * anonymous-reachability behavior is covered by
+     * {@code PasswordControllerIT#resetRequestAlsoReturns202WhenTheTenantSlugItselfDoesNotExist}.
+     */
+    @Test
+    void resetRequestWithAnUnknownTenantSlugStillProbesForTimingParity() throws Exception {
+        when(tenantRepository.findBySlug("no-such-tenant")).thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/v1/auth/password/reset-request")
+                        .with(jwt())
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(
+                                new PasswordController.ResetRequestBody("no-such-tenant", "someone@test.com"))))
+                .andExpect(status().isAccepted());
+
+        verify(oneTimeTokenService).probeForTimingParity();
+        verify(oneTimeTokenService, never()).requestPasswordReset(any(), anyString());
     }
 }

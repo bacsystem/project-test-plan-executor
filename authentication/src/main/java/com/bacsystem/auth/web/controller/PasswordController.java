@@ -103,9 +103,15 @@ public class PasswordController {
     @PostMapping("/reset-request")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void resetRequest(@RequestBody ResetRequestBody request) {
+        // always 202 regardless of tenant/email existing (§10.2, §12) — no branch on the result below.
+        // An unknown tenant slug otherwise short-circuits to a single DB lookup with no further
+        // round-trips — measurably cheaper than either a real-tenant hit or a real-tenant miss, and
+        // its own narrow instance of the same side channel requestPasswordReset's javadoc describes —
+        // so the empty branch runs the identical probe requestPasswordReset's own miss path uses.
         tenantRepository.findBySlug(request.tenant())
-                .ifPresent(tenant -> oneTimeTokenService.requestPasswordReset(tenant.getId(), request.email()));
-        // always 202 regardless of tenant/email existing (§10.2, §12) — no branch on the result above
+                .ifPresentOrElse(
+                        tenant -> oneTimeTokenService.requestPasswordReset(tenant.getId(), request.email()),
+                        oneTimeTokenService::probeForTimingParity);
     }
 
     @PostMapping("/reset-confirm")
