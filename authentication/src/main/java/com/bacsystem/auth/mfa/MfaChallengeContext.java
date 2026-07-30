@@ -1,9 +1,8 @@
 package com.bacsystem.auth.mfa;
 
-import java.util.Arrays;
+import com.bacsystem.auth.support.ChallengeContextCodec;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * What an MFA challenge ticket resolves to once verified: the user who
@@ -17,14 +16,11 @@ import java.util.stream.Collectors;
 public record MfaChallengeContext(UUID userId, String applicationClientId, Set<String> scopes) {
 
     String toRedisValue() {
-        return userId + "|" + applicationClientId + "|" + String.join(",", scopes);
+        return ChallengeContextCodec.encode(userId, applicationClientId, scopes);
     }
 
     static MfaChallengeContext fromRedisValue(String value) {
-        String[] parts = value.split("\\|", 3);
-        Set<String> scopes = parts.length > 2 && !parts[2].isEmpty()
-                ? Arrays.stream(parts[2].split(",")).collect(Collectors.toUnmodifiableSet())
-                : Set.of();
-        return new MfaChallengeContext(UUID.fromString(parts[0]), parts[1], scopes);
+        ChallengeContextCodec.Decoded decoded = ChallengeContextCodec.decode(value);
+        return new MfaChallengeContext(decoded.userId(), decoded.applicationClientId(), decoded.scopes());
     }
 }
