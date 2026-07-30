@@ -46,10 +46,10 @@ public class OneTimeTokenService {
      * count/shape for an external observer, undermining the "never reveals
      * whether the email exists" guarantee at that level even though the HTTP
      * status code is uniform. The miss branch below now performs the same
-     * number of round-trips against the same two collaborators via a cheap,
-     * non-mutating, always-false {@code existsById} lookup on a random id —
-     * nothing is ever persisted or made redeemable. This is deliberately not
-     * a perfect mitigation: network jitter dwarfs microsecond-scale DB timing
+     * number of round-trips via {@link #probeForTimingParity()} — see that
+     * method's javadoc for why the probes live here rather than reaching
+     * into {@code EmailNotificationService}. This is deliberately not a
+     * perfect mitigation: network jitter dwarfs microsecond-scale DB timing
      * differences in most real deployments, and a same-process resource-cost
      * observer isn't the threat model here — only the round-trip *count* was
      * cheap to close, so that's what this does.
@@ -58,8 +58,7 @@ public class OneTimeTokenService {
     public String requestPasswordReset(UUID tenantId, String email) {
         Optional<User> user = userService.findByTenantAndEmail(tenantId, email);
         if (user.isEmpty()) {
-            oneTimeTokenRepository.existsById(UUID.randomUUID());
-            emailNotificationService.probeForTimingParity();
+            probeForTimingParity();
             return null;
         }
 
@@ -74,6 +73,36 @@ public class OneTimeTokenService {
         emailNotificationService.queue(email, "password-reset",
                 "Reset your password: https://example.test/reset?token=" + raw);
         return raw;
+    }
+
+    /**
+     * Performs the same two no-op, non-mutating DB round-trips the "unknown
+     * email" branch of {@link #requestPasswordReset} performs (mirroring
+     * that branch's token-save and email-queue round-trips against this
+     * service's own {@link OneTimeTokenRepository} via cheap, always-false
+     * {@code existsById} lookups on random ids) without needing a tenant id
+     * or email at all — nothing is ever persisted or made redeemable.
+     * <p>
+     * This used to be split across two collaborators (one probe here, one on
+     * {@code EmailNotificationService}), which pulled a timing-parity-only
+     * method into an unrelated service's public API just to keep the total
+     * round-trip *count* matched. Since only the count matters for this
+     * best-effort mitigation — not which collaborator absorbs it — both
+     * probes now live here, where the rest of this timing-parity logic
+     * already does, and {@code EmailNotificationService} is left with only
+     * its actual job (queuing/sending email).
+     * <p>
+     * Also called directly by {@code PasswordController#resetRequest} when
+     * {@code tenantRepository.findBySlug} itself comes back empty: an
+     * unknown tenant slug would otherwise short-circuit to a single DB
+     * lookup with no further round-trips, which is measurably cheaper than
+     * either a real-tenant hit or a real-tenant miss and reopens the same
+     * class of side channel one level up the tenant-resolution chain.
+     */
+    @Transactional
+    public void probeForTimingParity() {
+        oneTimeTokenRepository.existsById(UUID.randomUUID());
+        oneTimeTokenRepository.existsById(UUID.randomUUID());
     }
 
     @Transactional

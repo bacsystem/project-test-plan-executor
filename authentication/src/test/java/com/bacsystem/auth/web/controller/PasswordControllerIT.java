@@ -40,4 +40,25 @@ class PasswordControllerIT extends PostgresRedisTestBase {
         assertThat(knownEmail.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
         assertThat(unknownEmail.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
     }
+
+    /**
+     * Companion to the case above: a tenant slug that doesn't resolve at all
+     * (as opposed to a real tenant with an unknown email) must be
+     * indistinguishable at the HTTP layer too. The invocation-count/round-trip
+     * shape assertion for this case lives in {@code PasswordControllerTest}
+     * (mocked {@code OneTimeTokenService}/{@code TenantRepository}), since
+     * this full-stack test has no seam to assert DB round-trip counts against.
+     */
+    @Test
+    void resetRequestAlsoReturns202WhenTheTenantSlugItselfDoesNotExist() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        ResponseEntity<String> unknownTenant = restTemplate.postForEntity("/v1/auth/password/reset-request",
+                new HttpEntity<>(Map.of("tenant", "no-such-tenant-" + System.nanoTime(), "email", "someone@test.com"),
+                        headers),
+                String.class);
+
+        assertThat(unknownTenant.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
+    }
 }
