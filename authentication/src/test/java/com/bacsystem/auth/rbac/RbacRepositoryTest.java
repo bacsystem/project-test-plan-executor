@@ -139,32 +139,43 @@ class RbacRepositoryTest extends PostgresRedisTestBase {
     // occur in practice, but the query's OR clause must not accidentally admit it).
     @Test
     void findByTenantIdOrTemplateIncludesOwnRolesAndTemplatesOnly() {
+        long marker = System.nanoTime();
         Tenant tenantA = tenantRepository.saveAndFlush(newTenant());
         Tenant tenantB = tenantRepository.saveAndFlush(newTenant());
 
         Role ownRole = new Role();
         ownRole.setTenant(tenantA);
-        ownRole.setName("own-role");
+        ownRole.setName("own-role-" + marker);
         ownRole = roleRepository.saveAndFlush(ownRole);
 
         Role otherTenantsRole = new Role();
         otherTenantsRole.setTenant(tenantB);
-        otherTenantsRole.setName("other-tenant-role");
-        roleRepository.saveAndFlush(otherTenantsRole);
+        otherTenantsRole.setName("other-tenant-role-" + marker);
+        otherTenantsRole = roleRepository.saveAndFlush(otherTenantsRole);
 
         Role template = new Role();
         template.setTenant(null);
         template.setTemplate(true);
-        template.setName("shared-template");
+        template.setName("shared-template-" + marker);
         template = roleRepository.saveAndFlush(template);
 
         Role strayNullNonTemplate = new Role();
         strayNullNonTemplate.setTenant(null);
         strayNullNonTemplate.setTemplate(false);
-        strayNullNonTemplate.setName("stray-null-non-template");
-        roleRepository.saveAndFlush(strayNullNonTemplate);
+        strayNullNonTemplate.setName("stray-null-non-template-" + marker);
+        strayNullNonTemplate = roleRepository.saveAndFlush(strayNullNonTemplate);
 
-        List<Role> result = roleRepository.findByTenantIdOrTemplate(tenantA.getId());
+        // The shared DB model means findByTenantIdOrTemplate's null-tenant/template
+        // branch can also surface template roles created by other test classes, so
+        // the result set is scoped down to only the role IDs this test created
+        // before asserting on it (own role, other tenant's role, the shared
+        // template, and the stray null-tenant/non-template row).
+        List<java.util.UUID> ownIds = List.of(
+                ownRole.getId(), otherTenantsRole.getId(), template.getId(), strayNullNonTemplate.getId());
+
+        List<Role> result = roleRepository.findByTenantIdOrTemplate(tenantA.getId()).stream()
+                .filter(r -> ownIds.contains(r.getId()))
+                .toList();
 
         assertThat(result).extracting(Role::getId)
                 .containsExactlyInAnyOrder(ownRole.getId(), template.getId());

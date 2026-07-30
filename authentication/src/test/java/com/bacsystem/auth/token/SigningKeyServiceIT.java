@@ -100,7 +100,7 @@ class SigningKeyServiceIT extends PostgresRedisTestBase {
     @Test
     void retireExpiredOverlapsRetiresAnElapsedRetiringKeyButLeavesAFutureOneAlone() {
         SigningKey elapsed = new SigningKey();
-        elapsed.setKid("kid-elapsed");
+        elapsed.setKid("kid-elapsed-" + System.nanoTime());
         elapsed.setAlgorithm("ES256");
         elapsed.setPrivateKeyPem("priv-elapsed");
         elapsed.setPublicKeyPem("pub-elapsed");
@@ -109,7 +109,7 @@ class SigningKeyServiceIT extends PostgresRedisTestBase {
         signingKeyRepository.saveAndFlush(elapsed);
 
         SigningKey stillWithinOverlap = new SigningKey();
-        stillWithinOverlap.setKid("kid-not-yet");
+        stillWithinOverlap.setKid("kid-not-yet-" + System.nanoTime());
         stillWithinOverlap.setAlgorithm("ES256");
         stillWithinOverlap.setPrivateKeyPem("priv-not-yet");
         stillWithinOverlap.setPublicKeyPem("pub-not-yet");
