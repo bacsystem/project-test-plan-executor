@@ -14,8 +14,14 @@ class EmailOutboxRepositoryTest extends PostgresRedisTestBase {
 
     @Test
     void queuedEmailSurvivesAsARowUntilSent() {
+        // The email_outbox table is shared across the whole test JVM (singleton container
+        // pattern - see PostgresRedisTestBase), so other test classes exercising real
+        // password-reset/notification flows may also leave PENDING rows behind. Use a
+        // unique recipient and assert this row is present rather than asserting the whole
+        // table has exactly one PENDING row.
+        String recipient = "user-" + System.nanoTime() + "@example.test";
         EmailOutbox outbox = new EmailOutbox();
-        outbox.setRecipient("user@example.test");
+        outbox.setRecipient(recipient);
         outbox.setTemplateName("password-reset");
         outbox.setBody("Reset link: https://example.test/reset?token=abc");
         outbox.setStatus(EmailOutboxStatus.PENDING);
@@ -25,6 +31,6 @@ class EmailOutboxRepositoryTest extends PostgresRedisTestBase {
         assertThat(saved.getId()).isNotNull();
 
         List<EmailOutbox> pending = emailOutboxRepository.findByStatus(EmailOutboxStatus.PENDING);
-        assertThat(pending).hasSize(1);
+        assertThat(pending).extracting(EmailOutbox::getRecipient).contains(recipient);
     }
 }
