@@ -1,9 +1,8 @@
 package com.bacsystem.auth.identity;
 
-import java.util.Arrays;
+import com.bacsystem.auth.support.ChallengeContextCodec;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * What a must-change-password challenge ticket resolves to once redeemed:
@@ -16,21 +15,18 @@ import java.util.stream.Collectors;
  * this gate instead of silently dropping them.
  *
  * <p>Deliberately mirrors {@code com.bacsystem.auth.mfa.MfaChallengeContext}
- * field-for-field and serialization-for-serialization: this is the same
- * "partial auth, more steps required" shape, just gated on
- * {@code User.isMustChangePassword()} instead of MFA enrollment.
+ * field-for-field: this is the same "partial auth, more steps required" shape,
+ * just gated on {@code User.isMustChangePassword()} instead of MFA enrollment.
+ * Both share their Redis-value serialization via {@link ChallengeContextCodec}.
  */
 public record PasswordChangeChallengeContext(UUID userId, String applicationClientId, Set<String> scopes) {
 
     String toRedisValue() {
-        return userId + "|" + applicationClientId + "|" + String.join(",", scopes);
+        return ChallengeContextCodec.encode(userId, applicationClientId, scopes);
     }
 
     static PasswordChangeChallengeContext fromRedisValue(String value) {
-        String[] parts = value.split("\\|", 3);
-        Set<String> scopes = parts.length > 2 && !parts[2].isEmpty()
-                ? Arrays.stream(parts[2].split(",")).collect(Collectors.toUnmodifiableSet())
-                : Set.of();
-        return new PasswordChangeChallengeContext(UUID.fromString(parts[0]), parts[1], scopes);
+        ChallengeContextCodec.Decoded decoded = ChallengeContextCodec.decode(value);
+        return new PasswordChangeChallengeContext(decoded.userId(), decoded.applicationClientId(), decoded.scopes());
     }
 }
