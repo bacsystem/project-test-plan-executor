@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Must-change-password challenge (§7/§5): mirrors {@code MfaService}'s
@@ -49,29 +50,54 @@ public class PasswordChangeChallengeService {
     }
 
     /**
-     * Validates the ticket exists and returns its context WITHOUT consuming it — mirrors the read half
-     * of {@code MfaService.verifyChallenge}, which only deletes its Redis key once the rest of the
-     * verification (there, the TOTP/backup-code check; here, the caller's full change-required flow)
-     * has actually succeeded. Split out from the old single-step {@code verifyChallenge} because,
-     * unlike MFA's code check, the remaining validation for this ticket (new-password strength) lives
-     * one layer up in {@code PasswordController}/{@code UserService}, so the two steps can't be
-     * collapsed into one method here the way MFA's can.
+     * A ticket claimed via {@link #claimChallenge}, plus the TTL that remained on it at claim time —
+     * everything {@link #restoreChallenge} needs to put an unused ticket back exactly as it was.
      */
-    public PasswordChangeChallengeContext peekChallenge(String rawTicket) {
-        String value = redisTemplate.opsForValue().get(redisKey(rawTicket));
+    public record ClaimedChallenge(PasswordChangeChallengeContext context, Duration remainingTtl) {}
+
+    /**
+     * Atomically claims the ticket: a single Redis GETDEL (via {@link org.springframework.data.redis.core.ValueOperations#getAndDelete})
+     * reads and deletes the key in one round-trip, so of any number of concurrent callers presenting
+     * the same raw ticket, at most one can ever observe a non-null value — every other caller gets
+     * nil back from GETDEL and fails here exactly as if the ticket didn't exist. This replaces the old
+     * two-step {@code peekChallenge} (plain GET, non-destructive) + late {@code consumeChallenge}
+     * (DEL, called only after the caller's entire downstream flow succeeded): that split had a TOCTOU
+     * gap where two concurrent requests could both pass the non-destructive read, both run the full
+     * change-required flow, and both eventually delete the same (already-deleted) key — redeeming a
+     * single-use ticket twice.
+     *
+     * <p>Unlike the old {@code peekChallenge}, this DOES consume the ticket up front. A caller whose
+     * remaining validation fails after a successful claim (e.g. {@code UserService.changePassword}
+     * rejecting a weak new password) must call {@link #restoreChallenge} to put the ticket back for a
+     * legitimate retry — see that method's javadoc.
+     */
+    public ClaimedChallenge claimChallenge(String rawTicket) {
+        String key = redisKey(rawTicket);
+        // Read the remaining TTL before claiming, purely so a later restoreChallenge can put the
+        // ticket back with (approximately) the time budget it actually had left, rather than a fresh
+        // full CHALLENGE_TTL — the claim's atomicity (and thus which caller wins) depends only on the
+        // getAndDelete call below, not on this read, so a few milliseconds of staleness here is
+        // harmless.
+        Long ttlSeconds = redisTemplate.getExpire(key, TimeUnit.SECONDS);
+        String value = redisTemplate.opsForValue().getAndDelete(key);
         if (value == null) {
             throw new PasswordChangeChallengeExpiredException();
         }
-        return PasswordChangeChallengeContext.fromRedisValue(value);
+        Duration remainingTtl = (ttlSeconds != null && ttlSeconds > 0) ? Duration.ofSeconds(ttlSeconds) : CHALLENGE_TTL;
+        return new ClaimedChallenge(PasswordChangeChallengeContext.fromRedisValue(value), remainingTtl);
     }
 
     /**
-     * Consumes (deletes) the ticket. Call only once the operation it gates has fully succeeded — same
-     * single-use contract as MFA's challenge, just split into its own step since success here is
-     * determined by the caller, not by this service.
+     * Re-inserts a ticket that {@link #claimChallenge} already consumed, restoring the same raw
+     * ticket/context and (approximately) the TTL it had left at claim time. Call this only when the
+     * atomic claim itself succeeded but the operation it gates then failed for a reason the caller
+     * should be allowed to retry with the same ticket — e.g. {@code PasswordController.changeRequired}
+     * calls this from a {@code WeakPasswordException} catch block, so a weak-password attempt doesn't
+     * permanently burn the one-time ticket, mirroring the leniency the old {@code peekChallenge}
+     * (non-destructive by default) used to provide for free.
      */
-    public void consumeChallenge(String rawTicket) {
-        redisTemplate.delete(redisKey(rawTicket));
+    public void restoreChallenge(String rawTicket, ClaimedChallenge claimed) {
+        redisTemplate.opsForValue().set(redisKey(rawTicket), claimed.context().toRedisValue(), claimed.remainingTtl());
     }
 
     private String redisKey(String rawTicket) {

@@ -6,6 +6,7 @@ import com.bacsystem.auth.identity.PasswordChangeChallengeService;
 import com.bacsystem.auth.identity.User;
 import com.bacsystem.auth.identity.UserRepository;
 import com.bacsystem.auth.identity.UserService;
+import com.bacsystem.auth.identity.WeakPasswordException;
 import com.bacsystem.auth.mfa.MfaService;
 import com.bacsystem.auth.onetime.OneTimeTokenService;
 import com.bacsystem.auth.rbac.JpaRegisteredClientRepository;
@@ -100,16 +101,22 @@ public class PasswordController {
      * the user isn't MFA-enrolled are tokens issued directly via {@link TokenIssuer}, the same class
      * the password grant, refresh grant, and MFA verify all share.
      *
-     * <p>The challenge ticket itself is only consumed (deleted from Redis, via
-     * {@link PasswordChangeChallengeService#consumeChallenge}) once the password change has actually
-     * succeeded — not merely because the ticket was found valid. {@code peekChallenge} below reads it
-     * without deleting, so a request that fails {@code UserService.changePassword}'s strength check
-     * leaves the ticket redeemable for a retry, instead of forcing the caller back through the whole
-     * login flow over what might be a simple typo.
+     * <p>The challenge ticket is claimed atomically up front (via
+     * {@link PasswordChangeChallengeService#claimChallenge}, a Redis GETDEL) so that of any number of
+     * concurrent requests presenting the same raw ticket, at most one can ever proceed past this
+     * point — every other concurrent caller fails immediately with
+     * {@link PasswordChangeChallengeExpiredException}, indistinguishable from an unknown/expired
+     * ticket. Because the claim already consumed the ticket, a request that then fails
+     * {@code UserService.changePassword}'s strength check would otherwise permanently burn it over
+     * what might be a simple typo — so that failure path explicitly restores the ticket (via
+     * {@link PasswordChangeChallengeService#restoreChallenge}) before rethrowing, leaving it
+     * redeemable for a retry with a stronger password.
      */
     @PostMapping("/change-required")
     public ResponseEntity<?> changeRequired(@RequestBody ChangeRequiredRequest request) {
-        PasswordChangeChallengeContext context = passwordChangeChallengeService.peekChallenge(request.challenge());
+        PasswordChangeChallengeService.ClaimedChallenge claimed =
+                passwordChangeChallengeService.claimChallenge(request.challenge());
+        PasswordChangeChallengeContext context = claimed.context();
         // Same defensive shape as MfaController.verify: the client/user referenced by an
         // already-verified challenge should always still exist, but if either vanished during the
         // challenge TTL, fail the same generic-authentication-failure way §10.2 requires everywhere
@@ -121,10 +128,15 @@ public class PasswordController {
         User user = userRepository.findById(context.userId())
                 .orElseThrow(PasswordChangeChallengeExpiredException::new);
 
-        // May throw WeakPasswordException — the ticket is still untouched at this point, so it
-        // remains valid for a retry with a stronger password.
-        userService.changePassword(user, request.newPassword());
-        passwordChangeChallengeService.consumeChallenge(request.challenge());
+        try {
+            userService.changePassword(user, request.newPassword());
+        } catch (WeakPasswordException e) {
+            // The atomic claim above already consumed the ticket; restore it so the caller can
+            // retry with a stronger password instead of being forced back through the whole login
+            // flow over what might be a simple typo.
+            passwordChangeChallengeService.restoreChallenge(request.challenge(), claimed);
+            throw e;
+        }
 
         if (mfaService.isEnrolled(user.getId())) {
             String mfaChallenge = mfaService.issueChallenge(user.getId(), client.getClientId(), context.scopes());
