@@ -37,6 +37,11 @@ class LoginAttemptServiceTest {
         return counter == null ? 0.0 : counter.count();
     }
 
+    private double failedCounterCount() {
+        var counter = meterRegistry.find("login_attempt_failed").counter();
+        return counter == null ? 0.0 : counter.count();
+    }
+
     private List<LoginAttempt> failuresEndingAt(Instant lastFailure, int count) {
         return IntStream.range(0, count)
                 .mapToObj(i -> {
@@ -147,5 +152,21 @@ class LoginAttemptServiceTest {
         service.assertNotLocked("user@test.com", "1.2.3.4");
         // no exception == the 5 stale pre-success failures no longer count;
         // only the single new failure remains, which is below THRESHOLD.
+    }
+
+    // §16: a slow-and-low credential-stuffing burst that stays under the
+    // per-account/per-IP lockout threshold must still be observable — every
+    // raw failed attempt increments this counter, not just the ones that
+    // trip a lockout.
+    @Test
+    void recordFailureIncrementsFailedCounterOnEveryCallEvenBelowLockoutThreshold() {
+        LoginAttemptService service = newService();
+
+        service.recordFailure("user@test.com", "1.2.3.4");
+        assertThat(failedCounterCount()).isEqualTo(1.0);
+
+        service.recordFailure("other@test.com", "5.6.7.8");
+        service.recordFailure("other@test.com", "5.6.7.8");
+        assertThat(failedCounterCount()).isEqualTo(3.0);
     }
 }
