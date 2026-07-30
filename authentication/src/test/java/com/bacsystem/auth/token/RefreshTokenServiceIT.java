@@ -6,17 +6,23 @@ import com.bacsystem.auth.audit.AuditLogRepository;
 import com.bacsystem.auth.identity.User;
 import com.bacsystem.auth.identity.UserRepository;
 import com.bacsystem.auth.identity.UserStatus;
+import com.bacsystem.auth.audit.AuditLogService;
 import com.bacsystem.auth.support.PostgresRedisTestBase;
 import com.bacsystem.auth.tenancy.Tenant;
 import com.bacsystem.auth.tenancy.TenantRepository;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 
 class RefreshTokenServiceIT extends PostgresRedisTestBase {
 
@@ -26,6 +32,14 @@ class RefreshTokenServiceIT extends PostgresRedisTestBase {
     @Autowired private RefreshTokenService refreshTokenService;
     @Autowired private AuditLogRepository auditLogRepository;
     @Autowired private MeterRegistry meterRegistry;
+    @SpyBean private AuditLogService auditLogService;
+
+    @AfterEach
+    void resetAuditLogSpy() {
+        // Other tests in this class rely on the real AuditLogService behavior; undo any
+        // per-test stubbing so it doesn't leak across test methods sharing this context.
+        Mockito.reset(auditLogService);
+    }
 
     private User newUser() {
         Tenant tenant = new Tenant();
@@ -127,6 +141,38 @@ class RefreshTokenServiceIT extends PostgresRedisTestBase {
         // the mismatch is treated as suspicious reuse — the chain is revoked, so even the
         // legitimate client can no longer redeem the original token afterwards.
         assertThrows(RefreshTokenReuseException.class, () -> refreshTokenService.rotate(raw, "example-app"));
+    }
+
+    @Test
+    void chainRevocationSurvivesAnAuditLogWriteFailureDuringReuseDetection() {
+        // Regression for the bug where rotate()'s @Transactional(noRollbackFor =
+        // RefreshTokenReuseException.class) only protects against that one exception type.
+        // If auditLogService.record() itself throws (e.g. a transient DB hiccup, per its
+        // documented contract of rethrowing on any DB failure), that's a *different*
+        // exception, so Spring would roll back the whole transaction - silently undoing the
+        // revokeAllForUser(...) writes that already executed - and the caller would see the
+        // audit failure instead of the intended reuse signal. Revoking a potentially
+        // compromised token chain must survive an audit write failure; failing to log it is
+        // the lesser problem.
+        User user = newUser();
+        String raw = refreshTokenService.issue(user, "example-app");
+        String rotatedOnce = refreshTokenService.rotate(raw, "example-app").newRawRefreshToken();
+
+        doThrow(new RuntimeException("simulated transient audit DB failure"))
+                .when(auditLogService).record(any(), any(), any(), any(), any());
+
+        assertThrows(RefreshTokenReuseException.class, () -> refreshTokenService.rotate(raw, "example-app"));
+
+        // Query the DB directly (a fresh read, outside the failed rotate() call) to confirm
+        // the revocation actually committed despite the audit write throwing mid-transaction.
+        List<RefreshToken> chain = refreshTokenRepository.findByUserId(user.getId());
+        assertThat(chain).hasSize(2);
+        assertThat(chain).allSatisfy(token -> assertThat(token.getRevokedAt()).isNotNull());
+
+        // and the chain being revoked really did stick - the legitimately-rotated token is
+        // unusable too, same as the non-audit-failure reuse path already guarantees.
+        Mockito.reset(auditLogService);
+        assertThrows(RefreshTokenReuseException.class, () -> refreshTokenService.rotate(rotatedOnce, "example-app"));
     }
 
     @Test

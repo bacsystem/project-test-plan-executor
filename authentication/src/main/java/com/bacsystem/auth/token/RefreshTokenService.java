@@ -4,6 +4,8 @@ import com.bacsystem.auth.audit.AuditAction;
 import com.bacsystem.auth.audit.AuditLogService;
 import com.bacsystem.auth.identity.User;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +16,8 @@ import java.util.UUID;
 
 @Service
 public class RefreshTokenService {
+
+    private static final Logger log = LoggerFactory.getLogger(RefreshTokenService.class);
 
     private static final long REFRESH_TOKEN_TTL_DAYS = 30;
 
@@ -60,7 +64,20 @@ public class RefreshTokenService {
      * same method just wrote — because {@link RefreshTokenReuseException}
      * is a RuntimeException thrown by the very method that started the
      * transaction, which would silently undo the revocation it exists to
-     * perform.
+     * perform. That safety net only covers that one exception type, though:
+     * the {@code auditLogService.record(...)} call below is caught locally
+     * and never allowed to propagate, because if it throws (per its
+     * documented contract of rethrowing on any DB failure) that is a
+     * *different* exception, which {@code noRollbackFor} does not cover —
+     * Spring would roll back the whole transaction, undoing the revocation
+     * on exactly the kind of transient failure that shouldn't be allowed to
+     * do that. Revoking a potentially-compromised token chain is the
+     * security-critical action here; failing to audit-log that revocation
+     * is a lesser problem than failing to perform it. This is local to this
+     * method's revoke-then-audit semantics — it does not change {@link
+     * AuditLogService#record}'s own contract, which other callers (e.g.
+     * RoleService, UserService, MfaService) correctly rely on to propagate
+     * so their own plain CRUD+audit transactions roll back together.
      */
     @Transactional(noRollbackFor = RefreshTokenReuseException.class)
     public RefreshTokenRotationResult rotate(String presentedRaw, String requestingClientId) {
@@ -76,8 +93,15 @@ public class RefreshTokenService {
             AuditAction action = clientMismatch
                     ? AuditAction.REFRESH_TOKEN_CLIENT_MISMATCH
                     : AuditAction.REFRESH_TOKEN_REUSE_DETECTED;
-            auditLogService.record(current.getUser().getId(), action,
-                    "RefreshToken", current.getId().toString(), "{\"event\":\"" + event + "\"}");
+            try {
+                auditLogService.record(current.getUser().getId(), action,
+                        "RefreshToken", current.getId().toString(), "{\"event\":\"" + event + "\"}");
+            } catch (RuntimeException e) {
+                // Do not let this propagate: the revocation written above must survive an
+                // audit-write failure (see the class-level rationale in the javadoc above).
+                log.error("Failed to audit refresh token security event: event={} userId={} refreshTokenId={}",
+                        event, current.getUser().getId(), current.getId(), e);
+            }
             // §16: security alert distinct from generic ops metrics — lets an external
             // dashboard/alert fire on reuse-detected / client-mismatch without parsing audit logs.
             meterRegistry.counter("refresh_token_security_event", "event", event).increment();
