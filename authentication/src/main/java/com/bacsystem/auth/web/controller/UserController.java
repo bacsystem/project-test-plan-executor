@@ -76,15 +76,18 @@ public class UserController {
         userService.deactivateUser(tenantIdOf(auth), id, actorIdOf(auth));
     }
 
-    // Role assignment (§2, §11) — one scope, "roles:assign", gates all three
-    // endpoints below (assign, list, revoke) rather than a separate scope per
-    // verb: they're all facets of the same "manage this user's role
-    // assignments" capability, and PermissionCatalogController's single
-    // "permissions:sync" scope for its one endpoint is the closest existing
-    // precedent for scope granularity in this module. userId is caller-supplied,
-    // so — like every other id-driven endpoint here — tenant scoping happens in
-    // RoleService (assignRole/listRolesForUser/revokeRole), never via a path or
-    // query parameter, preventing cross-tenant IDOR on either the user or the role.
+    // Role assignment (§2, §11) — two scopes, split by mutation vs. read:
+    // "roles:assign" gates the two mutating endpoints below (assign, revoke),
+    // "roles:read" gates the list endpoint. A single "roles:assign" scope used to
+    // gate all three, which meant a caller with only read-level access to a
+    // user's roles had to hold an assign-shaped scope to so much as list them —
+    // wrong per least-privilege, and inconsistent with the "<resource>:<verb>"
+    // naming PermissionCatalogController's "permissions:sync" scope already
+    // establishes for this module (verb reflects what the caller may DO, not just
+    // the resource). userId is caller-supplied, so — like every other id-driven
+    // endpoint here — tenant scoping happens in RoleService
+    // (assignRole/listRolesForUser/revokeRole), never via a path or query
+    // parameter, preventing cross-tenant IDOR on either the user or the role.
 
     @PostMapping("/{userId}/roles")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -95,7 +98,7 @@ public class UserController {
     }
 
     @GetMapping("/{userId}/roles")
-    @PreAuthorize("hasAuthority('SCOPE_roles:assign')")
+    @PreAuthorize("hasAuthority('SCOPE_roles:read')")
     public List<RoleSummaryResponse> listRoles(@PathVariable UUID userId, JwtAuthenticationToken auth) {
         return roleService.listRolesForUser(tenantIdOf(auth), userId).stream()
                 .map(this::toResponse)

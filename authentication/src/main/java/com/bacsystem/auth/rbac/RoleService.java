@@ -123,10 +123,17 @@ public class RoleService {
      * role must belong to {@code tenantId} (multi-tenancy — mirrors the discipline
      * {@code RoleController.requireOwnedRole}/{@code UserService.getById(tenant, id)}
      * already apply individually; this is the same check on both sides of the
-     * assignment at once). Idempotent: re-assigning an already-assigned pair is a
-     * no-op success rather than a constraint-violation throw, relying on UserRole's
-     * {@code Persistable} fix (Item 2) only to guarantee the underlying PK is safe —
-     * the idempotency check itself happens here, before any write is attempted.
+     * assignment at once). Re-assigning an already-assigned pair is a {@code 409}
+     * (spec §11: {@code POST /v1/users/{id}/roles} → {@code 409 already assigned}),
+     * signaled via {@link RoleAlreadyAssignedException} rather than silently
+     * returning. This existsById check is a fast-path only, not the source of
+     * truth: a genuine race between two first-time assignments of the same pair can
+     * pass this check for both callers, in which case the database's PK constraint
+     * (enforced via UserRole's {@code Persistable} implementation, which forces a
+     * real INSERT rather than a silent UPSERT) is the actual backstop — the loser
+     * gets a {@code DataIntegrityViolationException}, mapped to {@code 409} by
+     * {@code ProblemDetailAdvice} as well, so either path the caller observes is a
+     * structured {@code 409}, never a raw 500.
      */
     @Transactional
     public void assignRole(UUID tenantId, UUID userId, UUID roleId, UUID actorUserId) {
@@ -135,7 +142,7 @@ public class RoleService {
 
         UserRole.Key key = new UserRole.Key(userId, roleId);
         if (userRoleRepository.existsById(key)) {
-            return;
+            throw new RoleAlreadyAssignedException(userId, roleId);
         }
 
         User actorRef = new User();
@@ -153,10 +160,20 @@ public class RoleService {
 
     /**
      * Revokes {@code roleId} from {@code userId}, with the same tenant-ownership
-     * checks as {@link #assignRole}. Idempotent in the same spirit: revoking a pair
-     * that was never assigned is a no-op success, not a throw (Spring Data's default
-     * {@code deleteById} throws {@code EmptyResultDataAccessException} on a missing
-     * row, which would otherwise turn a harmless "already revoked" retry into a 500).
+     * checks as {@link #assignRole}. Per spec §11 ({@code DELETE
+     * /v1/users/{id}/roles/{roleId}} → {@code 404}), revoking a pair that was never
+     * assigned throws {@link RoleAssignmentNotFoundException} rather than returning
+     * a no-op success — symmetric with {@link #assignRole}'s {@code 409} on the
+     * mirror-image condition (assigning a pair that already exists). This
+     * intentionally departs from the "idempotent DELETE" convention used elsewhere
+     * in REST APIs: here the assignment is itself the addressed resource
+     * ({@code /roles/{roleId}} under a specific user), the spec explicitly
+     * documents 404 for this endpoint, and treating "not currently assigned" as a
+     * silent success would hide the same class of caller mistake that {@code
+     * assignRole}'s old silent-no-op behavior did on the assign side (Item 1). We
+     * still avoid Spring Data's default {@code deleteById} (which throws
+     * {@code EmptyResultDataAccessException}, an unmapped 500) by checking
+     * existence first and throwing our own structured exception instead.
      */
     @Transactional
     public void revokeRole(UUID tenantId, UUID userId, UUID roleId, UUID actorUserId) {
@@ -165,7 +182,7 @@ public class RoleService {
 
         UserRole.Key key = new UserRole.Key(userId, roleId);
         if (!userRoleRepository.existsById(key)) {
-            return;
+            throw new RoleAssignmentNotFoundException(userId, roleId);
         }
         userRoleRepository.deleteById(key);
 
