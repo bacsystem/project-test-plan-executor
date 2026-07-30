@@ -6,6 +6,7 @@ import com.bacsystem.auth.identity.PasswordChangeChallengeService;
 import com.bacsystem.auth.identity.User;
 import com.bacsystem.auth.identity.UserRepository;
 import com.bacsystem.auth.identity.UserService;
+import com.bacsystem.auth.mfa.MfaService;
 import com.bacsystem.auth.onetime.OneTimeTokenService;
 import com.bacsystem.auth.rbac.JpaRegisteredClientRepository;
 import com.bacsystem.auth.tenancy.TenantRepository;
@@ -13,6 +14,7 @@ import com.bacsystem.auth.token.IssuedTokens;
 import com.bacsystem.auth.token.TokenIssuer;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -41,6 +43,17 @@ public class PasswordController {
     public record TokenPairResponse(@JsonProperty("access_token") String accessToken,
                                      @JsonProperty("refresh_token") String refreshToken) {}
 
+    /**
+     * Same {@code error}/{@code error_description} field shape the password grant's {@code mfa_required}
+     * {@code OAuth2Error} renders as on {@code POST /oauth2/token} (see {@code MustChangePasswordLoginIT}).
+     * Built explicitly here rather than by throwing {@code OAuth2AuthenticationException} because that
+     * exception's JSON rendering is produced by Spring Authorization Server's token-endpoint filter,
+     * which this controller — reached over a plain resource-server-secured path, not the authorization
+     * server's endpoint matcher — is not part of; throwing it here would only surface as an empty-body
+     * 401 via {@code BearerTokenAuthenticationEntryPoint}, not this JSON shape.
+     */
+    public record MfaRequiredResponse(String error, @JsonProperty("error_description") String errorDescription) {}
+
     private final UserService userService;
     private final OneTimeTokenService oneTimeTokenService;
     private final TenantRepository tenantRepository;
@@ -48,12 +61,13 @@ public class PasswordController {
     private final JpaRegisteredClientRepository registeredClientRepository;
     private final UserRepository userRepository;
     private final TokenIssuer tokenIssuer;
+    private final MfaService mfaService;
 
     public PasswordController(UserService userService, OneTimeTokenService oneTimeTokenService,
                                TenantRepository tenantRepository,
                                PasswordChangeChallengeService passwordChangeChallengeService,
                                JpaRegisteredClientRepository registeredClientRepository,
-                               UserRepository userRepository, TokenIssuer tokenIssuer) {
+                               UserRepository userRepository, TokenIssuer tokenIssuer, MfaService mfaService) {
         this.userService = userService;
         this.oneTimeTokenService = oneTimeTokenService;
         this.tenantRepository = tenantRepository;
@@ -61,6 +75,7 @@ public class PasswordController {
         this.registeredClientRepository = registeredClientRepository;
         this.userRepository = userRepository;
         this.tokenIssuer = tokenIssuer;
+        this.mfaService = mfaService;
     }
 
     @PostMapping("/change")
@@ -73,16 +88,28 @@ public class PasswordController {
 
     /**
      * Reached before the caller has any bearer token — it is the forced second step of a
-     * temporary-password login (§7) — so, mirroring {@code MfaController.verify}'s shape for the
-     * {@code mfa_required} branch exactly, it resolves the target user and application itself from
+     * temporary-password login (§7) — so, mirroring {@code MfaController.verify}'s shape for
+     * resolving the target user and application from the challenge context, it resolves both from
      * the challenge's {@link PasswordChangeChallengeContext}, applies the actual password change
      * (which also clears {@code mustChangePassword}, see {@code UserService.changePassword}), and
-     * issues tokens directly via {@link TokenIssuer}, the same class the password grant, refresh
-     * grant, and MFA verify all share.
+     * only then — mirroring {@code PasswordGrantAuthenticationProvider}'s decision tree exactly,
+     * where the must-change-password branch is checked ahead of the MFA branch — checks whether the
+     * user is MFA-enrolled. If so, a full token pair must not be issued here either: an
+     * {@code mfa_required} challenge is issued via the same {@code mfaService.issueChallenge} call
+     * the password grant uses, redeemable at {@code /v1/auth/mfa/verify} exactly as normal. Only when
+     * the user isn't MFA-enrolled are tokens issued directly via {@link TokenIssuer}, the same class
+     * the password grant, refresh grant, and MFA verify all share.
+     *
+     * <p>The challenge ticket itself is only consumed (deleted from Redis, via
+     * {@link PasswordChangeChallengeService#consumeChallenge}) once the password change has actually
+     * succeeded — not merely because the ticket was found valid. {@code peekChallenge} below reads it
+     * without deleting, so a request that fails {@code UserService.changePassword}'s strength check
+     * leaves the ticket redeemable for a retry, instead of forcing the caller back through the whole
+     * login flow over what might be a simple typo.
      */
     @PostMapping("/change-required")
-    public TokenPairResponse changeRequired(@RequestBody ChangeRequiredRequest request) {
-        PasswordChangeChallengeContext context = passwordChangeChallengeService.verifyChallenge(request.challenge());
+    public ResponseEntity<?> changeRequired(@RequestBody ChangeRequiredRequest request) {
+        PasswordChangeChallengeContext context = passwordChangeChallengeService.peekChallenge(request.challenge());
         // Same defensive shape as MfaController.verify: the client/user referenced by an
         // already-verified challenge should always still exist, but if either vanished during the
         // challenge TTL, fail the same generic-authentication-failure way §10.2 requires everywhere
@@ -94,10 +121,19 @@ public class PasswordController {
         User user = userRepository.findById(context.userId())
                 .orElseThrow(PasswordChangeChallengeExpiredException::new);
 
+        // May throw WeakPasswordException — the ticket is still untouched at this point, so it
+        // remains valid for a retry with a stronger password.
         userService.changePassword(user, request.newPassword());
+        passwordChangeChallengeService.consumeChallenge(request.challenge());
+
+        if (mfaService.isEnrolled(user.getId())) {
+            String mfaChallenge = mfaService.issueChallenge(user.getId(), client.getClientId(), context.scopes());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new MfaRequiredResponse("mfa_required", mfaChallenge));
+        }
 
         IssuedTokens issued = tokenIssuer.issue(client, user, context.scopes());
-        return new TokenPairResponse(issued.accessToken(), issued.refreshToken());
+        return ResponseEntity.ok(new TokenPairResponse(issued.accessToken(), issued.refreshToken()));
     }
 
     @PostMapping("/reset-request")

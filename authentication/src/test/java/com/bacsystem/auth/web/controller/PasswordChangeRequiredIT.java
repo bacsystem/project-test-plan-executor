@@ -2,9 +2,13 @@ package com.bacsystem.auth.web.controller;
 
 import com.bacsystem.auth.identity.User;
 import com.bacsystem.auth.identity.UserService;
+import com.bacsystem.auth.mfa.MfaEnrollmentResult;
+import com.bacsystem.auth.mfa.MfaService;
 import com.bacsystem.auth.support.PostgresRedisTestBase;
 import com.bacsystem.auth.tenancy.Tenant;
 import com.bacsystem.auth.tenancy.TenantRepository;
+import dev.samstevens.totp.code.DefaultCodeGenerator;
+import dev.samstevens.totp.time.SystemTimeProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -17,6 +21,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,9 +36,20 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class PasswordChangeRequiredIT extends PostgresRedisTestBase {
 
+    private static final int TOTP_PERIOD_SECONDS = 30;
+
     @Autowired private TenantRepository tenantRepository;
     @Autowired private UserService userService;
+    @Autowired private MfaService mfaService;
     @Autowired private TestRestTemplate restTemplate;
+
+    private final DefaultCodeGenerator codeGenerator = new DefaultCodeGenerator();
+
+    /** Mirrors {@code MfaVerifyIT#currentCodeFor}: the generator wants the TOTP time-step counter, not raw epoch seconds. */
+    private String currentCodeFor(String rawSecret) throws Exception {
+        long timeStepCounter = Math.floorDiv(new SystemTimeProvider().getTime(), TOTP_PERIOD_SECONDS);
+        return codeGenerator.generate(rawSecret, timeStepCounter);
+    }
 
     private String obtainChallenge(Tenant tenant, String email, String tempPassword) {
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
@@ -104,5 +120,86 @@ class PasswordChangeRequiredIT extends PostgresRedisTestBase {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody().get("code")).isEqualTo("authentication_failed");
+    }
+
+    /**
+     * Adversarial-review Item 1: nothing in this codebase currently sets {@code mustChangePassword}
+     * true on an already-MFA-enrolled user via the API (enrollment needs a bearer token, which needs
+     * the flag false already) — so this enrolls MFA directly through {@link MfaService} to simulate
+     * the state a future "admin resets a user's password to a temporary one" feature would produce,
+     * and proves {@code /change-required} can't be used to bypass the second factor once that state
+     * exists: it must return the same {@code mfa_required} shape the password grant itself returns
+     * (see {@code MustChangePasswordLoginIT}/{@code PasswordGrantAuthenticationProvider}), not a token
+     * pair.
+     */
+    @Test
+    void whenTheUserIsAlsoMfaEnrolledChangeRequiredIssuesAnMfaChallengeInsteadOfTokens() throws Exception {
+        Tenant tenant = new Tenant();
+        tenant.setSlug("pwchange-mfa-" + System.nanoTime());
+        tenant.setName("Password Change Required Plus MFA Test");
+        tenant = tenantRepository.saveAndFlush(tenant);
+        User user = userService.createUser(tenant.getId(), "forced-mfa@test.com", "TempPassw0rd!123", null);
+
+        MfaEnrollmentResult enrollment = mfaService.beginEnrollment(user.getId());
+        mfaService.confirmEnrollment(user.getId(), currentCodeFor(enrollment.rawSecret()));
+
+        String challenge = obtainChallenge(tenant, "forced-mfa@test.com", "TempPassw0rd!123");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        ResponseEntity<Map> changeResponse = restTemplate.postForEntity("/v1/auth/password/change-required",
+                new HttpEntity<>(Map.of("challenge", challenge, "newPassword", "BrandNewPassw0rd!456"), headers),
+                Map.class);
+
+        assertThat(changeResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(changeResponse.getBody().get("error")).isEqualTo("mfa_required");
+        assertThat(changeResponse.getBody().get("error_description")).isNotNull();
+        assertThat(changeResponse.getBody()).doesNotContainKeys("access_token", "refresh_token");
+
+        // The password change itself must still have gone through — only the token issuance is gated.
+        User reloaded = userService.getById(user.getId());
+        assertThat(reloaded.isMustChangePassword()).isFalse();
+
+        // And the returned mfa_required ticket must be a real, redeemable MFA challenge, not a dead end.
+        String mfaChallenge = (String) changeResponse.getBody().get("error_description");
+        String loginCode = currentCodeFor(enrollment.rawSecret());
+        ResponseEntity<Map> verifyResponse = restTemplate.postForEntity("/v1/auth/mfa/verify",
+                new HttpEntity<>(Map.of("challenge", mfaChallenge, "code", loginCode), headers),
+                Map.class);
+        assertThat(verifyResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(verifyResponse.getBody()).containsKeys("access_token", "refresh_token");
+    }
+
+    /**
+     * Adversarial-review Item 2: a weak {@code newPassword} must not burn the single-use ticket —
+     * mirroring {@code MfaService.verifyChallenge}, which deletes its Redis-backed challenge only on
+     * success, the same ticket must still be redeemable afterward with a valid password instead of
+     * forcing the user back through the whole login flow over a typo.
+     */
+    @Test
+    void aWeakNewPasswordDoesNotBurnTheChallengeTicket() {
+        Tenant tenant = new Tenant();
+        tenant.setSlug("pwchange-weak-" + System.nanoTime());
+        tenant.setName("Password Change Required Weak Password Test");
+        tenant = tenantRepository.saveAndFlush(tenant);
+        userService.createUser(tenant.getId(), "weak-attempt@test.com", "TempPassw0rd!123", null);
+
+        String challenge = obtainChallenge(tenant, "weak-attempt@test.com", "TempPassw0rd!123");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        ResponseEntity<Map> weakResponse = restTemplate.postForEntity("/v1/auth/password/change-required",
+                new HttpEntity<>(Map.of("challenge", challenge, "newPassword", "short1!"), headers),
+                Map.class);
+        assertThat(weakResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(weakResponse.getBody().get("code")).isEqualTo("WEAK_PASSWORD");
+
+        // Same ticket, now with a valid password, must still succeed — proving the failed attempt
+        // above didn't consume it.
+        ResponseEntity<Map> retryResponse = restTemplate.postForEntity("/v1/auth/password/change-required",
+                new HttpEntity<>(Map.of("challenge", challenge, "newPassword", "BrandNewPassw0rd!456"), headers),
+                Map.class);
+        assertThat(retryResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(retryResponse.getBody()).containsKeys("access_token", "refresh_token");
     }
 }

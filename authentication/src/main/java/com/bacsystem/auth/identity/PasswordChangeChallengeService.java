@@ -48,14 +48,33 @@ public class PasswordChangeChallengeService {
         return rawTicket;
     }
 
-    /** Single-use: the Redis key is deleted as soon as it's read, valid or not. */
-    public PasswordChangeChallengeContext verifyChallenge(String rawTicket) {
-        String redisKey = REDIS_KEY_PREFIX + TokenHasher.sha256Hex(rawTicket);
-        String value = redisTemplate.opsForValue().get(redisKey);
+    /**
+     * Validates the ticket exists and returns its context WITHOUT consuming it — mirrors the read half
+     * of {@code MfaService.verifyChallenge}, which only deletes its Redis key once the rest of the
+     * verification (there, the TOTP/backup-code check; here, the caller's full change-required flow)
+     * has actually succeeded. Split out from the old single-step {@code verifyChallenge} because,
+     * unlike MFA's code check, the remaining validation for this ticket (new-password strength) lives
+     * one layer up in {@code PasswordController}/{@code UserService}, so the two steps can't be
+     * collapsed into one method here the way MFA's can.
+     */
+    public PasswordChangeChallengeContext peekChallenge(String rawTicket) {
+        String value = redisTemplate.opsForValue().get(redisKey(rawTicket));
         if (value == null) {
             throw new PasswordChangeChallengeExpiredException();
         }
-        redisTemplate.delete(redisKey);
         return PasswordChangeChallengeContext.fromRedisValue(value);
+    }
+
+    /**
+     * Consumes (deletes) the ticket. Call only once the operation it gates has fully succeeded — same
+     * single-use contract as MFA's challenge, just split into its own step since success here is
+     * determined by the caller, not by this service.
+     */
+    public void consumeChallenge(String rawTicket) {
+        redisTemplate.delete(redisKey(rawTicket));
+    }
+
+    private String redisKey(String rawTicket) {
+        return REDIS_KEY_PREFIX + TokenHasher.sha256Hex(rawTicket);
     }
 }
