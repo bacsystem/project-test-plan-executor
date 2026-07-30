@@ -57,23 +57,24 @@ class LoginAttemptRepositoryTest extends PostgresRedisTestBase {
     void findsMostRecentSuccessfulAttemptByEmail() {
         Instant older = Instant.now().minusSeconds(120);
         Instant newer = Instant.now();
+        String email = "reset-" + System.nanoTime() + "@example.test";
 
         LoginAttempt earlierSuccess = new LoginAttempt();
-        earlierSuccess.setEmailAttempted("reset@example.test");
+        earlierSuccess.setEmailAttempted(email);
         earlierSuccess.setIpAddress("203.0.113.20");
         earlierSuccess.setSuccess(true);
         earlierSuccess.setAttemptedAt(older);
         loginAttemptRepository.saveAndFlush(earlierSuccess);
 
         LoginAttempt latestSuccess = new LoginAttempt();
-        latestSuccess.setEmailAttempted("reset@example.test");
+        latestSuccess.setEmailAttempted(email);
         latestSuccess.setIpAddress("203.0.113.21");
         latestSuccess.setSuccess(true);
         latestSuccess.setAttemptedAt(newer);
         loginAttemptRepository.saveAndFlush(latestSuccess);
 
         Optional<LoginAttempt> found = loginAttemptRepository
-                .findTopByEmailAttemptedAndSuccessTrueOrderByAttemptedAtDesc("reset@example.test");
+                .findTopByEmailAttemptedAndSuccessTrueOrderByAttemptedAtDesc(email);
 
         assertThat(found).isPresent();
         assertThat(found.get().getAttemptedAt()).isEqualTo(newer);

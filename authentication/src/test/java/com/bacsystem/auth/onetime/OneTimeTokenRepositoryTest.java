@@ -34,15 +34,17 @@ class OneTimeTokenRepositoryTest extends PostgresRedisTestBase {
         user.setStatus(UserStatus.ACTIVE);
         user = userRepository.saveAndFlush(user);
 
+        String tokenHash = "reset-hash-" + System.nanoTime();
+
         OneTimeToken token = new OneTimeToken();
         token.setUser(user);
         token.setPurpose(OneTimeTokenPurpose.PASSWORD_RESET);
-        token.setTokenHash("reset-hash");
+        token.setTokenHash(tokenHash);
         token.setExpiresAt(Instant.now().plusSeconds(900));
         oneTimeTokenRepository.saveAndFlush(token);
 
         Optional<OneTimeToken> found = oneTimeTokenRepository
-                .findByTokenHashAndRedeemedAtIsNull("reset-hash");
+                .findByTokenHashAndRedeemedAtIsNull(tokenHash);
         assertThat(found).isPresent();
         assertThat(found.get().getPurpose()).isEqualTo(OneTimeTokenPurpose.PASSWORD_RESET);
     }

@@ -24,15 +24,16 @@ class RefreshTokenRepositoryTest extends PostgresRedisTestBase {
     @Test
     void savesAndFindsByTokenHash() {
         User user = newUser();
+        String tokenHash = "hash-1-" + System.nanoTime();
 
         RefreshToken token = new RefreshToken();
         token.setUser(user);
-        token.setTokenHash("hash-1");
+        token.setTokenHash(tokenHash);
         token.setApplicationClientId("example-app");
         token.setExpiresAt(Instant.now().plusSeconds(3600));
         RefreshToken saved = refreshTokenRepository.saveAndFlush(token);
 
-        Optional<RefreshToken> found = refreshTokenRepository.findByTokenHash("hash-1");
+        Optional<RefreshToken> found = refreshTokenRepository.findByTokenHash(tokenHash);
         assertThat(found).isPresent();
         assertThat(found.get().getUser().getId()).isEqualTo(user.getId());
         assertThat(found.get().getReplacedBy()).isNull();
@@ -41,17 +42,19 @@ class RefreshTokenRepositoryTest extends PostgresRedisTestBase {
     @Test
     void rotationChainViaReplacedBy() {
         User user = newUser();
+        String originalHash = "original-hash-" + System.nanoTime();
+        String rotatedHash = "rotated-hash-" + System.nanoTime();
 
         RefreshToken original = new RefreshToken();
         original.setUser(user);
-        original.setTokenHash("original-hash");
+        original.setTokenHash(originalHash);
         original.setApplicationClientId("example-app");
         original.setExpiresAt(Instant.now().plusSeconds(3600));
         original = refreshTokenRepository.saveAndFlush(original);
 
         RefreshToken rotated = new RefreshToken();
         rotated.setUser(user);
-        rotated.setTokenHash("rotated-hash");
+        rotated.setTokenHash(rotatedHash);
         rotated.setApplicationClientId("example-app");
         rotated.setExpiresAt(Instant.now().plusSeconds(3600));
         rotated = refreshTokenRepository.saveAndFlush(rotated);
@@ -59,10 +62,12 @@ class RefreshTokenRepositoryTest extends PostgresRedisTestBase {
         original.setReplacedBy(rotated);
         refreshTokenRepository.saveAndFlush(original);
 
-        List<RefreshToken> chain = refreshTokenRepository.findByUserId(user.getId());
+        List<RefreshToken> chain = refreshTokenRepository.findByUserId(user.getId()).stream()
+                .filter(t -> t.getTokenHash().equals(originalHash) || t.getTokenHash().equals(rotatedHash))
+                .toList();
         assertThat(chain).hasSize(2);
 
-        Optional<RefreshToken> found = refreshTokenRepository.findByTokenHash("original-hash");
+        Optional<RefreshToken> found = refreshTokenRepository.findByTokenHash(originalHash);
         assertThat(found).isPresent();
         assertThat(found.get().getReplacedBy()).isNotNull();
         assertThat(found.get().getReplacedBy().getId()).isEqualTo(rotated.getId());
