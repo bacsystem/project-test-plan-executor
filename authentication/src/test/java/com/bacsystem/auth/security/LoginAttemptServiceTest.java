@@ -37,8 +37,8 @@ class LoginAttemptServiceTest {
         return counter == null ? 0.0 : counter.count();
     }
 
-    private double failedCounterCount() {
-        var counter = meterRegistry.find("login_attempt_failed").counter();
+    private double failedCounterCount(String scope) {
+        var counter = meterRegistry.find("login_attempt_failed").tag("scope", scope).counter();
         return counter == null ? 0.0 : counter.count();
     }
 
@@ -157,16 +157,21 @@ class LoginAttemptServiceTest {
     // §16: a slow-and-low credential-stuffing burst that stays under the
     // per-account/per-IP lockout threshold must still be observable — every
     // raw failed attempt increments this counter, not just the ones that
-    // trip a lockout.
+    // trip a lockout. §16 also requires the failure-burst alert to be
+    // distinguishable by IP vs. by account (distinct from the per-account-only
+    // signal), mirroring login_attempt_locked's scope=account|ip tag scheme
+    // instead of one untagged/global counter.
     @Test
     void recordFailureIncrementsFailedCounterOnEveryCallEvenBelowLockoutThreshold() {
         LoginAttemptService service = newService();
 
         service.recordFailure("user@test.com", "1.2.3.4");
-        assertThat(failedCounterCount()).isEqualTo(1.0);
+        assertThat(failedCounterCount("account")).isEqualTo(1.0);
+        assertThat(failedCounterCount("ip")).isEqualTo(1.0);
 
         service.recordFailure("other@test.com", "5.6.7.8");
         service.recordFailure("other@test.com", "5.6.7.8");
-        assertThat(failedCounterCount()).isEqualTo(3.0);
+        assertThat(failedCounterCount("account")).isEqualTo(3.0);
+        assertThat(failedCounterCount("ip")).isEqualTo(3.0);
     }
 }
