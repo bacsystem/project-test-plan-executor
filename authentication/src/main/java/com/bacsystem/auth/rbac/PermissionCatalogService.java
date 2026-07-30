@@ -5,6 +5,7 @@ import com.bacsystem.auth.audit.AuditLogService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -29,12 +30,27 @@ public class PermissionCatalogService {
      * where two concurrent syncs of the same app both read a brand-new name as
      * "not yet active" and both claim it as their own "added", double-counting
      * it in the audit log even though the actual row is upserted exactly once.
+     * <p>
+     * A permission being resynced after it was previously deprecated also
+     * counts as "added" — it's a real, user-facing reactivation, not a no-op.
+     * That case is an UPDATE at the row level (xmax != 0), so upsertActive's
+     * own result can't see it. PermissionRepository.lockAndCheckWasDeprecated
+     * is called first, in the same transaction, to lock and read that row's
+     * prior deprecated_at with `SELECT ... FOR UPDATE` before the upsert
+     * applies; that row lock is what keeps two concurrent reactivations of the
+     * SAME name from both claiming "added" (the second call's lock wait means
+     * it always re-reads the first call's already-committed, no-longer-
+     * deprecated row) — see the Javadoc on lockAndCheckWasDeprecated for why a
+     * single-statement CTE couldn't be used instead.
      */
     @Transactional
     public PermissionSyncResult sync(String applicationName, Set<String> permissionNames) {
         int added = 0;
         for (String name : permissionNames) {
-            if (permissionRepository.upsertActive(applicationName, name)) {
+            List<Boolean> existing = permissionRepository.lockAndCheckWasDeprecated(applicationName, name);
+            boolean wasDeprecated = !existing.isEmpty() && Boolean.TRUE.equals(existing.get(0));
+            boolean inserted = permissionRepository.upsertActive(applicationName, name);
+            if (inserted || wasDeprecated) {
                 added++;
             }
         }
