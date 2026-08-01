@@ -1,0 +1,30 @@
+/* --------------------------- */
+/* Image List */
+/* --------------------------- */
+
+@layer style {
+  .MuiImageList-root {
+    @apply m-0;
+  }
+
+  .MuiImageListItem-root,
+  .MuiImageListItem-img {
+    @apply rounded-md;
+  }
+
+  .MuiImageListItemBar-root {
+    @apply bg-background-paper/60 mx-1 mb-1 overflow-y-auto rounded-sm backdrop-blur-sm;
+  }
+
+  .MuiImageListItemBar-title {
+    @apply font-body text-text-primary overflow-y-auto text-base leading-5 font-normal;
+  }
+
+  .MuiImageListItemBar-subtitle {
+    @apply font-body text-text-secondary overflow-y-auto text-sm leading-4 font-normal;
+  }
+
+  .MuiImageListItemBar-titleWrap.MuiImageListItemBar-titleWrapBottom {
+    @apply rtl:pr-4 rtl:pl-0;
+  }
+}

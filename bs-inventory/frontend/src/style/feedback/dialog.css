@@ -1,0 +1,37 @@
+/* --------------------------- */
+/* Dialog */
+/* --------------------------- */
+
+@layer style {
+  .MuiDialog-container {
+    .MuiPaper-root {
+      @apply rounded-3xl;
+    }
+  }
+
+  .MuiDialogContentText-root {
+    @apply text-text-primary;
+  }
+
+  .MuiDialogTitle-root,
+  .MuiDialogContent-root,
+  .MuiDialogActions-root {
+    @apply p-7;
+  }
+
+  .MuiDialogContent-root {
+    @apply py-0;
+  }
+
+  .MuiDialogTitle-root {
+    @apply pb-4;
+  }
+
+  .MuiDialogActions-root {
+    @apply pt-4;
+  }
+
+  .MuiDialog-paperFullScreen {
+    @apply h-[calc(100%-2rem)] w-[calc(100%-2rem)];
+  }
+}

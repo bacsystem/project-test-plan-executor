@@ -1,0 +1,195 @@
+/* --------------------------- */
+/* Global */
+/* --------------------------- */
+
+:root {
+  --font-body: "Mulish", ui-sans-serif;
+  --font-heading: "Urbanist", ui-sans-serif;
+}
+
+/* 
+  Define the CSS layer order. 
+  Note: MUI overrides this when loaded with enableCssLayer: true.
+  We use MuiLayerOverride component in ThemeProvider to enforce this order.
+*/
+@layer theme, base, mui, components, style, utilities;
+
+@layer components {
+  @import "react-big-calendar/lib/css/react-big-calendar.css";
+  @import "swiper/css";
+  @import "react-quill-new/dist/quill.snow.css";
+}
+
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
+
+/* --------- Theme --------- */
+@import "./theme/common.css";
+@import "./theme/blue.css";
+@import "./theme/green.css";
+@import "./theme/orange.css";
+@import "./theme/purple.css";
+
+/* --------- Surfaces --------- */
+@import "./surfaces/accordion.css";
+@import "./surfaces/card.css";
+@import "./surfaces/paper.css";
+
+/* --------- Data Display --------- */
+@import "./data-display/avatar.css";
+@import "./data-display/badge.css";
+@import "./data-display/chip.css";
+@import "./data-display/divider.css";
+@import "./data-display/list.css";
+@import "./data-display/table.css";
+@import "./data-display/tooltip.css";
+@import "./data-display/typography.css";
+
+/* --------- Navigation --------- */
+@import "./navigation/breadcrumb.css";
+@import "./navigation/menu.css";
+@import "./navigation/bottom-navigation.css";
+@import "./navigation/drawer.css";
+@import "./navigation/link.css";
+@import "./navigation/pagination.css";
+@import "./navigation/stepper.css";
+@import "./navigation/tabs.css";
+
+/* --------- Inputs --------- */
+@import "./inputs/autocomplete.css";
+@import "./inputs/button.css";
+@import "./inputs/button-group.css";
+@import "./inputs/checkbox.css";
+@import "./inputs/fab.css";
+@import "./inputs/input.css";
+@import "./inputs/radiobutton.css";
+@import "./inputs/rating.css";
+@import "./inputs/select.css";
+@import "./inputs/slider.css";
+@import "./inputs/switch.css";
+@import "./inputs/tooglebutton.css";
+
+/* --------- Layout --------- */
+@import "./layout/scrollbar.css";
+@import "./layout/image-list.css";
+
+/* --------- Feedback --------- */
+@import "./feedback/alert.css";
+@import "./feedback/dialog.css";
+@import "./feedback/progress.css";
+@import "./feedback/skeleton.css";
+@import "./feedback/snackbar.css";
+
+/* --------- Lab --------- */
+@import "./lab/timeline.css";
+
+/* --------- Mui X --------- */
+@import "./mui-x/chart.css";
+@import "./mui-x/data-grid.css";
+@import "./mui-x/date-time-picker.css";
+@import "./mui-x/tree-view.css";
+
+/* --------- Plugins --------- */
+@import "./plugins/lightbox-yarl.css";
+@import "./plugins/video-player-vidstack.css";
+@import "./plugins/text-editor-quill.css";
+@import "./plugins/ds-markdown.css";
+@import "./plugins/react-big-calendar.css";
+@import "./plugins/emoji-picker.css";
+
+/* --------- Landing Page --------- */
+@import "./landing-page/landing-page.css";
+
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+}
+
+@utility text-balance {
+  text-wrap: balance;
+}
+
+@layer utilities {
+  body {
+    @apply bg-background text-text-primary m-0 p-0 font-sans text-base;
+  }
+}
+
+* {
+  @apply box-border;
+}
+
+*:focus {
+  outline: 0;
+}
+
+.MuiPopper-root {
+  @apply z-100;
+}
+
+.bg-foreground,
+.shadow-inside {
+  transition: background-color 0.2s ease-in-out;
+}
+.shadow-inside {
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+@theme {
+  --shadow-inside: var(--shadow-inside);
+  --shadow-2xs: var(--shadow-2xs);
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-2xl: var(--shadow-2xl);
+
+  --shadow-darker-2xs: var(--shadow-darker-2xs);
+  --shadow-darker-xs: var(--shadow-darker-xs);
+  --shadow-darker-sm: var(--shadow-darker-sm);
+  --shadow-darker-md: var(--shadow-darker-md);
+  --shadow-darker-lg: var(--shadow-darker-lg);
+  --shadow-darker-xl: var(--shadow-darker-xl);
+  --shadow-darker-2xl: var(--shadow-darker-2xl);
+
+  --animate-float: float 2s ease-in-out infinite;
+
+  @keyframes float {
+    0% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-10px);
+    }
+
+    100% {
+      transform: translateY(0);
+    }
+  }
+
+  --animate-wiggle: wiggle 1s ease-in-out infinite;
+  @keyframes wiggle {
+    0%,
+    100% {
+      transform: rotate(-3deg);
+    }
+    50% {
+      transform: rotate(3deg);
+    }
+  }
+}

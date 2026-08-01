@@ -1,0 +1,514 @@
+/* --------------------------- */
+/* Chip */
+/* --------------------------- */
+
+@layer style {
+  .MuiChip-root {
+    @apply font-body font-medium shadow-none!;
+  }
+
+  .MuiChip-sizeSmall {
+    @apply h-auto rounded-sm px-0.5 py-0.5 text-sm leading-4;
+  }
+
+  .MuiChip-sizeMedium {
+    @apply h-auto rounded-sm px-1 py-0.5 text-base leading-5;
+  }
+
+  .MuiChip-filled {
+    @apply bg-grey-25 border-0 outline-1 -outline-offset-1 outline-transparent;
+    &.MuiChip-clickable:hover {
+      @apply bg-grey-50;
+    }
+  }
+
+  .MuiChip-outlined {
+    @apply outline-grey-200 border-0 bg-transparent outline-1 -outline-offset-1;
+    &.MuiChip-clickable:hover {
+      @apply bg-grey-200/10;
+    }
+  }
+
+  .MuiChip-sizeMedium .MuiAvatar-root {
+    @apply -ms-0.5! h-5! w-5!;
+  }
+
+  .MuiChip-sizeSmall .MuiAvatar-root {
+    @apply ms-0! h-4! w-4!;
+  }
+
+  .MuiChip-sizeMedium .MuiAvatar-root + .MuiChip-label {
+    @apply ms-1;
+  }
+
+  .MuiChip-sizeSmall .MuiAvatar-root + .MuiChip-label {
+    @apply ms-0.5;
+  }
+
+  .MuiChip-outlined .MuiChip-deleteIcon,
+  .MuiChip-filled .MuiChip-deleteIcon {
+    @apply bg-text-disabled! text-background-paper! -ms-1 me-0 rounded-full outline-hidden! transition-all;
+    &:hover {
+      @apply bg-text-disabled-dark!;
+    }
+  }
+
+  .MuiChip-filled.MuiChip-colorPrimary {
+    @apply bg-primary;
+    &.MuiChip-clickable:hover {
+      @apply bg-primary-light;
+    }
+    .MuiChip-deleteIcon {
+      @apply bg-text-contrast! text-primary!;
+      &:hover {
+        @apply text-primary-light!;
+      }
+    }
+  }
+
+  .MuiChip-filled.MuiChip-colorSecondary {
+    @apply bg-secondary;
+    &.MuiChip-clickable:hover {
+      @apply bg-secondary-light;
+    }
+    .MuiChip-deleteIcon {
+      @apply bg-text-contrast! text-secondary!;
+      &:hover {
+        @apply text-secondary-light!;
+      }
+    }
+  }
+
+  .MuiChip-filled.MuiChip-colorAccent-1 {
+    @apply bg-accent-1;
+    &.MuiChip-clickable:hover {
+      @apply bg-accent-1-light;
+    }
+    .MuiChip-deleteIcon {
+      @apply bg-text-contrast! text-accent-1!;
+      &:hover {
+        @apply text-accent-1-light!;
+      }
+    }
+  }
+
+  .MuiChip-filled.MuiChip-colorAccent-2 {
+    @apply bg-accent-2;
+    &.MuiChip-clickable:hover {
+      @apply bg-accent-2-light;
+    }
+    .MuiChip-deleteIcon {
+      @apply bg-text-contrast! text-accent-2!;
+      &:hover {
+        @apply text-accent-2-light!;
+      }
+    }
+  }
+
+  .MuiChip-filled.MuiChip-colorAccent-3 {
+    @apply bg-accent-3;
+    &.MuiChip-clickable:hover {
+      @apply bg-accent-3-light;
+    }
+    .MuiChip-deleteIcon {
+      @apply bg-text-contrast! text-accent-3!;
+      &:hover {
+        @apply text-accent-3-light!;
+      }
+    }
+  }
+
+  .MuiChip-filled.MuiChip-colorAccent-4 {
+    @apply bg-accent-4;
+    &.MuiChip-clickable:hover {
+      @apply bg-accent-4-light;
+    }
+    .MuiChip-deleteIcon {
+      @apply bg-text-contrast! text-accent-4!;
+      &:hover {
+        @apply text-accent-4-light!;
+      }
+    }
+  }
+
+  .MuiChip-filled.MuiChip-colorAccent-5 {
+    @apply bg-accent-5;
+    &.MuiChip-clickable:hover {
+      @apply bg-accent-5-light;
+    }
+    .MuiChip-deleteIcon {
+      @apply bg-text-contrast! text-accent-5!;
+      &:hover {
+        @apply text-accent-5-light!;
+      }
+    }
+  }
+
+  .MuiChip-filled.MuiChip-colorAccent-6 {
+    @apply bg-accent-6;
+    &.MuiChip-clickable:hover {
+      @apply bg-accent-6-light;
+    }
+    .MuiChip-deleteIcon {
+      @apply bg-text-contrast! text-accent-6!;
+      &:hover {
+        @apply text-accent-6-light!;
+      }
+    }
+  }
+
+  .MuiChip-filled.MuiChip-colorInfo {
+    @apply bg-info;
+    &.MuiChip-clickable:hover {
+      @apply bg-info-light;
+    }
+    .MuiChip-deleteIcon {
+      @apply bg-text-contrast! text-info!;
+      &:hover {
+        @apply text-info-light!;
+      }
+    }
+  }
+
+  .MuiChip-filled.MuiChip-colorSuccess {
+    @apply bg-success;
+    &.MuiChip-clickable:hover {
+      @apply bg-success-light;
+    }
+    .MuiChip-deleteIcon {
+      @apply bg-text-contrast! text-success!;
+      &:hover {
+        @apply text-success-light!;
+      }
+    }
+  }
+
+  .MuiChip-filled.MuiChip-colorError {
+    @apply bg-error;
+    &.MuiChip-clickable:hover {
+      @apply bg-error-light;
+    }
+    .MuiChip-deleteIcon {
+      @apply bg-text-contrast! text-error!;
+      &:hover {
+        @apply text-error-light!;
+      }
+    }
+  }
+
+  .MuiChip-filled.MuiChip-colorWarning {
+    @apply bg-warning;
+    &.MuiChip-clickable:hover {
+      @apply bg-warning-light;
+    }
+    .MuiChip-deleteIcon {
+      @apply bg-text-contrast! text-warning!;
+      &:hover {
+        @apply text-warning-light!;
+      }
+    }
+  }
+
+  .MuiChip-filled.MuiChip-colorText-primary {
+    @apply bg-text-primary;
+    &.MuiChip-clickable:hover {
+      @apply bg-text-primary-light;
+    }
+    .MuiChip-deleteIcon {
+      @apply bg-text-contrast! text-text-primary!;
+      &:hover {
+        @apply text-text-primary-light!;
+      }
+    }
+  }
+
+  .MuiChip-filled.MuiChip-colorText-secondary {
+    @apply bg-text-secondary;
+    &.MuiChip-clickable:hover {
+      @apply bg-text-secondary-light;
+    }
+    .MuiChip-deleteIcon {
+      @apply bg-text-contrast! text-text-secondary!;
+      &:hover {
+        @apply text-text-secondary-light!;
+      }
+    }
+  }
+
+  .MuiChip-filled.MuiChip-colorText-disabled {
+    @apply bg-text-disabled;
+    &.MuiChip-clickable:hover {
+      @apply bg-text-disabled-light;
+    }
+    .MuiChip-deleteIcon {
+      @apply bg-text-contrast! text-text-disabled!;
+      &:hover {
+        @apply text-text-disabled-light!;
+      }
+    }
+  }
+
+  .MuiChip-filled.MuiChip-colorGrey {
+    @apply bg-grey-25 text-text-primary;
+    &.MuiChip-clickable:hover {
+      @apply bg-grey-50;
+    }
+    .MuiChip-deleteIcon {
+      @apply bg-text-secondary! text-grey-25!;
+      &:hover {
+        @apply bg-text-secondary-light! text-grey-50!;
+      }
+    }
+  }
+
+  .MuiChip-outlined.MuiChip-outlinedPrimary {
+    @apply outline-primary;
+    .MuiChip-deleteIcon {
+      @apply bg-primary!;
+
+      &:hover {
+        @apply bg-primary-dark!;
+      }
+    }
+
+    &.MuiChip-clickable:hover {
+      @apply bg-primary-light/10;
+    }
+  }
+
+  .MuiChip-outlined.MuiChip-outlinedSecondary {
+    @apply outline-secondary;
+    .MuiChip-deleteIcon {
+      @apply bg-secondary!;
+
+      &:hover {
+        @apply bg-secondary-dark!;
+      }
+    }
+
+    &.MuiChip-clickable:hover {
+      @apply bg-secondary-light/10;
+    }
+  }
+
+  .MuiChip-outlined.MuiChip-outlinedAccent-1 {
+    @apply outline-accent-1;
+    .MuiChip-deleteIcon {
+      @apply bg-accent-1!;
+
+      &:hover {
+        @apply bg-accent-1-dark!;
+      }
+    }
+
+    &.MuiChip-clickable:hover {
+      @apply bg-accent-1-light/10;
+    }
+  }
+
+  .MuiChip-outlined.MuiChip-outlinedAccent-2 {
+    @apply outline-accent-2;
+    .MuiChip-deleteIcon {
+      @apply bg-accent-2!;
+
+      &:hover {
+        @apply bg-accent-2-dark!;
+      }
+    }
+
+    &.MuiChip-clickable:hover {
+      @apply bg-accent-2-light/10;
+    }
+  }
+
+  .MuiChip-outlined.MuiChip-outlinedAccent-3 {
+    @apply outline-accent-3;
+    .MuiChip-deleteIcon {
+      @apply bg-accent-3!;
+
+      &:hover {
+        @apply bg-accent-3-dark!;
+      }
+    }
+
+    &.MuiChip-clickable:hover {
+      @apply bg-accent-3-light/10;
+    }
+  }
+
+  .MuiChip-outlined.MuiChip-outlinedAccent-4 {
+    @apply outline-accent-4;
+    .MuiChip-deleteIcon {
+      @apply bg-accent-4!;
+
+      &:hover {
+        @apply bg-accent-4-dark!;
+      }
+    }
+
+    &.MuiChip-clickable:hover {
+      @apply bg-accent-4-light/10;
+    }
+  }
+
+  .MuiChip-outlined.MuiChip-outlinedAccent-5 {
+    @apply outline-accent-5;
+    .MuiChip-deleteIcon {
+      @apply bg-accent-5!;
+
+      &:hover {
+        @apply bg-accent-5-dark!;
+      }
+    }
+
+    &.MuiChip-clickable:hover {
+      @apply bg-accent-5-light/10;
+    }
+  }
+
+  .MuiChip-outlined.MuiChip-outlinedAccent-6 {
+    @apply outline-accent-6;
+    .MuiChip-deleteIcon {
+      @apply bg-accent-6!;
+
+      &:hover {
+        @apply bg-accent-6-dark!;
+      }
+    }
+
+    &.MuiChip-clickable:hover {
+      @apply bg-accent-6-light/10;
+    }
+  }
+
+  .MuiChip-outlined.MuiChip-outlinedError {
+    @apply outline-error;
+    .MuiChip-deleteIcon {
+      @apply bg-error!;
+
+      &:hover {
+        @apply bg-error-dark!;
+      }
+    }
+
+    &.MuiChip-clickable:hover {
+      @apply bg-error-light/10;
+    }
+  }
+
+  .MuiChip-outlined.MuiChip-outlinedSuccess {
+    @apply outline-success;
+    .MuiChip-deleteIcon {
+      @apply bg-success!;
+
+      &:hover {
+        @apply bg-success-dark!;
+      }
+    }
+
+    &.MuiChip-clickable:hover {
+      @apply bg-success-light/10;
+    }
+  }
+
+  .MuiChip-outlined.MuiChip-outlinedInfo {
+    @apply outline-info;
+    .MuiChip-deleteIcon {
+      @apply bg-info!;
+
+      &:hover {
+        @apply bg-info-dark!;
+      }
+    }
+
+    &.MuiChip-clickable:hover {
+      @apply bg-info-light/10;
+    }
+  }
+
+  .MuiChip-outlined.MuiChip-outlinedWarning {
+    @apply outline-warning;
+    .MuiChip-deleteIcon {
+      @apply bg-warning!;
+
+      &:hover {
+        @apply bg-warning-dark!;
+      }
+    }
+
+    &.MuiChip-clickable:hover {
+      @apply bg-warning-light/10;
+    }
+  }
+
+  .MuiChip-outlined.MuiChip-outlinedText-primary {
+    @apply outline-text-primary;
+    .MuiChip-deleteIcon {
+      @apply bg-text-primary!;
+
+      &:hover {
+        @apply bg-text-primary-dark!;
+      }
+    }
+
+    &.MuiChip-clickable:hover {
+      @apply bg-grey-500/10;
+    }
+  }
+
+  .MuiChip-outlined.MuiChip-outlinedText-secondary {
+    @apply outline-text-secondary;
+    .MuiChip-deleteIcon {
+      @apply bg-text-secondary!;
+
+      &:hover {
+        @apply bg-text-secondary-dark!;
+      }
+    }
+
+    &.MuiChip-clickable:hover {
+      @apply bg-grey-500/10;
+    }
+  }
+
+  .MuiChip-outlined.MuiChip-outlinedText-disabled {
+    @apply outline-text-disabled;
+    .MuiChip-deleteIcon {
+      @apply bg-text-disabled!;
+
+      &:hover {
+        @apply bg-text-disabled-dark!;
+      }
+    }
+
+    &.MuiChip-clickable:hover {
+      @apply bg-grey-500/10;
+    }
+  }
+
+  .MuiChip-outlined.MuiChip-outlinedGrey {
+    @apply outline-grey-200;
+    .MuiChip-deleteIcon {
+      @apply bg-text-secondary!;
+
+      &:hover {
+        @apply bg-text-secondary-dark!;
+      }
+    }
+
+    &.MuiChip-clickable:hover {
+      @apply bg-grey-200/10;
+    }
+  }
+
+  .MuiChip-root.Mui-disabled {
+    @apply opacity-disabled;
+  }
+
+  .MuiChip-root.multiline {
+    @apply h-auto;
+    .MuiChip-label {
+      @apply block whitespace-normal;
+    }
+  }
+}

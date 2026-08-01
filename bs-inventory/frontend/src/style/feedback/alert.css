@@ -1,0 +1,72 @@
+/* --------------------------- */
+/* Alert */
+/* --------------------------- */
+
+@layer style {
+  .MuiAlert-root {
+    @apply font-body rounded-md text-base leading-5 font-normal;
+  }
+
+  .MuiAlert-standard.MuiAlert-colorSuccess {
+    @apply bg-success-light/10 text-success-dark;
+  }
+
+  .MuiAlert-standard.MuiAlert-colorInfo {
+    @apply bg-info-light/10 text-info-dark;
+  }
+
+  .MuiAlert-standard.MuiAlert-colorWarning {
+    @apply bg-warning-light/10 text-warning-dark;
+  }
+
+  .MuiAlert-standard.MuiAlert-colorError {
+    @apply bg-error-light/10 text-error-dark;
+  }
+
+  .MuiAlert-action {
+    @apply items-center pt-0 rtl:mr-0 rtl:-ml-2;
+  }
+
+  .MuiSnackbarContent-action {
+    @apply rtl:mr-auto rtl:ml-[unset] rtl:pr-4 rtl:pl-0;
+  }
+
+  .MuiAlert-outlinedSuccess {
+    @apply text-success;
+  }
+
+  .MuiAlert-outlinedError {
+    @apply text-error;
+  }
+
+  .MuiAlert-outlinedWarning {
+    @apply text-warning;
+  }
+
+  .MuiAlert-outlinedInfo {
+    @apply text-info;
+  }
+
+  .MuiAlert-filled.MuiAlert-colorSuccess,
+  .MuiAlert-filled.MuiAlert-colorWarning,
+  .MuiAlert-filled.MuiAlert-colorInfo,
+  .MuiAlert-filled.MuiAlert-colorError {
+    @apply text-text-contrast;
+  }
+
+  .MuiAlert-root.neutral {
+    @apply border-grey-100 bg-background-paper border border-solid;
+
+    .MuiAlert-message {
+      @apply text-text-secondary;
+    }
+
+    .MuiAlertTitle-root {
+      @apply text-text-primary;
+    }
+  }
+
+  .MuiAlert-icon {
+    @apply mr-3 rtl:mr-0 rtl:ml-3;
+  }
+}

@@ -1,0 +1,81 @@
+/* --------------------------- */
+/* Theme Blue */
+/* --------------------------- */
+
+@layer base {
+  .theme-blue {
+    --primary: 201 83% 57%;
+    --primary-light: 201 83% 67%;
+    --primary-dark: 201 83% 47%;
+
+    --secondary: 191 100% 46%;
+    --secondary-light: 191 100% 56%;
+    --secondary-dark: 191 100% 36%;
+
+    --accent-1: 136 49% 49%;
+    --accent-1-light: 136 49% 59%;
+    --accent-1-dark: 136 49% 39%;
+
+    --accent-2: 85 49% 49%;
+    --accent-2-light: 85 49% 59%;
+    --accent-2-dark: 85 49% 39%;
+
+    --accent-3: 32 89% 65%;
+    --accent-3-light: 32 89% 75%;
+    --accent-3-dark: 32 89% 55%;
+
+    --accent-4: 359 87% 70%;
+    --accent-4-light: 359 87% 80%;
+    --accent-4-dark: 359 87% 60%;
+
+    --accent-5: 311 82% 60%;
+    --accent-5-light: 311 82% 70%;
+    --accent-5-dark: 311 82% 50%;
+
+    --accent-6: 272 92% 66%;
+    --accent-6-light: 272 92% 76%;
+    --accent-6-dark: 272 92% 56%;
+
+    --bg-waves: url("/images/backgrounds/waves-light.jpg");
+    --bg-spheres: url("/images/backgrounds/theme-blue-light-spheres.jpg");
+
+    color-scheme: light;
+  }
+  .theme-blue.dark {
+    --primary: 201 78% 62%;
+    --primary-light: 201 78% 72%;
+    --primary-dark: 201 78% 52%;
+
+    --secondary: 191 95% 51%;
+    --secondary-light: 191 95% 61%;
+    --secondary-dark: 191 95% 41%;
+
+    --accent-1: 136 44% 54%;
+    --accent-1-light: 136 44% 64%;
+    --accent-1-dark: 136 44% 44%;
+
+    --accent-2: 85 44% 54%;
+    --accent-2-light: 85 44% 64%;
+    --accent-2-dark: 85 44% 44%;
+
+    --accent-3: 32 84% 70%;
+    --accent-3-light: 32 84% 80%;
+    --accent-3-dark: 32 84% 60%;
+
+    --accent-4: 359 82% 75%;
+    --accent-4-light: 359 82% 85%;
+    --accent-4-dark: 359 82% 65%;
+
+    --accent-5: 311 77% 65%;
+    --accent-5-light: 311 77% 75%;
+    --accent-5-dark: 311 77% 55%;
+
+    --accent-6: 272 87% 71%;
+    --accent-6-light: 272 87% 81%;
+    --accent-6-dark: 272 87% 61%;
+
+    --bg-waves: url("/images/backgrounds/waves-dark.jpg");
+    --bg-spheres: url("/images/backgrounds/theme-blue-dark-spheres.jpg");
+    color-scheme: dark;
+  }
+}

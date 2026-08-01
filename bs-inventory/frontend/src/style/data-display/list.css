@@ -1,0 +1,54 @@
+/* --------------------------- */
+/* List */
+/* --------------------------- */
+
+@layer style {
+  .MuiListItemButton-root {
+    @apply font-body my-0.5 rounded-sm px-4 py-2 text-start text-base leading-5 font-medium tracking-normal normal-case shadow-none;
+
+    &:hover {
+      @apply bg-grey-500/10 text-text-primary;
+    }
+
+    &:active,
+    &.active {
+      @apply bg-grey-500/15 text-primary;
+    }
+
+    &.Mui-selected,
+    &[aria-selected="true"] {
+      @apply bg-grey-500/10! text-primary;
+    }
+
+    &.Mui-focused,
+    &.Mui-focusVisible {
+      @apply outline-primary/40 bg-transparent! outline-2 -outline-offset-2;
+    }
+
+    .MuiListItemText-root {
+      @apply m-0;
+    }
+  }
+
+  .MuiListItem-padding {
+    @apply ps-4 pe-4;
+  }
+
+  .MuiListItemAvatar-root {
+    @apply min-w-0;
+  }
+
+  .MuiListItemSecondaryAction-root {
+    @apply rtl:right-[unset] rtl:left-4;
+  }
+
+  .MuiList-dense {
+    .MuiButtonBase-root {
+      @apply font-body my-0.25 rounded-xs px-4 py-1.5 text-base leading-5 font-medium tracking-normal normal-case shadow-none;
+
+      .MuiTypography-root {
+        @apply font-body text-base leading-5 font-medium tracking-normal normal-case shadow-none;
+      }
+    }
+  }
+}

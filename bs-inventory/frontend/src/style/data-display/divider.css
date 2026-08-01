@@ -1,0 +1,22 @@
+/* --------------------------- */
+/* Divider */
+/* --------------------------- */
+
+@layer style {
+  .MuiDivider-root {
+    @apply border-grey-100 my-2;
+
+    &.large {
+      @apply my-4;
+    }
+  }
+
+  .MuiDivider-withChildren:after,
+  .MuiDivider-withChildren:before {
+    @apply border-grey-100;
+  }
+
+  .MuiDivider-wrapper {
+    @apply mx-8;
+  }
+}

@@ -1,0 +1,85 @@
+/* --------------------------- */
+/* Vidstack - Video Player */
+/* --------------------------- */
+
+.plyr {
+  @apply rounded-lg!;
+
+  .plyr__control svg {
+    @apply h-5 w-5;
+  }
+
+  .plyr__controls__item.plyr__control,
+  .plyr__control {
+    @apply rounded-md p-2;
+
+    svg {
+      @apply fill-transparent;
+    }
+
+    &:hover {
+      @apply bg-primary-light;
+    }
+  }
+
+  &.plyr--video .plyr__control:focus-visible,
+  &.plyr--video .plyr__control:hover,
+  &.plyr--video .plyr__control[data-hocus],
+  &.plyr--video .plyr__control[role="button"][aria-expanded="true"] {
+    @apply bg-primary-light;
+  }
+
+  .plyr__control.plyr__control--overlaid {
+    @apply bg-primary px-6 py-2;
+    &:hover {
+      @apply bg-primary-light;
+    }
+  }
+
+  .plyr__slider .plyr__slider__track {
+    @apply text-primary!;
+  }
+
+  .plyr__menu__container {
+    @apply bg-background-paper rounded-lg!;
+
+    .plyr__control {
+      @apply text-text-primary rounded-sm!;
+    }
+  }
+
+  .plyr__menu__container .plyr__control[role="menuitemradio"]:focus-visible:before,
+  .plyr__menu__container .plyr__control[role="menuitemradio"][data-focus]:before,
+  .plyr__menu__container .plyr__control[role="menuitemradio"]:hover:before {
+    @apply bg-grey-50!;
+  }
+
+  .plyr__menu__container .plyr__control[role="menuitemradio"][aria-checked="true"]:before {
+    @apply bg-primary!;
+  }
+
+  .plyr__tooltip {
+    @apply bg-background-paper text-text-primary rounded-md px-3 py-1 text-sm;
+  }
+
+  .plyr__menu__container:after,
+  .plyr__tooltip:before {
+    @apply border-t-background-paper!;
+  }
+
+  .plyr__menu__container .plyr__control--back:before {
+    @apply bg-transparent! shadow-none!;
+  }
+
+  .plyr__poster {
+    @apply bg-background-paper;
+  }
+}
+
+.media-player:not([data-started]) .plyr .plyr__controls {
+  @apply pointer-events-none! opacity-0!;
+}
+
+.media-player:not([data-started]) video {
+  @apply opacity-0!;
+}

@@ -1,0 +1,132 @@
+/* --------------------------- */
+/* Fab */
+/* --------------------------- */
+
+@layer style {
+  .MuiFab-root {
+    @apply shadow-darker-sm h-auto min-h-0 w-auto min-w-0;
+    &:focus {
+      @apply shadow-darker-sm!;
+    }
+  }
+
+  /* Sizes */
+  .MuiFab-sizeXlarge {
+    &.MuiFab-extended {
+      @apply rounded-xl px-8 py-3 text-base leading-6;
+    }
+
+    &.MuiFab-circular {
+      @apply rounded-xl px-3 py-3 text-base leading-6;
+    }
+  }
+
+  .MuiFab-sizeLarge {
+    &.MuiFab-extended {
+      @apply rounded-lg px-6 py-2 text-base leading-6;
+    }
+
+    &.MuiFab-circular {
+      @apply rounded-lg px-2 py-2 text-base leading-6;
+    }
+  }
+
+  .MuiFab-sizeMedium {
+    &.MuiFab-extended {
+      @apply rounded-md px-5 py-2 text-base leading-5;
+    }
+
+    &.MuiFab-circular {
+      @apply rounded-md px-2 py-2 text-base leading-5;
+    }
+  }
+
+  .MuiFab-sizeSmall {
+    &.MuiFab-extended {
+      @apply rounded-sm px-4 py-2 text-base leading-4;
+    }
+
+    &.MuiFab-circular {
+      @apply rounded-sm px-2 py-2 text-base leading-4;
+    }
+  }
+
+  /* Colors */
+  .MuiFab-primary.Mui-disabled {
+    @apply bg-primary text-text-contrast opacity-disabled;
+  }
+
+  .MuiFab-secondary.Mui-disabled {
+    @apply bg-secondary text-text-contrast opacity-disabled;
+  }
+
+  .MuiFab-accent-1.Mui-disabled {
+    @apply bg-accent-1 text-text-contrast opacity-disabled;
+  }
+
+  .MuiFab-accent-2.Mui-disabled {
+    @apply bg-accent-2 text-text-contrast opacity-disabled;
+  }
+
+  .MuiFab-accent-3.Mui-disabled {
+    @apply bg-accent-3 text-text-contrast opacity-disabled;
+  }
+
+  .MuiFab-accent-4.Mui-disabled {
+    @apply bg-accent-4 text-text-contrast opacity-disabled;
+  }
+
+  .MuiFab-accent-5.Mui-disabled {
+    @apply bg-accent-5 text-text-contrast opacity-disabled;
+  }
+
+  .MuiFab-accent-6.Mui-disabled {
+    @apply bg-accent-6 text-text-contrast opacity-disabled;
+  }
+
+  .MuiFab-text-primary.Mui-disabled {
+    @apply bg-text-primary text-text-contrast opacity-disabled;
+  }
+
+  .MuiFab-text-secondary.Mui-disabled {
+    @apply bg-text-secondary text-text-contrast opacity-disabled;
+  }
+
+  .MuiFab-text-disabled.Mui-disabled {
+    @apply bg-text-disabled text-text-contrast opacity-disabled;
+  }
+
+  .MuiFab-error.Mui-disabled {
+    @apply bg-error text-text-contrast opacity-disabled;
+  }
+
+  .MuiFab-warning.Mui-disabled {
+    @apply bg-warning text-text-contrast opacity-disabled;
+  }
+
+  .MuiFab-info.Mui-disabled {
+    @apply bg-info text-text-contrast opacity-disabled;
+  }
+
+  .MuiFab-success.Mui-disabled {
+    @apply bg-success text-text-contrast opacity-disabled;
+  }
+
+  .MuiFab-default {
+    @apply text-text-primary;
+
+    &:hover {
+      @apply text-primary;
+    }
+  }
+
+  .MuiSpeedDial-fab[aria-expanded="true"] {
+    svg {
+      @apply rotate-45 transition-transform;
+    }
+  }
+
+  .MuiSpeedDial-actions .MuiFab-root {
+    @apply m-1;
+  }
+}

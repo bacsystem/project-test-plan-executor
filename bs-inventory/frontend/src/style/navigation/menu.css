@@ -1,0 +1,74 @@
+/* --------------------------- */
+/* Menu */
+/* --------------------------- */
+
+@layer style {
+  /* Menu and Autocomplete containers */
+  .MuiMenu-paper {
+    @apply bg-background-paper shadow-darker-sm! outline-grey-50 rounded-lg px-2 py-2 outline-1;
+
+    &:empty {
+      @apply m-0! border-none! p-0! outline-hidden!;
+    }
+  }
+
+  /* Outlined class  */
+  .MuiMenu-root.outlined .MuiMenu-paper {
+    @apply outline-primary/40 mt-1 mb-1 rounded-lg outline-2 -outline-offset-1;
+  }
+
+  /* Menu  items */
+  .MuiMenuItem-root {
+    @apply font-body my-0.5 min-h-auto! rounded-sm px-4 py-2 text-base leading-5 font-medium tracking-normal normal-case shadow-none;
+
+    &:hover {
+      @apply bg-grey-500/10 text-text-primary;
+    }
+
+    &:active,
+    &.active {
+      @apply bg-grey-500/15 text-primary;
+    }
+
+    &.Mui-selected,
+    &[aria-selected="true"] {
+      @apply bg-grey-500/10! text-primary;
+    }
+
+    &.Mui-focused,
+    &.Mui-focusVisible {
+      @apply bg-grey-50!;
+    }
+  }
+
+  /* List group titles */
+  .MuiListSubheader-root {
+    @apply font-body my-0.5 rounded-sm px-4 py-2 text-sm leading-5 font-semibold tracking-normal normal-case shadow-none;
+  }
+
+  .MuiListItemIcon-root {
+    @apply me-2 min-w-0! text-current;
+  }
+
+  .MuiListItemIcon-root:not(:has(svg)):not(:has(.MuiAvatar-root)) {
+    @apply w-5;
+  }
+
+  .MuiList-root {
+    @apply p-0;
+  }
+
+  div + .MuiListItemIcon-root {
+    @apply ms-0 me-0;
+  }
+
+  .MuiList-dense {
+    .MuiMenuItem-root {
+      @apply min-h-0 rounded-sm px-3.5 py-1.5;
+    }
+
+    .MuiTypography-body2 {
+      @apply text-sm leading-4;
+    }
+  }
+}

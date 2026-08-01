@@ -1,0 +1,81 @@
+/* --------------------------- */
+/* Tree View */
+/* --------------------------- */
+
+@layer style {
+  .MuiTreeItem-label {
+    @apply font-body text-base leading-5 font-normal tracking-normal;
+  }
+
+  .MuiTreeItem-content,
+  .MuiTreeItem2-content {
+    @apply mb-1 rounded-xs px-2 py-1.5 transition-all;
+    padding-inline-start: calc(0.5rem + var(--TreeView-itemChildrenIndentation) * var(--TreeView-itemDepth));
+    &:hover {
+      @apply bg-grey-25;
+    }
+
+    &.Mui-selected,
+    &.Mui-focused,
+    &[data-selected],
+    &[data-focused] {
+      @apply bg-grey-25 text-primary;
+    }
+
+    &[data-editing] input {
+      @apply -ms-0.5;
+    }
+
+    .MuiCheckbox-root {
+      @apply me-1;
+    }
+  }
+
+  .MuiRichTreeView-root > .MuiTreeItem-root,
+  .MuiRichTreeViewPro-root > .MuiTreeItem-root,
+  .MuiSimpleTreeView-root > .MuiTreeItem-root {
+    > .MuiTreeItem-content,
+    > .MuiTreeItem2-content {
+      @apply ps-2;
+    }
+  }
+
+  .MuiSimpleTreeView-root.small,
+  .MuiRichTreeView-root.small {
+    .MuiTreeItem-label {
+      @apply font-body text-sm leading-5 font-normal tracking-normal;
+    }
+
+    .MuiTreeItem-content {
+      @apply rounded-2xs mb-0.5 px-1 py-1;
+    }
+  }
+
+  .bordered.MuiSimpleTreeView-root,
+  .bordered.MuiRichTreeView-root {
+    .MuiCollapse-wrapper {
+      @apply border-grey-200 ms-4 border-s border-dashed ps-0;
+    }
+  }
+
+  .MuiSimpleTreeView-root li[aria-selected="true"] > .MuiTreeItem2-content,
+  .MuiRichTreeView-root li[aria-selected="true"] > .MuiTreeItem2-content {
+    @apply bg-grey-25 text-primary;
+  }
+
+  .MuiTreeItem-labelInput {
+    @apply font-body h-5 rounded-[0.5rem] px-1 text-base;
+  }
+
+  div[class*="MuiTreeItemDragAndDropOverlay-root"] {
+    @apply border-primary/50 rounded-none;
+  }
+
+  .MuiRichTreeViewPro-itemContent:not([data-expanded]) .MuiTreeItem-iconContainer,
+  .MuiSimpleTreeView-itemContent:not([data-expanded]) .MuiTreeItem-iconContainer,
+  .MuiRichTreeView-itemContent:not([data-expanded]) .MuiTreeItem-iconContainer {
+    svg {
+      @apply rtl:rotate-180;
+    }
+  }
+}

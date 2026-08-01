@@ -1,0 +1,95 @@
+/* --------------------------- */
+/* Link */
+/* --------------------------- */
+
+@layer style {
+  .MuiLink-underlineAlways {
+    @apply underline-offset-2 transition-all duration-300;
+    &:hover {
+      @apply decoration-transparent;
+    }
+  }
+
+  .link-primary {
+    @apply text-primary underline underline-offset-2 transition-all duration-300;
+    &:hover {
+      @apply decoration-transparent;
+    }
+  }
+
+  .link-secondary {
+    @apply text-secondary underline underline-offset-2 transition-all duration-300;
+    &:hover {
+      @apply decoration-transparent;
+    }
+  }
+
+  .link-text-primary {
+    @apply text-text-primary underline underline-offset-2 transition-all duration-300;
+    &:hover {
+      @apply decoration-transparent;
+    }
+  }
+
+  .link-text-secondary {
+    @apply text-text-secondary underline underline-offset-2 transition-all duration-300;
+    &:hover {
+      @apply decoration-transparent;
+    }
+  }
+
+  .link-text-disabled {
+    @apply text-text-disabled underline underline-offset-2 transition-all duration-300;
+    &:hover {
+      @apply decoration-transparent;
+    }
+  }
+
+  .link-info {
+    @apply text-info underline underline-offset-2 transition-all duration-300;
+    &:hover {
+      @apply decoration-transparent;
+    }
+  }
+
+  .link-error {
+    @apply text-error underline underline-offset-2 transition-all duration-300;
+    &:hover {
+      @apply decoration-transparent;
+    }
+  }
+
+  .link-success {
+    @apply text-success underline underline-offset-2 transition-all duration-300;
+    &:hover {
+      @apply decoration-transparent;
+    }
+  }
+
+  .link-warning {
+    @apply text-warning underline underline-offset-2 transition-all duration-300;
+    &:hover {
+      @apply decoration-transparent;
+    }
+  }
+
+  .link-button {
+    @apply font-body text-base leading-6 font-medium tracking-normal normal-case;
+  }
+
+  .link-body2 {
+    @apply font-body text-sm leading-6 font-medium tracking-normal normal-case;
+  }
+
+  .link-underline-none {
+    @apply decoration-transparent;
+  }
+
+  .link-underline-hover,
+  .MuiLink-underlineHover {
+    @apply underline decoration-transparent underline-offset-2 transition-all duration-300;
+    &:hover {
+      @apply decoration-inherit;
+    }
+  }
+}

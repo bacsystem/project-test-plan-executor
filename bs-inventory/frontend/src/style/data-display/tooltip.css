@@ -1,0 +1,107 @@
+/* --------------------------- */
+/* Tooltip */
+/* --------------------------- */
+
+@layer style {
+  .MuiTooltip-tooltip {
+    @apply border-grey-200 bg-background-paper font-body text-text-primary shadow-darker-sm m-0! rounded-sm border border-solid px-3 py-1.5 text-sm font-semibold;
+
+    &.large {
+      @apply rounded-sm px-4.75 py-[calc(.5rem-1px)] text-base leading-4;
+    }
+  }
+
+  .MuiTooltip-popper[data-popper-placement*="right"],
+  .MuiTooltip-popper[data-popper-placement*="left"] {
+    @apply mx-1!;
+  }
+
+  .MuiTooltip-popper[data-popper-placement*="top"],
+  .MuiTooltip-popper[data-popper-placement*="bottom"] {
+    @apply my-1!;
+  }
+
+  .MuiTooltip-popper .MuiTooltip-tooltip span {
+    @apply inline-block;
+  }
+
+  .MuiTooltip-arrow {
+    @apply text-background-paper h-2! w-2!;
+  }
+
+  .MuiTooltip-popper[data-popper-placement*="right"] {
+    @apply ml-2! rtl:mr-2!;
+    .MuiTooltip-arrow {
+      @apply top-1/2! ms-0 transform-[translate(0,-50%)]! overflow-visible bg-transparent rtl:right-[unset] rtl:left-0;
+
+      &:after,
+      &:before {
+        @apply pointer-events-none absolute top-1/2 right-full h-0 w-0 origin-["initial"] transform-none border-solid border-transparent content-[""];
+      }
+
+      &:after {
+        @apply border-r-background-paper -mt-1 border-4 border-solid border-transparent bg-transparent;
+      }
+      &:before {
+        @apply border-r-grey-200 -mt-[5px] border-[5px] border-solid border-transparent bg-transparent;
+      }
+    }
+  }
+
+  .MuiTooltip-popper[data-popper-placement*="left"] {
+    @apply mr-2! rtl:ml-2!;
+    .MuiTooltip-arrow {
+      @apply top-1/2! me-0 transform-[translate(0,-50%)]! overflow-visible bg-transparent rtl:right-0;
+
+      &:after,
+      &:before {
+        @apply pointer-events-none absolute top-1/2 left-full h-0 w-0 origin-["initial"] transform-none border-solid border-transparent content-[""];
+      }
+
+      &:after {
+        @apply border-l-background-paper -mt-1 border-4 border-solid border-transparent bg-transparent;
+      }
+      &:before {
+        @apply border-l-grey-200 -mt-[5px] border-[5px] border-solid border-transparent bg-transparent;
+      }
+    }
+  }
+
+  .MuiTooltip-popper[data-popper-placement*="top"] {
+    @apply mb-2!;
+    .MuiTooltip-arrow {
+      @apply left-1/2! mb-0 transform-[translate(-50%,0)]! overflow-visible bg-transparent;
+
+      &:after,
+      &:before {
+        @apply pointer-events-none absolute top-full left-1/2 h-0 w-0 origin-["initial"] transform-none border-solid border-transparent content-[""];
+      }
+
+      &:after {
+        @apply border-t-background-paper -ml-1 border-4 border-solid border-transparent bg-transparent rtl:-mr-1 rtl:ml-0;
+      }
+      &:before {
+        @apply border-t-grey-200 -ml-[5px] border-[5px] border-solid border-transparent bg-transparent rtl:-mr-[5px] rtl:ml-0;
+      }
+    }
+  }
+
+  .MuiTooltip-popper[data-popper-placement*="bottom"] {
+    @apply mt-2!;
+    .MuiTooltip-arrow {
+      @apply left-1/2! mt-0 transform-[translate(-50%,0)]! overflow-visible bg-transparent;
+
+      &:after,
+      &:before {
+        @apply pointer-events-none absolute bottom-full left-1/2 h-0 w-0 origin-["initial"] transform-none border-solid border-transparent content-[""];
+      }
+
+      &:after {
+        @apply border-b-background-paper -ml-1 border-4 border-solid border-transparent bg-transparent rtl:-mr-1 rtl:ml-0;
+      }
+      &:before {
+        @apply border-b-grey-200 -ml-[5px] border-[5px] border-solid border-transparent bg-transparent rtl:-mr-[5px] rtl:ml-0;
+      }
+    }
+  }
+}

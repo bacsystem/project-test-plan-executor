@@ -1,0 +1,67 @@
+/* --------------------------- */
+/* Chart */
+/* --------------------------- */
+
+@layer style {
+  .MuiChartsAxis-line,
+  .MuiChartsAxis-tick {
+    @apply stroke-grey-200;
+  }
+
+  .MuiChartsAxisHighlight-root {
+    @apply stroke-grey-200 fill-grey-500;
+  }
+
+  .MuiChartsAxis-tickLabel {
+    @apply fill-text-secondary font-body! text-sm;
+  }
+
+  .MuiChartsSurface-root text,
+  .MuiChartsLegend-root,
+  .MuiChartsAxis-label {
+    @apply font-body! text-text-secondary;
+  }
+
+  .radar-chart text,
+  .MuiChartsAxis-label text {
+    @apply font-body! fill-text-secondary;
+  }
+
+  .radar-label-center text {
+    @apply text-anchor-middle dominant-baseline-hanging;
+  }
+
+  .MuiChartsLegend-label {
+    @apply ms-0.5 me-1.5;
+  }
+
+  .MuiChartsGrid-line {
+    @apply stroke-grey-50;
+  }
+
+  .MuiBarElement-root,
+  .MuiPieArc-root {
+    @apply stroke-2;
+  }
+
+  .MuiRadarGrid-radial,
+  .MuiRadarGrid-divider {
+    @apply stroke-opacity-100 stroke-grey-100!;
+  }
+
+  .MuiRadarSeriesPlot-area {
+    @apply fill-opacity-10;
+  }
+
+  .MuiRadarAxisHighlight-line {
+    @apply stroke-grey-200 stroke-2;
+  }
+
+  .MuiRadarAxisHighlight-dot {
+    @apply circle-radius-5 opacity-100;
+  }
+
+  .MuiChartsLegend-mark .custom-chart-mark {
+    @apply -mt-0.5;
+  }
+}

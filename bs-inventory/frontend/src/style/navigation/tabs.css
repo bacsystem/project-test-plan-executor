@@ -1,0 +1,96 @@
+/* --------------------------- */
+/* Tabs */
+/* --------------------------- */
+
+@layer style {
+  .MuiTabs-list {
+    @apply gap-1;
+  }
+
+  .MuiTabs-indicator {
+    @apply hidden;
+  }
+
+  .MuiTab-iconWrapper.MuiTab-icon {
+    @apply ms-0 me-1;
+  }
+  .MuiTabs-root {
+    @apply mb-5 min-h-0;
+  }
+
+  .MuiTabs-list {
+    @apply gap-1;
+  }
+
+  .MuiTabPanel-root {
+    @apply p-4;
+  }
+
+  .MuiTabs-scrollButtons.Mui-disabled {
+    @apply opacity-disabled;
+  }
+
+  .MuiButtonBase-root.MuiTab-root {
+    @apply border-grey-200 text-text-primary h-auto min-h-0 min-w-0 rounded-md border border-solid px-4.75 py-[calc(.5rem-1px)] text-base leading-5;
+
+    &:not(.Mui-selected):hover {
+      @apply bg-grey-500/10;
+    }
+
+    &.icon-only {
+      @apply px-[calc(.5rem-1px)];
+    }
+
+    &.Mui-selected {
+      @apply border border-solid;
+    }
+
+    &.Mui-selected.MuiTab-textColorPrimary {
+      @apply border-primary text-primary;
+    }
+
+    &.Mui-selected.MuiTab-textColorSecondary {
+      @apply border-secondary text-secondary;
+    }
+
+    &.Mui-selected.MuiTab-textColorAccent-1 {
+      @apply border-accent-1 text-accent-1;
+    }
+
+    &.Mui-disabled {
+      @apply opacity-disabled;
+    }
+
+    /* Small */
+    &.small {
+      @apply rounded-sm px-3.75 py-[calc(.5rem-1px)] text-base leading-4;
+
+      &.icon-only {
+        @apply px-[calc(.5rem-1px)];
+      }
+    }
+
+    /* Tiny */
+    &.tiny {
+      @apply rounded-xs px-3.25 py-[calc(0.375rem-1px)] text-sm leading-4;
+
+      &.icon-only {
+        @apply px-[calc(.375rem-1px)];
+      }
+    }
+  }
+
+  .MuiTabScrollButton-root.MuiTabScrollButton-horizontal:not(.Mui-disabled) {
+    &:hover {
+      @apply text-primary;
+    }
+  }
+
+  .MuiTabs-root:has(.MuiTabScrollButton-root) {
+    @apply -mx-4;
+  }
+
+  .MuiTabs-scroller {
+    @apply overflow-hidden;
+  }
+}

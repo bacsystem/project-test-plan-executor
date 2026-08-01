@@ -1,0 +1,32 @@
+/* --------------------------- */
+/* Progress */
+/* --------------------------- */
+
+@layer style {
+  .MuiCircularProgress-root {
+    &.small {
+      @apply h-4! w-4!;
+    }
+
+    &.medium {
+      @apply h-5! w-5!;
+    }
+
+    &.large {
+      @apply h-6! w-6!;
+    }
+
+    &.xlarge {
+      @apply h-8! w-8!;
+    }
+  }
+
+  .MuiLinearProgress-root {
+    @apply bg-grey-50;
+  }
+
+  .MuiLinearProgress-root,
+  .MuiLinearProgress-bar {
+    @apply rounded-2xl;
+  }
+}

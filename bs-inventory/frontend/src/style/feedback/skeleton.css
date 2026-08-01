@@ -1,0 +1,25 @@
+/* --------------------------- */
+/* Skeleton */
+/* --------------------------- */
+
+@layer style {
+  .MuiSkeleton-root {
+    @apply bg-grey-50 rounded-sm;
+  }
+
+  .MuiSkeleton-circular {
+    @apply rounded-full;
+  }
+
+  .MuiSkeleton-rounded {
+    @apply rounded-sm;
+  }
+
+  .MuiSkeleton-rectangular {
+    @apply rounded-sm;
+  }
+
+  .MuiSkeleton-text {
+    @apply rounded-[0.375rem];
+  }
+}

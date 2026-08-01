@@ -1,0 +1,93 @@
+/* --------------------------- */
+/* Avatar */
+/* --------------------------- */
+
+@layer style {
+  .MuiAvatar-root {
+    @apply bg-grey-300 font-body h-9 w-9 border-0! text-sm font-semibold outline-2 -outline-offset-1 outline-transparent;
+
+    &.large {
+      @apply h-10 w-10;
+
+      &.MuiAvatar-circular {
+        @apply rounded-lg;
+      }
+    }
+
+    &.medium {
+      @apply h-9 w-9;
+
+      &.MuiAvatar-circular {
+        @apply rounded-md;
+      }
+    }
+
+    &.small {
+      @apply h-8 w-8 text-xs;
+
+      &.MuiAvatar-circular {
+        @apply rounded-sm;
+      }
+    }
+
+    &.tiny {
+      @apply h-7 w-7 text-xs;
+
+      &.MuiAvatar-circular {
+        @apply rounded-xs;
+      }
+    }
+
+    &.nano {
+      @apply h-4 w-4 text-xs;
+
+      &.MuiAvatar-circular {
+        @apply rounded-4xs;
+      }
+    }
+  }
+
+  .MuiAvatar-circular {
+    @apply rounded-md;
+  }
+
+  .MuiAvatar-rounded {
+    @apply rounded-sm;
+  }
+
+  .MuiAvatarGroup-root {
+    &.large .MuiAvatar-root {
+      @apply h-10 w-10;
+    }
+
+    &.medium .MuiAvatar-root {
+      @apply h-9 w-9;
+    }
+
+    &.small .MuiAvatar-root {
+      @apply h-8 w-8 text-xs;
+    }
+
+    &.tiny .MuiAvatar-root {
+      @apply h-7 w-7 text-xs;
+    }
+
+    &.nano .MuiAvatar-root {
+      @apply h-4 w-4 text-xs;
+    }
+  }
+
+  .MuiAvatarGroup-avatar {
+    @apply outline-background-paper outline-2 -outline-offset-1;
+  }
+
+  html[dir="rtl"] {
+    .MuiAvatarGroup-root .MuiAvatar-root:last-child {
+      margin-left: var(--AvatarGroup-spacing, -8px);
+    }
+
+    .MuiAvatarGroup-root .MuiAvatar-root:first-child {
+      margin-left: 0;
+    }
+  }
+}

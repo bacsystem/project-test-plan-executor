@@ -1,0 +1,217 @@
+/* --------------------------- */
+/* Common variables for the themes */
+/* --------------------------- */
+
+@layer base {
+  :root {
+    /* --------- Globals --------- */
+    --main-padding: 16px;
+    /* --------- Globals --------- */
+
+    /* --------- Background Colors --------- */
+    --background: 0 0% 100%;
+    --background-paper: 0 0% 100%;
+    /* --------- Background Colors --------- */
+
+    /* --------- Grey Scales --------- */
+    --grey-20: 0 0% 98%;
+    --grey-25: 0 0% 97%;
+    --grey-50: 0 0% 95%;
+    --grey-100: 0 0% 91%;
+    --grey-200: 0 0% 87%;
+    --grey-300: 0 0% 83%;
+    --grey-400: 0 0% 79%;
+    --grey-500: 0 0% 75%;
+    --grey-600: 0 0% 71%;
+    --grey-700: 0 0% 67%;
+    --grey-800: 0 0% 63%;
+    --grey-900: 0 0% 59%;
+    /* --------- Grey Scales --------- */
+
+    /* --------- Text Colors --------- */
+    --text-primary: 0 0% 30%;
+    --text-primary-light: 0 0% 40%;
+    --text-primary-dark: 0 0% 20%;
+
+    --text-secondary: 0 0% 60%;
+    --text-secondary-light: 0 0% 70%;
+    --text-secondary-dark: 0 0% 50%;
+
+    --text-disabled: 0 0% 75%;
+    --text-disabled-light: 0 0% 85%;
+    --text-disabled-dark: 0 0% 65%;
+
+    --text-muted: 0 0% 75%;
+    --text-muted-light: 0 0% 85%;
+    --text-muted-dark: 0 0% 65%;
+
+    --text-contrast: 0 0% 100%;
+    --text-contrast-alternative: 0 0% 100%;
+    /* --------- Text Colors --------- */
+
+    /* --------- Feedback Colors --------- */
+    --error: 347 64% 55%;
+    --error-light: 347 64% 65%;
+    --error-dark: 347 64% 45%;
+
+    --info: 193 72% 58%;
+    --info-light: 193 72% 68%;
+    --info-dark: 193 72% 48%;
+
+    --success: 108 45% 58%;
+    --success-light: 108 45% 68%;
+    --success-dark: 108 45% 48%;
+
+    --warning: 25 82% 60%;
+    --warning-light: 25 82% 70%;
+    --warning-dark: 25 82% 50%;
+
+    --rating: 35 99% 54%;
+    --rating-light: 35 99% 64%;
+    --rating-dark: 35 99% 44%;
+    /* --------- Feedback Colors --------- */
+
+    /* --------- Shadows --------- */
+    --shadow-inside: inset 0px 0px 160px 160px rgba(255, 255, 255, var(--inner-shadow-opacity));
+
+    --shadow-2xs: 0px 3px 4px rgba(0, 0, 0, 0.03);
+    --shadow-xs: 0px 3px 8px rgba(0, 0, 0, 0.03);
+    --shadow-sm: 0px 3px 12px rgba(0, 0, 0, 0.03);
+    --shadow-md: 0px 3px 16px rgba(0, 0, 0, 0.03);
+    --shadow-lg: 0px 3px 20px rgba(0, 0, 0, 0.03);
+    --shadow-xl: 0px 3px 24px rgba(0, 0, 0, 0.03);
+    --shadow-2xl: 0px 3px 28px rgba(0, 0, 0, 0.03);
+
+    --shadow-darker-2xs: 0px 3px 4px rgba(0, 0, 0, 0.06);
+    --shadow-darker-xs: 0px 3px 8px rgba(0, 0, 0, 0.06);
+    --shadow-darker-sm: 0px 3px 12px rgba(0, 0, 0, 0.06);
+    --shadow-darker-md: 0px 3px 16px rgba(0, 0, 0, 0.06);
+    --shadow-darker-lg: 0px 3px 20px rgba(0, 0, 0, 0.06);
+    --shadow-darker-xl: 0px 3px 24px rgba(0, 0, 0, 0.06);
+    --shadow-darker-2xl: 0px 3px 28px rgba(0, 0, 0, 0.06);
+    /* --------- Shadows --------- */
+
+    /* --------- Light Line --------- */
+    --line: hsl(0, 0%, 100%, 1);
+    /* --------- Light Line --------- */
+
+    /* --------- Border Radius --------- */
+    --border-radius-4xs: 0.5rem;
+    --border-radius-3xs: 0.65rem;
+    --border-radius-2xs: 0.75rem;
+    --border-radius-xs: 0.785rem;
+    --border-radius-sm: 0.875rem;
+    --border-radius-md: 1rem;
+    --border-radius-lg: 1.125rem;
+    --border-radius-xl: 1.375rem;
+    --border-radius-2xl: 1.5rem;
+    --border-radius-3xl: 1.75rem;
+    --border-radius-4xl: 2rem;
+
+    --layout-duration: 0ms;
+
+    color-scheme: light;
+  }
+  .dark {
+    /* --------- Background Colors --------- */
+    --background: 226 4% 17%;
+    --background-paper: 226 3% 15%;
+    /* --------- Background Colors --------- */
+
+    /* --------- Grey Scales --------- */
+    --grey-20: 226 3% 16%;
+    --grey-25: 226 3% 17%;
+    --grey-50: 226 3% 18%;
+    --grey-100: 226 3% 19%;
+    --grey-200: 226 3% 24%;
+    --grey-300: 226 3% 27%;
+    --grey-400: 226 3% 30%;
+    --grey-500: 226 3% 33%;
+    --grey-600: 226 3% 36%;
+    --grey-700: 226 3% 39%;
+    --grey-800: 226 3% 42%;
+    --grey-900: 226 3% 45%;
+    /* --------- Grey Scales --------- */
+
+    /* --------- Text Colors --------- */
+    --text-primary: 0 0% 90%;
+    --text-primary-light: 0 0% 100%;
+    --text-primary-dark: 0 0% 80%;
+
+    --text-secondary: 0 0% 60%;
+    --text-secondary-light: 0 0% 70%;
+    --text-secondary-dark: 0 0% 50%;
+
+    --text-disabled: 0 0% 40%;
+    --text-disabled-light: 0 0% 50%;
+    --text-disabled-dark: 0 0% 30%;
+
+    --text-muted: 0 0% 40%;
+    --text-muted-light: 0 0% 50%;
+    --text-muted-dark: 0 0% 30%;
+
+    --text-contrast: 0 0% 100%;
+    --text-contrast-alternative: 0 0% 25%;
+    /* --------- Text Colors --------- */
+
+    /* --------- Feedback Colors --------- */
+    --error: 347 64% 55%;
+    --error-light: 347 64% 65%;
+    --error-dark: 347 64% 45%;
+
+    --info: 193 72% 58%;
+    --info-light: 193 72% 68%;
+    --info-dark: 193 72% 48%;
+
+    --success: 108 45% 58%;
+    --success-light: 108 45% 68%;
+    --success-dark: 108 45% 48%;
+
+    --warning: 25 82% 60%;
+    --warning-light: 25 82% 70%;
+    --warning-dark: 25 82% 50%;
+
+    --rating: 35 99% 54%;
+    --rating-light: 35 99% 64%;
+    --rating-dark: 35 99% 44%;
+    /* --------- Feedback Colors --------- */
+
+    /* --------- Shadows --------- */
+    --shadow-inside: inset 0px 0px 160px 160px rgba(0, 0, 0, var(--inner-shadow-opacity));
+
+    --shadow-2xs: 0px 3px 4px rgba(0, 0, 0, 0.1);
+    --shadow-xs: 0px 3px 8px rgba(0, 0, 0, 0.1);
+    --shadow-sm: 0px 3px 12px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0px 3px 16px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0px 3px 20px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0px 3px 24px rgba(0, 0, 0, 0.1);
+    --shadow-2xl: 0px 3px 28px rgba(0, 0, 0, 0.1);
+
+    --shadow-darker-2xs: 0px 3px 4px rgba(0, 0, 0, 0.2);
+    --shadow-darker-xs: 0px 3px 8px rgba(0, 0, 0, 0.2);
+    --shadow-darker-sm: 0px 3px 12px rgba(0, 0, 0, 0.2);
+    --shadow-darker-md: 0px 3px 16px rgba(0, 0, 0, 0.2);
+    --shadow-darker-lg: 0px 3px 20px rgba(0, 0, 0, 0.2);
+    --shadow-darker-xl: 0px 3px 24px rgba(0, 0, 0, 0.2);
+    --shadow-darker-2xl: 0px 3px 28px rgba(0, 0, 0, 0.2);
+    /* --------- Shadows --------- */
+
+    /* --------- Light Line --------- */
+    --line: hsl(0, 0%, 100%, 0.04);
+    /* --------- Light Line --------- */
+
+    color-scheme: dark;
+  }
+}
+
+@media only screen and (max-width: 960px) {
+  :root {
+    --main-padding: 12px;
+  }
+}
+
+@media only screen and (max-width: 540px) {
+  :root {
+    --main-padding: 8px;
+  }
+}

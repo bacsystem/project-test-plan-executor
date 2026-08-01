@@ -1,0 +1,82 @@
+/* --------------------------- */
+/* Theme Orange */
+/* --------------------------- */
+
+@layer base {
+  .theme-orange {
+    --primary: 25 94% 57%;
+    --primary-light: 25 94% 67%;
+    --primary-dark: 25 94% 47%;
+
+    --secondary: 41 98% 51%;
+    --secondary-light: 41 98% 61%;
+    --secondary-dark: 41 98% 41%;
+
+    --accent-1: 110 49% 49%;
+    --accent-1-light: 110 49% 59%;
+    --accent-1-dark: 110 49% 39%;
+
+    --accent-2: 168 56% 55%;
+    --accent-2-light: 168 56% 65%;
+    --accent-2-dark: 168 56% 45%;
+
+    --accent-3: 216 89% 63%;
+    --accent-3-light: 216 89% 73%;
+    --accent-3-dark: 216 89% 53%;
+
+    --accent-4: 262 76% 63%;
+    --accent-4-light: 262 76% 73%;
+    --accent-4-dark: 262 76% 53%;
+
+    --accent-5: 306 68% 65%;
+    --accent-5-light: 306 68% 75%;
+    --accent-5-dark: 306 68% 55%;
+
+    --accent-6: 336 90% 58%;
+    --accent-6-light: 336 90% 68%;
+    --accent-6-dark: 336 90% 48%;
+
+    --bg-waves: url("/images/backgrounds/waves-light.jpg");
+    --bg-spheres: url("/images/backgrounds/theme-orange-light-spheres.jpg");
+
+    color-scheme: light;
+  }
+  .theme-orange.dark {
+    --primary: 25 89% 62%;
+    --primary-light: 25 89% 72%;
+    --primary-dark: 25 89% 52%;
+
+    --secondary: 41 93% 56%;
+    --secondary-light: 41 93% 66%;
+    --secondary-dark: 41 93% 46%;
+
+    --accent-1: 110 44% 54%;
+    --accent-1-light: 110 44% 64%;
+    --accent-1-dark: 110 44% 44%;
+
+    --accent-2: 168 51% 60%;
+    --accent-2-light: 168 51% 70%;
+    --accent-2-dark: 168 51% 50%;
+
+    --accent-3: 216 86% 68%;
+    --accent-3-light: 216 86% 78%;
+    --accent-3-dark: 216 86% 58%;
+
+    --accent-4: 262 71% 68%;
+    --accent-4-light: 262 71% 78%;
+    --accent-4-dark: 262 71% 58%;
+
+    --accent-5: 306 63% 70%;
+    --accent-5-light: 306 63% 80%;
+    --accent-5-dark: 306 63% 60%;
+
+    --accent-6: 336 85% 63%;
+    --accent-6-light: 336 85% 73%;
+    --accent-6-dark: 336 85% 53%;
+
+    --bg-waves: url("/images/backgrounds/waves-dark.jpg");
+    --bg-spheres: url("/images/backgrounds/theme-orange-dark-spheres.jpg");
+
+    color-scheme: dark;
+  }
+}

@@ -1,0 +1,71 @@
+/* --------------------------- */
+/* Table */
+/* --------------------------- */
+
+@layer style {
+  .MuiTableCell-root {
+    @apply font-body leading-6 tracking-normal normal-case;
+  }
+
+  .MuiTableCell-head,
+  .MuiButtonBase-root.MuiTableSortLabel-root {
+    @apply font-bold;
+  }
+
+  .MuiTableCell-root {
+    @apply border-grey-50 text-start;
+  }
+
+  .MuiTableCell-alignRight {
+    @apply text-end;
+  }
+
+  .MuiTableFooter-root .MuiTableCell-root {
+    @apply border-transparent;
+  }
+
+  .MuiTableCell-sizeMedium {
+    @apply p-3;
+  }
+
+  .MuiTableCell-sizeSmall {
+    @apply p-1.75;
+  }
+
+  .MuiTableBody-root .MuiTableRow-root {
+    &:last-child td,
+    &:last-child th {
+      @apply border-transparent;
+    }
+  }
+
+  .MuiTableHead-root .MuiTableRow-root:first-of-type {
+    .MuiTableCell-head {
+      @apply pt-0;
+    }
+  }
+
+  .MuiTableRow-root.MuiTableRow-hover:hover {
+    @apply bg-grey-25;
+  }
+
+  .MuiTable-root.no-left-padding .MuiTableRow-root {
+    .MuiTableCell-root:first-child {
+      @apply ps-0;
+    }
+  }
+
+  .MuiTable-root.no-right-padding .MuiTableRow-root {
+    .MuiTableCell-root:last-child {
+      @apply pe-0;
+    }
+  }
+
+  .MuiTablePaginationActions-root {
+    @apply m-0 ms-5;
+  }
+
+  .MuiTablePagination-select {
+    @apply m-0 me-4;
+  }
+}

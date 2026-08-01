@@ -1,0 +1,62 @@
+/* --------------------------- */
+/* Rating */
+/* --------------------------- */
+
+@layer style {
+  .MuiRating-root {
+    @apply gap-0.5;
+  }
+
+  /* Size */
+  .MuiRating-sizeSmall {
+    .MuiRating-icon {
+      @apply w-4;
+    }
+  }
+
+  .MuiRating-sizeMedium {
+    .MuiRating-icon {
+      @apply w-5;
+    }
+  }
+
+  .MuiRating-sizeLarge {
+    .MuiRating-icon {
+      @apply w-6;
+    }
+  }
+
+  /* Color */
+  .MuiRating-icon.MuiRating-iconFilled svg,
+  .MuiRating-icon.MuiRating-iconFilled svg.contained,
+  .MuiRating-icon.MuiRating-iconFilled svg.outlined {
+    @apply text-rating;
+  }
+
+  .MuiRating-icon.MuiRating-iconEmpty svg,
+  .MuiRating-icon.MuiRating-iconEmpty svg.outlined {
+    @apply text-grey-200;
+  }
+
+  .MuiRating-icon.MuiRating-iconEmpty svg.contained {
+    @apply text-grey-50;
+  }
+
+  .MuiRating-root.Mui-disabled {
+    @apply opacity-disabled;
+  }
+
+  .MuiRating-icon.MuiRating-iconEmpty svg,
+  .MuiRating-icon.MuiRating-iconEmpty svg.outlined {
+    @apply text-grey-200!;
+  }
+
+  .MuiRating-icon.MuiRating-iconEmpty svg.contained {
+    @apply text-grey-50!;
+  }
+
+  .MuiRating-decimal label,
+  .MuiRating-decimal span {
+    @apply rtl:right-0;
+  }
+}

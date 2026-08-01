@@ -1,0 +1,53 @@
+/* --------------------------- */
+/* Ds Markdown */
+/* --------------------------- */
+
+div.ds-markdown {
+  @apply font-body font-normal;
+  --dsr-bg: hsla(var(--background-paper));
+  --ds-rgb-label-1: hsla(var(--text-primary));
+  --ds-md-zoom: 1;
+  --ds-font-size-m: 0.875rem;
+
+  h1 {
+    @apply font-heading mt-6.5 mb-3.5 text-5xl font-bold;
+  }
+
+  h2 {
+    @apply font-heading mt-6 mb-3 text-4xl font-bold;
+  }
+
+  h3 {
+    @apply font-heading mt-5.5 mb-2.5 text-3xl font-bold;
+  }
+
+  h4 {
+    @apply font-heading mt-5 mb-2 text-2xl font-bold;
+  }
+
+  h5 {
+    @apply font-heading mt-4 mb-1.5 text-xl font-bold;
+  }
+
+  h6 {
+    @apply font-heading mt-3.5 mb-1 text-lg font-bold;
+  }
+
+  p {
+    @apply font-body mb-2 text-base leading-5 font-normal;
+  }
+
+  ul {
+    @apply mb-2 list-inside list-disc;
+    li {
+      @apply leading-6;
+    }
+  }
+
+  ol {
+    @apply mb-2 list-inside list-decimal;
+    li {
+      @apply leading-6;
+    }
+  }
+}

@@ -1,0 +1,170 @@
+/* --------------------------- */
+/* Pagination */
+/* --------------------------- */
+
+@layer style {
+  .MuiPaginationItem-root {
+    @apply font-body mx-0.5! flex h-auto min-h-0 font-medium tracking-normal normal-case shadow-none transition-all;
+  }
+
+  .MuiTablePagination-select {
+    @apply me-4;
+
+    .MuiSelect-select {
+      @apply pe-2;
+    }
+  }
+
+  /* Sizes */
+  .MuiPaginationItem-sizeLarge {
+    @apply h-10 rounded-lg px-2 py-2 text-base leading-6;
+
+    &.MuiPaginationItem-rounded {
+      @apply rounded-xs;
+    }
+  }
+
+  .MuiPaginationItem-sizeMedium {
+    @apply h-9 min-w-9 rounded-md px-2 py-2 text-base leading-5;
+
+    &.MuiPaginationItem-rounded {
+      @apply rounded-xs;
+    }
+  }
+
+  .MuiPaginationItem-sizeSmall {
+    @apply h-8 min-w-8 rounded-sm px-2 py-2 text-base leading-4;
+
+    &.MuiPaginationItem-rounded {
+      @apply rounded-xs;
+    }
+  }
+
+  /* Contained */
+  .MuiPagination-root {
+    .MuiButtonBase-root.MuiPaginationItem-root {
+      &:hover {
+        @apply bg-grey-25;
+      }
+
+      &.Mui-selected {
+        @apply bg-grey-25 text-primary;
+      }
+
+      &.Mui-disabled {
+        @apply opacity-disabled;
+      }
+    }
+
+    .MuiButtonBase-root.MuiPaginationItem-colorPrimary {
+      &:hover {
+        @apply bg-primary/10 text-primary;
+      }
+
+      &.Mui-selected {
+        @apply bg-primary text-text-contrast;
+      }
+
+      &.Mui-disabled {
+        @apply opacity-disabled;
+      }
+    }
+
+    .MuiButtonBase-root.MuiPaginationItem-colorSecondary {
+      &:hover {
+        @apply bg-secondary/10 text-secondary;
+      }
+
+      &.Mui-selected {
+        @apply bg-secondary text-text-contrast;
+      }
+
+      &.Mui-disabled {
+        @apply opacity-disabled;
+      }
+    }
+
+    &.surface-standard {
+      .MuiButtonBase-root.MuiPaginationItem-root {
+        @apply outline -outline-offset-1 outline-transparent!;
+        &:hover {
+          @apply bg-background-paper outline-grey-25 outline -outline-offset-1 backdrop-blur-sm;
+        }
+
+        &.Mui-selected {
+          @apply text-primary bg-background-paper outline-grey-25 outline -outline-offset-1 backdrop-blur-sm;
+        }
+      }
+    }
+  }
+
+  /* Outlined */
+  .MuiPagination-root .MuiPaginationItem-outlined {
+    &.MuiPaginationItem-sizeMedium {
+      @apply px-[calc(0.5rem-1px)] py-[calc(0.5rem-1px)];
+    }
+
+    &.MuiPaginationItem-sizeSmall {
+      @apply px-[calc(0.5rem-1px)] py-[calc(0.5rem-1px)];
+    }
+
+    &.MuiPaginationItem-sizeLarge {
+      @apply px-[calc(0.5rem-1px)] py-[calc(0.5rem-1px)];
+    }
+
+    &.MuiButtonBase-root.MuiPaginationItem-root.MuiPaginationItem-outlined {
+      @apply border border-solid border-transparent;
+
+      &:hover {
+        @apply bg-grey-500/15;
+      }
+
+      &.Mui-selected {
+        @apply border-grey-200 bg-grey-500/15 text-text-primary-dark;
+      }
+    }
+
+    &.MuiButtonBase-root.MuiPaginationItem-root.MuiPaginationItem-outlined.MuiPaginationItem-colorPrimary {
+      &:hover {
+        @apply border-primary bg-primary/10;
+      }
+
+      &.Mui-selected {
+        @apply border-primary bg-primary/15 text-primary-dark;
+      }
+    }
+
+    &.MuiButtonBase-root.MuiPaginationItem-root.MuiPaginationItem-outlined.MuiPaginationItem-colorSecondary {
+      &:hover {
+        @apply border-primary bg-secondary/10;
+      }
+
+      &.Mui-selected {
+        @apply border-primary bg-secondary/15 text-secondary-dark;
+      }
+    }
+  }
+
+  /* Labels */
+  .MuiTablePagination-selectLabel,
+  .MuiTablePagination-displayedRows {
+    @apply font-body text-base leading-5 font-normal;
+  }
+
+  /* Centering with Absolute Positioning */
+  .MuiTablePagination-root.center .MuiToolbar-root {
+    @apply relative;
+
+    .MuiTablePagination-actions {
+      @apply absolute inset-s-1/2 -translate-x-1/2;
+    }
+  }
+
+  .MuiTablePagination-root .MuiTablePagination-toolbar {
+    @apply relative;
+
+    .MuiPagination-root.center {
+      @apply absolute inset-s-1/2 -translate-x-1/2;
+    }
+  }
+}
